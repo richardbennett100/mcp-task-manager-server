@@ -59,6 +59,18 @@ The following tools are available for MCP clients:
   * **Description:** Creates a *new* project from an exported JSON string.
   * **Params:** `project_data` (string, required, JSON), `new_project_name` (string, optional, max 255)
   * **Returns:** `{ project_id: string }` of the newly created project.
+* **`updateTask`**:
+  * **Description:** Updates specific details (description, priority, dependencies) of an existing task.
+  * **Params:** `project_id` (string, required, UUID), `task_id` (string, required, UUID), `description` (string, optional, 1-1024), `priority` (enum 'high'|'medium'|'low', optional), `dependencies` (string[], optional, max 50, replaces existing)
+  * **Returns:** Updated `FullTaskData` object.
+* **`deleteTask`**:
+  * **Description:** Deletes one or more tasks (and their subtasks/dependency links via cascade).
+  * **Params:** `project_id` (string, required, UUID), `task_ids` (string[], required, 1-100)
+  * **Returns:** `{ success: true, deleted_count: number }`
+* **`deleteProject`**:
+  * **Description:** Permanently deletes a project and ALL associated data. **Use with caution!**
+  * **Params:** `project_id` (string, required, UUID)
+  * **Returns:** `{ success: true }`
 
 *(Note: Refer to the corresponding `src/tools/*Params.ts` files for detailed Zod schemas and parameter descriptions.)*
 

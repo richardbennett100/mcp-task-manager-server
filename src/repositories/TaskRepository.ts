@@ -381,5 +381,150 @@ export class TaskRepository {
 
 
     // --- Add other methods later ---
+    /**
+     * Updates a task's description, priority, and/or dependencies.
+     * Handles dependency replacement atomically within a transaction.
+     * @param projectId - The project ID.
+     * @param taskId - The task ID to update.
+     * @param updatePayload - Object containing optional fields to update.
+     * @param timestamp - The ISO8601 timestamp for updated_at.
+     * @returns The updated task data.
+     * @throws {Error} If the task doesn't exist or the database operation fails.
+     */
+    public updateTask(
+        projectId: string,
+        taskId: string,
+        updatePayload: { description?: string; priority?: TaskData['priority']; dependencies?: string[] },
+        timestamp: string
+    ): TaskData {
+
+        const transaction = this.db.transaction(() => {
+            const setClauses: string[] = [];
+            const params: (string | null)[] = [];
+
+            if (updatePayload.description !== undefined) {
+                setClauses.push('description = ?');
+                params.push(updatePayload.description);
+            }
+            if (updatePayload.priority !== undefined) {
+                setClauses.push('priority = ?');
+                params.push(updatePayload.priority);
+            }
+
+            // Always update the timestamp
+            setClauses.push('updated_at = ?');
+            params.push(timestamp);
+
+            // If nothing else to update, we still update the timestamp
+            if (setClauses.length === 1 && updatePayload.dependencies === undefined) {
+                 logger.warn(`[TaskRepository] updateTask called for ${taskId} with no fields to update other than timestamp.`);
+                 // Or potentially throw an error if this shouldn't happen based on service validation
+            }
+
+            // Update the main task table if there are fields to update
+            let changes = 0;
+            if (setClauses.length > 0) {
+                const updateSql = `
+                    UPDATE tasks
+                    SET ${setClauses.join(', ')}
+                    WHERE project_id = ? AND task_id = ?
+                `;
+                params.push(projectId, taskId);
+
+                const updateStmt = this.db.prepare(updateSql);
+                const info = updateStmt.run(...params);
+                changes = info.changes;
+
+                if (changes !== 1) {
+                    // Check if the task actually exists before throwing generic error
+                    const exists = this.findById(projectId, taskId);
+                    if (!exists) {
+                         throw new Error(`Task ${taskId} not found in project ${projectId}.`); // Will be caught and mapped later
+                    } else {
+                        throw new Error(`Failed to update task ${taskId}. Expected 1 change, got ${changes}.`);
+                    }
+                }
+                logger.debug(`[TaskRepository] Updated task ${taskId} fields.`);
+            }
+
+
+            // Handle dependencies if provided (replaces existing)
+            if (updatePayload.dependencies !== undefined) {
+                if (!this.insertDependencyStmt) {
+                    throw new Error('TaskRepository insertDependencyStmt not initialized.');
+                }
+                // 1. Delete existing dependencies for this task
+                const deleteDepsStmt = this.db.prepare(`DELETE FROM task_dependencies WHERE task_id = ?`);
+                const deleteInfo = deleteDepsStmt.run(taskId);
+                logger.debug(`[TaskRepository] Deleted ${deleteInfo.changes} existing dependencies for task ${taskId}.`);
+
+                // 2. Insert new dependencies
+                const newDeps = updatePayload.dependencies;
+                for (const depId of newDeps) {
+                    const depData: DependencyData = {
+                        task_id: taskId,
+                        depends_on_task_id: depId,
+                    };
+                    // ON CONFLICT DO NOTHING handles duplicates or self-references if schema allows
+                    this.insertDependencyStmt.run(depData);
+                }
+                logger.debug(`[TaskRepository] Inserted ${newDeps.length} new dependencies for task ${taskId}.`);
+            }
+
+            // Fetch and return the updated task data
+            const updatedTask = this.findById(projectId, taskId);
+            if (!updatedTask) {
+                // Should not happen if update succeeded, but safety check
+                throw new Error(`Failed to retrieve updated task ${taskId} after update.`);
+            }
+            return updatedTask;
+        });
+
+        try {
+            const result = transaction();
+            logger.info(`[TaskRepository] Successfully updated task ${taskId}.`);
+            return result;
+        } catch (error) {
+            logger.error(`[TaskRepository] Failed transaction for updating task ${taskId}:`, error);
+            throw error; // Re-throw to be handled by the service layer
+        }
+    }
+
+
+    /**
+     * Deletes multiple tasks by their IDs within a specific project.
+     * Relies on ON DELETE CASCADE for subtasks and dependencies.
+     * @param projectId - The project ID.
+     * @param taskIds - An array of task IDs to delete.
+     * @returns The number of tasks deleted.
+     * @throws {Error} If the database operation fails.
+     */
+    public deleteTasks(projectId: string, taskIds: string[]): number {
+        if (taskIds.length === 0) {
+            return 0;
+        }
+
+        // Create placeholders for the IN clause
+        const placeholders = taskIds.map(() => '?').join(',');
+        const sql = `
+            DELETE FROM tasks
+            WHERE project_id = ? AND task_id IN (${placeholders})
+        `;
+        const params = [projectId, ...taskIds];
+
+        try {
+            const stmt = this.db.prepare(sql);
+            const info = stmt.run(...params);
+            logger.info(`[TaskRepository] Deleted ${info.changes} tasks from project ${projectId}.`);
+            // Note: Cascade deletes for subtasks/dependencies happen automatically via schema.
+            return info.changes;
+        } catch (error) {
+            logger.error(`[TaskRepository] Failed to delete tasks from project ${projectId}:`, error);
+            throw error;
+        }
+    }
+
+
+    // --- Add other methods later ---
     // deleteById(taskId: string): void;
 }

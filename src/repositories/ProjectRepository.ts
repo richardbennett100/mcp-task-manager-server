@@ -53,5 +53,26 @@ export class ProjectRepository {
         }
     }
 
-    // Add other methods as needed (e.g., update, delete, list)
+    /**
+     * Deletes a project by its ID.
+     * Relies on ON DELETE CASCADE in the schema to remove associated tasks/dependencies.
+     * @param projectId - The ID of the project to delete.
+     * @returns The number of projects deleted (0 or 1).
+     * @throws {Error} If the database operation fails.
+     */
+    public deleteProject(projectId: string): number {
+        const sql = `DELETE FROM projects WHERE project_id = ?`;
+        try {
+            const stmt = this.db.prepare(sql);
+            const info = stmt.run(projectId);
+            logger.info(`[ProjectRepository] Attempted to delete project ${projectId}. Rows affected: ${info.changes}`);
+            // Cascade delete handles tasks/dependencies in the background via schema definition.
+            return info.changes;
+        } catch (error) {
+            logger.error(`[ProjectRepository] Failed to delete project ${projectId}:`, error);
+            throw error; // Re-throw
+        }
+    }
+
+    // Add other methods as needed (e.g., update, list)
 }

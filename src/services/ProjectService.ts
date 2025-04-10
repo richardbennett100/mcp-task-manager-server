@@ -232,4 +232,42 @@ export class ProjectService {
             throw new Error(`Failed to import project: ${error instanceof Error ? error.message : 'Unknown database error'}`);
         }
     }
+
+    /**
+     * Deletes a project and all its associated data (tasks, dependencies).
+     * @param projectId - The ID of the project to delete.
+     * @returns A boolean indicating success (true if deleted, false if not found initially).
+     * @throws {NotFoundError} If the project is not found.
+     * @throws {Error} If the database operation fails.
+     */
+    public async deleteProject(projectId: string): Promise<boolean> {
+        logger.info(`[ProjectService] Attempting to delete project: ${projectId}`);
+
+        // 1. Validate Project Existence *before* attempting delete
+        const projectExists = this.projectRepository.findById(projectId);
+        if (!projectExists) {
+            logger.warn(`[ProjectService] Project not found for deletion: ${projectId}`);
+            throw new NotFoundError(`Project with ID ${projectId} not found.`);
+        }
+
+        // 2. Call Repository delete method
+        try {
+            // The repository method handles the actual DELETE operation on the projects table.
+            // Cascade delete defined in the schema handles tasks and dependencies.
+            const deletedCount = this.projectRepository.deleteProject(projectId);
+
+            if (deletedCount !== 1) {
+                // This shouldn't happen if findById succeeded, but log a warning if it does.
+                logger.warn(`[ProjectService] Expected to delete 1 project, but repository reported ${deletedCount} deletions for project ${projectId}.`);
+                // Still return true as the project is gone, but log indicates potential issue.
+            }
+
+            logger.info(`[ProjectService] Successfully deleted project ${projectId} and associated data.`);
+            return true; // Indicate success
+
+        } catch (error) {
+            logger.error(`[ProjectService] Error deleting project ${projectId}:`, error);
+            throw error; // Re-throw database or other errors
+        }
+    }
 }

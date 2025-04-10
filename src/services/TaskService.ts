@@ -326,5 +326,146 @@ export class TaskService {
         }
     }
 
+    /**
+     * Updates specific fields of an existing task.
+     * @param input - Contains project ID, task ID, and optional fields to update.
+     * @returns The full details of the updated task.
+     * @throws {ValidationError} If no update fields are provided or if dependencies are invalid.
+     * @throws {NotFoundError} If the project, task, or any specified dependency task is not found.
+     * @throws {Error} If the database operation fails.
+     */
+    public async updateTask(input: {
+        project_id: string;
+        task_id: string;
+        description?: string;
+        priority?: TaskData['priority'];
+        dependencies?: string[];
+    }): Promise<FullTaskData> {
+        const { project_id, task_id } = input;
+        logger.info(`[TaskService] Attempting to update task ${task_id} in project ${project_id}`);
+
+        // 1. Validate that at least one field is being updated
+        if (input.description === undefined && input.priority === undefined && input.dependencies === undefined) {
+            throw new ValidationError("At least one field (description, priority, or dependencies) must be provided for update.");
+        }
+
+        // 2. Validate Project Existence (using repo method)
+        const projectExists = this.projectRepository.findById(project_id);
+        if (!projectExists) {
+            logger.warn(`[TaskService] Project not found: ${project_id}`);
+            throw new NotFoundError(`Project with ID ${project_id} not found.`);
+        }
+
+        // 3. Validate Task Existence (using repo method - findById also implicitly checks project scope)
+        // We need the task data anyway if dependencies are involved, so fetch it now.
+        const existingTask = this.taskRepository.findById(project_id, task_id);
+        if (!existingTask) {
+            logger.warn(`[TaskService] Task ${task_id} not found in project ${project_id}`);
+            throw new NotFoundError(`Task with ID ${task_id} not found in project ${project_id}.`);
+        }
+
+        // 4. Validate Dependency Existence if provided
+        if (input.dependencies !== undefined) {
+            if (input.dependencies.length > 0) {
+                const depCheck = this.taskRepository.checkTasksExist(project_id, input.dependencies);
+                if (!depCheck.allExist) {
+                    logger.warn(`[TaskService] Invalid dependencies provided for task ${task_id}:`, depCheck.missingIds);
+                    throw new ValidationError(`One or more dependency tasks not found in project ${project_id}: ${depCheck.missingIds.join(', ')}`);
+                }
+                // Also check for self-dependency
+                if (input.dependencies.includes(task_id)) {
+                     throw new ValidationError(`Task ${task_id} cannot depend on itself.`);
+                }
+            }
+             // If input.dependencies is an empty array, it means "remove all dependencies"
+        }
+
+        // 5. Prepare payload for repository
+        const updatePayload: { description?: string; priority?: TaskData['priority']; dependencies?: string[] } = {};
+        if (input.description !== undefined) updatePayload.description = input.description;
+        if (input.priority !== undefined) updatePayload.priority = input.priority;
+        if (input.dependencies !== undefined) updatePayload.dependencies = input.dependencies;
+
+        // 6. Call Repository update method
+        try {
+            const now = new Date().toISOString();
+            // The repo method handles the transaction for task update + dependency replacement
+            const updatedTaskData = this.taskRepository.updateTask(project_id, task_id, updatePayload, now);
+
+            // 7. Fetch full details (including potentially updated dependencies and existing subtasks)
+            // Re-use logic similar to getTaskById
+            const finalDependencies = this.taskRepository.findDependencies(task_id);
+            const finalSubtasks = this.taskRepository.findSubtasks(task_id);
+
+            const fullUpdatedTask: FullTaskData = {
+                ...updatedTaskData, // Use the data returned by the update method
+                dependencies: finalDependencies,
+                subtasks: finalSubtasks,
+            };
+
+            logger.info(`[TaskService] Successfully updated task ${task_id} in project ${project_id}`);
+            return fullUpdatedTask;
+
+        } catch (error) {
+            logger.error(`[TaskService] Error updating task ${task_id} in project ${project_id}:`, error);
+            // Re-throw specific errors if needed, otherwise let the generic error propagate
+             if (error instanceof Error && error.message.includes('not found')) {
+                 // Map repo's generic error for not found back to specific NotFoundError
+                 throw new NotFoundError(error.message);
+             }
+            throw error; // Re-throw other errors (like DB constraint errors or unexpected ones)
+        }
+    }
+
+
+    /**
+     * Deletes one or more tasks within a project.
+     * @param projectId - The project ID.
+     * @param taskIds - An array of task IDs to delete.
+     * @returns The number of tasks successfully deleted.
+     * @throws {NotFoundError} If the project or any of the specified tasks are not found.
+     * @throws {Error} If the database operation fails.
+     */
+    public async deleteTasks(projectId: string, taskIds: string[]): Promise<number> {
+        logger.info(`[TaskService] Attempting to delete ${taskIds.length} tasks from project ${projectId}`);
+
+        // 1. Validate Project Existence
+        const projectExists = this.projectRepository.findById(projectId);
+        if (!projectExists) {
+            logger.warn(`[TaskService] Project not found: ${projectId}`);
+            throw new NotFoundError(`Project with ID ${projectId} not found.`);
+        }
+
+        // 2. Validate Task Existence *before* attempting delete
+        // This ensures we report an accurate count and catch non-existent IDs early.
+        const existenceCheck = this.taskRepository.checkTasksExist(projectId, taskIds);
+        if (!existenceCheck.allExist) {
+            logger.warn(`[TaskService] Cannot delete: One or more tasks not found in project ${projectId}:`, existenceCheck.missingIds);
+            // Throw NotFoundError here, as InvalidParams might be confusing if some IDs were valid
+            throw new NotFoundError(`One or more tasks to delete not found in project ${projectId}: ${existenceCheck.missingIds.join(', ')}`);
+        }
+
+        // 3. Call Repository delete method
+        try {
+            // The repository method handles the actual DELETE operation
+            const deletedCount = this.taskRepository.deleteTasks(projectId, taskIds);
+
+            // Double-check count (optional, but good sanity check)
+            if (deletedCount !== taskIds.length) {
+                logger.warn(`[TaskService] Expected to delete ${taskIds.length} tasks, but repository reported ${deletedCount} deletions.`);
+                // This might indicate a race condition or unexpected DB behavior, though unlikely with cascade.
+                // For V1, we'll trust the repo count but log the warning.
+            }
+
+            logger.info(`[TaskService] Successfully deleted ${deletedCount} tasks from project ${projectId}`);
+            return deletedCount;
+
+        } catch (error) {
+            logger.error(`[TaskService] Error deleting tasks from project ${projectId}:`, error);
+            throw error; // Re-throw database or other errors
+        }
+    }
+
+
     // --- Add other task service methods later ---
 }
