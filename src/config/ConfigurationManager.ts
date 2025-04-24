@@ -1,12 +1,19 @@
-﻿// Import config types for services as they are added
-import { ExampleServiceConfig } from '../types/index.js';
+﻿import { logger } from '../utils/logger.js'; // Assuming logger is needed for potential warnings
 
 // Define the structure for all configurations managed
 interface ManagedConfigs {
-    exampleService: Required<ExampleServiceConfig>;
-// Add other service config types here:
+    // Add other service config types here:
     // yourService: Required<YourServiceConfig>;
-    databasePath: string; // Added for database file location
+
+    // PostgreSQL connection details
+    pgHost: string;
+    pgPort: number;
+    pgUser: string;
+    pgPassword?: string; // Optional, might be handled differently (e.g., env var only)
+    pgDatabase: string;
+    // Optionally add SSL config, connection timeout, etc.
+    // pgSsl: boolean | object;
+    // pgConnectionTimeoutMillis: number;
 }
 
 /**
@@ -17,32 +24,28 @@ export class ConfigurationManager {
     private static instance: ConfigurationManager | null = null;
     private static instanceLock = false;
 
-    private config: ManagedConfigs;
+    // Make config public temporarily for easier access in DatabaseManager
+    // Or provide individual getters for each PG setting
+    public config: ManagedConfigs;
 
     private constructor() {
-        // Initialize with default configurations
+        // Initialize with default configurations for PostgreSQL
         this.config = {
-            exampleService: {
-                // Define defaults for ExampleService
-                greeting: "Hello",
-                enableDetailedLogs: false,
-            },
-            // Initialize other service configs with defaults:
-            // yourService: {
-            //   someSetting: 'default value',
-            //   retryCount: 3,
-            // },
-            // Default database path
-            databasePath: './data/taskmanager.db',
+            pgHost: 'localhost',
+            pgPort: 5432,
+            pgUser: 'taskmanager_user', // Choose a suitable default user
+            pgPassword: undefined,     // Avoid default passwords in code
+            pgDatabase: 'taskmanager_db', // Choose a suitable default DB name
+            // pgSsl: false,
+            // pgConnectionTimeoutMillis: 5000,
         };
 
-        // Optional: Load overrides from environment variables or config files here
+        // Load overrides from environment variables
         this.loadEnvironmentOverrides();
     }
 
     /**
      * Get the singleton instance of ConfigurationManager.
-     * Basic lock to prevent race conditions during initial creation.
      */
     public static getInstance(): ConfigurationManager {
         if (!ConfigurationManager.instance) {
@@ -54,11 +57,8 @@ export class ConfigurationManager {
                     ConfigurationManager.instanceLock = false; // Unlock
                 }
             } else {
-                // Basic busy wait if locked (consider a more robust async lock if high contention is expected)
                 while (ConfigurationManager.instanceLock) { }
-                // Re-check instance after wait
                 if (!ConfigurationManager.instance) {
-                    // This path is less likely but handles edge cases if lock logic needs refinement
                     return ConfigurationManager.getInstance();
                 }
             }
@@ -68,63 +68,80 @@ export class ConfigurationManager {
 
     // --- Getters for specific configurations ---
 
-    public getExampleServiceConfig(): Required<ExampleServiceConfig> {
-        // Return a copy to prevent accidental modification of the internal state
-        return { ...this.config.exampleService };
-    }
+    // Provide individual getters for PG settings if config remains private
+    public getPgHost(): string { return this.config.pgHost; }
+    public getPgPort(): number { return this.config.pgPort; }
+    public getPgUser(): string { return this.config.pgUser; }
+    public getPgPassword(): string | undefined { return this.config.pgPassword; }
+    public getPgDatabase(): string { return this.config.pgDatabase; }
+    // public getPgSsl(): boolean | object { return this.config.pgSsl; }
+    // public getPgConnectionTimeoutMillis(): number { return this.config.pgConnectionTimeoutMillis; }
 
-    // Add getters for other service configs:
-    // public getYourServiceConfig(): Required<YourServiceConfig> {
-    //   return { ...this.config.yourService };
-    // }
 
-    public getDatabasePath(): string {
-        // Return a copy to prevent accidental modification (though less critical for a string)
-        return this.config.databasePath;
-    }
+    // --- Updaters (if runtime updates are needed - less common for DB config) ---
+    // Add updaters if necessary
 
-    // --- Updaters for specific configurations (if runtime updates are needed) ---
-
-    public updateExampleServiceConfig(update: Partial<ExampleServiceConfig>): void {
-        this.config.exampleService = {
-            ...this.config.exampleService,
-            ...update,
-        };
-        // Optional: Notify relevant services about the config change
-    }
-
-    // Add updaters for other service configs:
-    // public updateYourServiceConfig(update: Partial<YourServiceConfig>): void {
-    //   this.config.yourService = {
-    //     ...this.config.yourService,
-    //     ...update,
-    //   };
-    // }
 
     /**
-     * Example method to load configuration overrides from environment variables.
-     * Call this in the constructor.
+     * Load configuration overrides from environment variables.
      */
     private loadEnvironmentOverrides(): void {
-        // Example for ExampleService
-        if (process.env.EXAMPLE_GREETING) {
-            this.config.exampleService.greeting = process.env.EXAMPLE_GREETING;
+        logger.info('Loading environment variable overrides for configuration...');
+
+        if (process.env.PGHOST) {
+            this.config.pgHost = process.env.PGHOST;
+            logger.info(`Overriding pgHost from env: ${this.config.pgHost}`);
         }
-        if (process.env.EXAMPLE_ENABLE_LOGS) {
-            this.config.exampleService.enableDetailedLogs = process.env.EXAMPLE_ENABLE_LOGS.toLowerCase() === 'true';
+        if (process.env.PGPORT) {
+            const port = parseInt(process.env.PGPORT, 10);
+            if (!isNaN(port)) {
+                this.config.pgPort = port;
+                 logger.info(`Overriding pgPort from env: ${this.config.pgPort}`);
+            } else {
+                 logger.warn(`Invalid PGPORT environment variable: ${process.env.PGPORT}. Using default ${this.config.pgPort}.`);
+            }
+        }
+        if (process.env.PGUSER) {
+            this.config.pgUser = process.env.PGUSER;
+             logger.info(`Overriding pgUser from env: ${this.config.pgUser}`);
+        }
+        // Recommended: Load password *only* from env var, don't keep default
+        if (process.env.PGPASSWORD) {
+            this.config.pgPassword = process.env.PGPASSWORD;
+             logger.info('Overriding pgPassword from env.'); // Don't log the password itself
+        }
+        if (process.env.PGDATABASE) {
+            this.config.pgDatabase = process.env.PGDATABASE;
+             logger.info(`Overriding pgDatabase from env: ${this.config.pgDatabase}`);
         }
 
-        // Override for Database Path
-        if (process.env.DATABASE_PATH) {
-            this.config.databasePath = process.env.DATABASE_PATH;
-        }
+        // Example for optional SSL (can be complex, might need 'true', 'false', or JSON object)
+        // if (process.env.PGSSL) {
+        //     if (process.env.PGSSL.toLowerCase() === 'true') {
+        //         this.config.pgSsl = true;
+        //     } else if (process.env.PGSSL.toLowerCase() === 'false') {
+        //         this.config.pgSsl = false;
+        //     } else {
+        //         try {
+        //             this.config.pgSsl = JSON.parse(process.env.PGSSL); // For SSL config objects
+        //         } catch (e) {
+        //             logger.warn(`Could not parse PGSSL env var as JSON: ${e}. Using default ${this.config.pgSsl}`);
+        //         }
+        //     }
+        //     logger.info(`Overriding pgSsl from env: ${JSON.stringify(this.config.pgSsl)}`);
+        // }
+
+        // Example for timeout
+        // if (process.env.PGCONNECTION_TIMEOUT_MS) {
+        //     const timeout = parseInt(process.env.PGCONNECTION_TIMEOUT_MS, 10);
+        //     if (!isNaN(timeout)) {
+        //         this.config.pgConnectionTimeoutMillis = timeout;
+        //         logger.info(`Overriding pgConnectionTimeoutMillis from env: ${this.config.pgConnectionTimeoutMillis}`);
+        //     } else {
+        //         logger.warn(`Invalid PGCONNECTION_TIMEOUT_MS env var: ${process.env.PGCONNECTION_TIMEOUT_MS}. Using default ${this.config.pgConnectionTimeoutMillis}.`);
+        //     }
+        // }
 
         // Add logic for other services based on their environment variables
-        // if (process.env.YOUR_SERVICE_RETRY_COUNT) {
-        //   const retryCount = parseInt(process.env.YOUR_SERVICE_RETRY_COUNT, 10);
-        //   if (!isNaN(retryCount)) {
-        //     this.config.yourService.retryCount = retryCount;
-        //   }
-        // }
     }
 }
