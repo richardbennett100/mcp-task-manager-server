@@ -5,21 +5,22 @@
  * MCP servers typically use stdout for protocol messages, so logs go to stderr.
  */
 export const logger: Logger = pino(
-    {
-        level: process.env.LOG_LEVEL || 'info', // Default to 'info', configurable via env var
-        formatters: {
-            level: (label: string) => { // Add type for label
-                // Standardize level labels if desired, e.g., uppercase
-                return { level: label.toUpperCase() };
-            },
-            // bindings: (bindings) => {
-            //     // Add custom bindings if needed, e.g., hostname, pid
-            //     return { pid: bindings.pid, hostname: bindings.hostname };
-            // },
-        },
-        timestamp: pino.stdTimeFunctions.isoTime, // Use ISO 8601 timestamps
+  {
+    level: process.env.LOG_LEVEL || 'info', // Default to 'info', configurable via env var
+    formatters: {
+      level: (label: string) => {
+        // Add type for label
+        // Standardize level labels if desired, e.g., uppercase
+        return { level: label.toUpperCase() };
+      },
+      // bindings: (bindings) => {
+      //     // Add custom bindings if needed, e.g., hostname, pid
+      //     return { pid: bindings.pid, hostname: bindings.hostname };
+      // },
     },
-    pino.destination(2) // Direct output to stderr (file descriptor 2)
+    timestamp: pino.stdTimeFunctions.isoTime, // Use ISO 8601 timestamps
+  },
+  pino.destination(2) // Direct output to stderr (file descriptor 2)
 );
 
 // Example usage (replace console.log/error calls throughout the app):

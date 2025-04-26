@@ -1,32 +1,51 @@
+// src/tools/listTasksParams.ts
 import { z } from 'zod';
 
-export const TOOL_NAME = "listTasks";
+export const TOOL_NAME = 'listTasks'; // Keep familiar name
 
 export const TOOL_DESCRIPTION = `
-Retrieves a list of tasks for a specified project.
-Allows optional filtering by task status ('todo', 'in-progress', 'review', 'done').
-Provides an option to include nested subtasks directly within their parent task objects in the response.
-Returns an array of task objects.
+Retrieves a list of work items (tasks, projects, etc.).
+Can list top-level projects (if rootsOnly is true or parent_work_item_id is null)
+OR direct children of a specific parent work item (if parent_work_item_id is provided).
+Allows optional filtering by item status ('todo', 'in-progress', 'review', 'done').
+Returns an array of work item objects matching the criteria. Does not fetch nested children.
 `;
 
-// Re-use enum from addTaskParams or define locally if preferred
-const TaskStatusEnum = z.enum(['todo', 'in-progress', 'review', 'done']);
+// Enum for status filtering
+const WorkItemStatusEnum = z.enum([
+  'todo',
+  'in-progress',
+  'review',
+  'done',
+]);
 
-// Zod schema for the parameters, matching FR-003 and listTasksTool.md spec
+// Zod schema adapted for work items
 export const TOOL_PARAMS = z.object({
-    project_id: z.string()
-        .uuid("The project_id must be a valid UUID.")
-        .describe("The unique identifier (UUID) of the project whose tasks are to be listed. This project must exist."), // Required, UUID format
+  // Project ID removed
+  parent_work_item_id: z
+    .string()
+    .uuid('parent_work_item_id must be a valid UUID if provided.')
+    .nullable() // Explicitly allow null to fetch roots
+    .optional()
+    .describe(
+      'Optional. The unique identifier (UUID) of the parent work item whose direct children are to be listed. Use null to list top-level projects.'
+    ),
 
-    status: TaskStatusEnum
-        .optional()
-        .describe("Optional filter to return only tasks matching the specified status."), // Optional, enum
+  rootsOnly: z
+    .boolean()
+    .optional()
+    .describe(
+      'Optional convenience flag. If true, lists only top-level projects (parent_work_item_id is ignored). If false or omitted, uses parent_work_item_id.'
+    ),
 
-    include_subtasks: z.boolean()
-        .optional()
-        .default(false) // Default value
-        .describe("Optional flag (default false). If true, the response will include subtasks nested within their parent tasks."), // Optional, boolean, default
+  status: WorkItemStatusEnum.optional().describe(
+    'Optional filter to return only items matching the specified status (excludes "deleted" items).'
+  ),
+
+  // include_subtasks removed as it's not supported by the current service implementation
 });
+// Add refinement to ensure either parent_work_item_id or rootsOnly makes sense?
+// e.g., .refine(...) - maybe later if needed.
 
 // Define the expected type for arguments based on the Zod schema
 export type ListTasksArgs = z.infer<typeof TOOL_PARAMS>;

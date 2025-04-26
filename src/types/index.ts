@@ -4,6 +4,6 @@ export * from './taskTypes.js'; // Added export for task types
 
 // Define common types used across services/tools if any
 export interface CommonContext {
-    sessionId?: string;
-    userId?: string;
+  sessionId?: string;
+  userId?: string;
 }

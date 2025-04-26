@@ -1,26 +1,28 @@
-﻿import { createServer } from "./createServer.js";
-import { logger } from "./utils/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-// import { WebSocketServerTransport } from "@modelcontextprotocol/sdk/server/ws.js"; // Example for WebSocket
+﻿import { createServer } from './createServer.js'; // createServer is now sync
+import { logger } from './utils/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
+// Keep main async only because server.connect is async
 const main = async () => {
-    try {
-        const server = createServer();
-        logger.info("Starting MCP server");
+  try {
+    // createServer is sync again
+    const server = createServer();
+    logger.info('MCP server setup complete.');
 
-        // Choose your transport
-        const transport = new StdioServerTransport();
-        // const transport = new WebSocketServerTransport({ port: 8080 }); // Example
+    const transport = new StdioServerTransport();
+    logger.info('Connecting transport', {
+      transport: transport.constructor.name,
+    });
 
-        logger.info("Connecting transport", { transport: transport.constructor.name });
-        await server.connect(transport);
+    // Connect transport *after* synchronous setup/registration
+    await server.connect(transport);
 
-        logger.info("MCP Server connected and listening");
-
-    } catch (error) {
-        logger.error("Failed to start server", error);
-        process.exit(1); // Exit if server fails to start
-    }
+    logger.info('MCP Server connected and listening');
+  } catch (error) {
+    logger.error('Failed to start server', error);
+    console.error('Fallback console log: Failed to start server:', error);
+    process.exit(1);
+  }
 };
 
 main();

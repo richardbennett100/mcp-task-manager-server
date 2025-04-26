@@ -1,75 +1,41 @@
-﻿import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ConfigurationManager } from "../config/ConfigurationManager.js";
-import { logger } from "../utils/index.js"; // Now using barrel file
-import { DatabaseManager } from "../db/DatabaseManager.js";
-import { ProjectRepository } from "../repositories/ProjectRepository.js";
-import { TaskRepository } from "../repositories/TaskRepository.js"; // Added TaskRepository import
-import { ProjectService, TaskService } from "../services/index.js"; // Using barrel file, added TaskService
+﻿import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+// Remove unused imports: ConfigManager, DBManager, Repos, Pool, Services
+import { logger } from '../utils/index.js';
 
-// Import tool registration functions
-// import { exampleTool } from "./exampleTool.js"; // Commenting out example
-import { createProjectTool } from "./createProjectTool.js";
-import { addTaskTool } from "./addTaskTool.js";
-import { listTasksTool } from "./listTasksTool.js";
-import { showTaskTool } from "./showTaskTool.js";
-import { setTaskStatusTool } from "./setTaskStatusTool.js";
-import { expandTaskTool } from "./expandTaskTool.js";
-import { getNextTaskTool } from "./getNextTaskTool.js";
-import { exportProjectTool } from "./exportProjectTool.js";
-import { importProjectTool } from "./importProjectTool.js";
-import { updateTaskTool } from "./updateTaskTool.js"; // Import the new tool
-import { deleteTaskTool } from "./deleteTaskTool.js"; // Import deleteTask tool
-import { deleteProjectTool } from "./deleteProjectTool.js"; // Import deleteProject tool
-// import { yourTool } from "./yourTool.js"; // Add other new tool imports here
-
+// Import only the tool registration functions
+import { addTaskTool } from './addTaskTool.js';
+import { listTasksTool } from './listTasksTool.js';
+import { updateTaskTool } from './updateTaskTool.js';
+import { deleteTaskTool } from './deleteTaskTool.js';
 /**
- * Register all defined tools with the MCP server instance.
- * This function centralizes tool registration logic.
- * It also instantiates necessary services and repositories.
+ * Register all defined tools with the MCP server instance. (Now SYNCHRONOUS)
+ * Does NOT instantiate dependencies anymore.
  */
 export function registerTools(server: McpServer): void {
-    logger.info("Registering tools...");
-    const configManager = ConfigurationManager.getInstance();
+  // Sync function
+  logger.info('Registering tools...');
 
-    // --- Instantiate Dependencies ---
-    // Note: Consider dependency injection frameworks for larger applications
-    try {
-        const dbManager = DatabaseManager.getInstance();
-        const db = dbManager.getDb(); // Get the initialized DB connection
+  try {
+    // --- NO DB/Repo/Service Instantiation Here ---
 
-        // Instantiate Repositories
-        const projectRepository = new ProjectRepository(db);
-        const taskRepository = new TaskRepository(db); // Instantiate TaskRepository
+    // --- Register Tools ---
+    // Pass only the server instance. Dependencies will be created inside tool handlers.
+    addTaskTool(server);
+    listTasksTool(server);
+    updateTaskTool(server);
+    deleteTaskTool(server);
 
-        // Instantiate Services
-        const projectService = new ProjectService(db, projectRepository, taskRepository); // Pass db and both repos
-        const taskService = new TaskService(db, taskRepository, projectRepository); // Instantiate TaskService, passing db and repos
-
-        // --- Register Tools ---
-        // Register each tool, passing necessary services
-
-        // exampleTool(server, configManager.getExampleServiceConfig()); // Example commented out
-
-        createProjectTool(server, projectService);
-        addTaskTool(server, taskService);
-        listTasksTool(server, taskService);
-        showTaskTool(server, taskService);
-        setTaskStatusTool(server, taskService);
-        expandTaskTool(server, taskService);
-        getNextTaskTool(server, taskService);
-        exportProjectTool(server, projectService);
-        importProjectTool(server, projectService); // Register importProjectTool (uses ProjectService)
-        updateTaskTool(server, taskService); // Register the new updateTask tool
-        deleteTaskTool(server, taskService); // Register deleteTask tool
-        deleteProjectTool(server, projectService); // Register deleteProject tool (uses ProjectService)
-        // ... etc.
-
-        logger.info("All tools registered successfully.");
-
-    } catch (error) {
-        logger.error("Failed to instantiate dependencies or register tools:", error);
-        // Depending on the desired behavior, you might want to exit the process
-        // process.exit(1);
-        throw new Error("Failed to initialize server components during tool registration.");
-    }
+    logger.info('All tools registered successfully.');
+  } catch (error) {
+    // Catch errors during the registration calls themselves (less likely)
+    logger.error('Failed during synchronous tool registration:', error);
+    console.error(
+      'Fallback console log: Failed during synchronous tool registration:',
+      error
+    );
+    // Throw error to prevent server starting with incomplete tools
+    throw new Error(
+      `Failed to register tools: ${error instanceof Error ? error.message : error}`
+    );
+  }
 }

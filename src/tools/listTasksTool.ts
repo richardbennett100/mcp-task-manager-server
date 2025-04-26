@@ -1,53 +1,68 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
-import { TOOL_NAME, TOOL_DESCRIPTION, TOOL_PARAMS, ListTasksArgs } from "./listTasksParams.js";
-import { TaskService } from "../services/TaskService.js";
+// src/tools/listTasksTool.ts
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+import {
+  TOOL_NAME,
+  TOOL_DESCRIPTION,
+  TOOL_PARAMS,
+  ListTasksArgs, // Use updated args type
+} from './listTasksParams.js'; // Use updated params file
 import { logger } from '../utils/logger.js';
-import { NotFoundError } from "../utils/errors.js";
+import { NotFoundError } from '../utils/errors.js'; // Keep for potential future use
+// Import necessary components for instantiation inside the handler
+import { DatabaseManager } from '../db/DatabaseManager.js';
+import { WorkItemRepository } // Import NEW repository
+  from '../repositories/WorkItemRepository.js';
+import { WorkItemService, ListWorkItemsFilter } // Import NEW service and filter type
+  from '../services/WorkItemService.js';
 
 /**
- * Registers the listTasks tool with the MCP server.
- *
+ * Registers the listTasks (now listWorkItems conceptually) tool with the MCP server.
  * @param server - The McpServer instance.
- * @param taskService - An instance of the TaskService.
  */
-export const listTasksTool = (server: McpServer, taskService: TaskService): void => {
+export const listTasksTool = (server: McpServer): void => {
+  const processRequest = async (args: ListTasksArgs) => {
+    logger.info(`[${TOOL_NAME}] Received request with args:`, args);
+    try {
+      // Instantiate dependencies inside the handler
+      const dbManager = await DatabaseManager.getInstance();
+      const pool = dbManager.getPool();
+      const workItemRepository = new WorkItemRepository(pool);
+      const workItemService = new WorkItemService(workItemRepository);
 
-    const processRequest = async (args: ListTasksArgs) => {
-        logger.info(`[${TOOL_NAME}] Received request with args:`, args);
-        try {
-            // Call the service method to list tasks
-            const tasks = await taskService.listTasks({
-                project_id: args.project_id,
-                status: args.status,
-                include_subtasks: args.include_subtasks,
-            });
+      // Construct the filter for the service
+      const filter: ListWorkItemsFilter = {
+        status: args.status,
+        // Prioritize rootsOnly flag if true
+        rootsOnly: args.rootsOnly ?? false,
+        // Pass parentId only if rootsOnly is not true
+        parent_work_item_id: (args.rootsOnly ?? false) ? undefined : args.parent_work_item_id,
+      };
 
-            // Format the successful response
-            logger.info(`[${TOOL_NAME}] Found ${tasks.length} tasks for project ${args.project_id}`);
-            return {
-                content: [{
-                    type: "text" as const,
-                    text: JSON.stringify(tasks) // Return the array of task objects
-                }]
-            };
-        } catch (error: unknown) {
-            // Handle potential errors
-            logger.error(`[${TOOL_NAME}] Error processing request:`, error);
+      // Call the new service method
+      const workItems = await workItemService.listWorkItems(filter);
 
-            if (error instanceof NotFoundError) {
-                // Specific error if the project wasn't found
-                throw new McpError(ErrorCode.InvalidParams, error.message); // Map NotFound to InvalidParams for project_id
-            } else {
-                // Generic internal error
-                const message = error instanceof Error ? error.message : 'An unknown error occurred while listing tasks.';
-                throw new McpError(ErrorCode.InternalError, message);
-            }
-        }
-    };
+      logger.info(`[${TOOL_NAME}] Found ${workItems.length} work items.`);
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(workItems) }],
+      };
+    } catch (error: unknown) {
+      logger.error(`[${TOOL_NAME}] Error processing request:`, error);
+      // Handle errors appropriately - NotFoundError might occur if parent ID validation is added
+      if (error instanceof NotFoundError) {
+        throw new McpError(ErrorCode.InvalidParams, error.message);
+      } else {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'An unknown error occurred while listing work items.';
+        throw new McpError(ErrorCode.InternalError, message);
+      }
+    }
+  };
 
-    // Register the tool with the server
-    server.tool(TOOL_NAME, TOOL_DESCRIPTION, TOOL_PARAMS.shape, processRequest);
+  // Register the tool with the updated Zod schema object's shape
+  server.tool(TOOL_NAME, TOOL_DESCRIPTION, TOOL_PARAMS.shape, processRequest);
 
-    logger.info(`[${TOOL_NAME}] Tool registered successfully.`);
+  // Log registration from index.ts
 };

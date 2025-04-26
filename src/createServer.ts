@@ -1,29 +1,25 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ConfigurationManager } from "./config/ConfigurationManager.js";
-import { registerTools } from "./tools/index.js";
-import { logger } from "./utils/index.js";
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+// Remove ConfigManager import if not used
+import { registerTools } from './tools/index.js'; // registerTools is sync
+import { logger } from './utils/index.js';
 
 /**
- * Creates and configures an MCP server instance.
- * This is the central function for server creation and tool registration.
- * @returns {McpServer} The configured MCP server instance
+ * Creates and configures an MCP server instance. (Now SYNCHRONOUS)
  */
 export function createServer(): McpServer {
-    logger.info("Creating MCP server instance");
+  // Sync function
+  logger.info('Creating MCP server instance');
 
-    // Initialize the server
-    const server = new McpServer({
-        name: "mcp-server",
-        version: "1.0.0",
-        description: "MCP Server based on recommended practices"
-    });
+  // FIX: Added name and version properties
+  const server = new McpServer({
+    name: 'mcp-task-manager-server', // Or your preferred name
+    version: '1.0.0', // Or your current version
+    description: 'MCP Server for Task Management',
+  });
 
-    // Get configuration
-    const configManager = ConfigurationManager.getInstance();
+  // Call synchronous tool registration
+  registerTools(server);
 
-    // Register all tools
-    registerTools(server);
-
-    logger.info("MCP server instance created successfully");
-    return server;
+  logger.info('MCP server instance created and tools registered successfully');
+  return server; // Return the server instance
 }

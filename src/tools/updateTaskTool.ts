@@ -1,60 +1,103 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
-// Import the base schema shape for registration and the refined schema for validation/types
-import { TOOL_NAME, TOOL_DESCRIPTION, TOOL_PARAMS, UPDATE_TASK_BASE_SCHEMA, UpdateTaskArgs } from "./updateTaskParams.js";
-import { TaskService, FullTaskData } from "../services/TaskService.js"; // Assuming TaskService is exported from index
+// src/tools/updateTaskTool.ts
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+import {
+  TOOL_NAME,
+  TOOL_DESCRIPTION,
+  UPDATE_TASK_BASE_SCHEMA,
+  TOOL_PARAMS, // Refined schema
+  UpdateTaskArgs,
+} from './updateTaskParams.js';
 import { logger } from '../utils/logger.js';
-import { NotFoundError, ValidationError } from "../utils/errors.js"; // Import custom errors
+import { NotFoundError, ValidationError } from '../utils/errors.js';
+import { DatabaseManager } from '../db/DatabaseManager.js';
+import { WorkItemRepository, WorkItemDependencyData }
+  from '../repositories/WorkItemRepository.js';
+import { WorkItemService, UpdateWorkItemInput, FullWorkItemData }
+  from '../services/WorkItemService.js';
 
 /**
- * Registers the updateTask tool with the MCP server.
- *
+ * Registers the updateTask (now updateWorkItem conceptually) tool with the MCP server.
  * @param server - The McpServer instance.
- * @param taskService - An instance of the TaskService.
  */
-export const updateTaskTool = (server: McpServer, taskService: TaskService): void => {
+export const updateTaskTool = (server: McpServer): void => {
+  const processRequest = async (
+    args: UpdateTaskArgs
+  ): Promise<{ content: { type: 'text'; text: string }[] }> => {
+    // Clone args for safe logging modification
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const logArgs: Record<string, any> = { ...args };
+    // FIX: Check if dependencies exists before accessing length
+    if (args.dependencies) {
+        logArgs.dependencies = `[${args.dependencies.length} items]`;
+    }
+    logger.info(`[${TOOL_NAME}] Received request with args:`, logArgs);
 
-    const processRequest = async (args: UpdateTaskArgs): Promise<{ content: { type: 'text', text: string }[] }> => {
-        logger.info(`[${TOOL_NAME}] Received request with args:`, { ...args, dependencies: args.dependencies ? `[${args.dependencies.length} items]` : undefined }); // Avoid logging potentially large arrays
-        try {
-            // Call the service method to update the task
-            // The service method now returns FullTaskData
-            const updatedTask: FullTaskData = await taskService.updateTask({
-                project_id: args.project_id,
-                task_id: args.task_id,
-                description: args.description,
-                priority: args.priority,
-                dependencies: args.dependencies,
-            });
+    try {
+      // Instantiate dependencies inside the handler
+      const dbManager = await DatabaseManager.getInstance();
+      const pool = dbManager.getPool();
+      const workItemRepository = new WorkItemRepository(pool);
+      const workItemService = new WorkItemService(workItemRepository);
 
-            // Format the successful response
-            logger.info(`[${TOOL_NAME}] Successfully updated task ${args.task_id} in project ${args.project_id}`);
-            return {
-                content: [{
-                    type: "text" as const,
-                    text: JSON.stringify(updatedTask) // Return the full updated task details
-                }]
-            };
-        } catch (error: unknown) {
-            // Handle potential errors according to systemPatterns.md mapping
-            logger.error(`[${TOOL_NAME}] Error processing request:`, error);
+      // Construct the update payload for the service, including only provided fields
+      const serviceUpdateInput: UpdateWorkItemInput = {};
+      if (args.parent_work_item_id !== undefined) serviceUpdateInput.parent_work_item_id = args.parent_work_item_id;
+      if (args.name !== undefined) serviceUpdateInput.name = args.name;
+      if (args.description !== undefined) serviceUpdateInput.description = args.description;
+      if (args.priority !== undefined) serviceUpdateInput.priority = args.priority;
+      if (args.status !== undefined) serviceUpdateInput.status = args.status;
+      if (args.due_date !== undefined) serviceUpdateInput.due_date = args.due_date;
+      if (args.order_key !== undefined) serviceUpdateInput.order_key = args.order_key;
+      if (args.shortname !== undefined) serviceUpdateInput.shortname = args.shortname;
 
-            if (error instanceof ValidationError) {
-                // Validation error from service (e.g., no fields provided, invalid deps)
-                 throw new McpError(ErrorCode.InvalidParams, error.message);
-            } else if (error instanceof NotFoundError) {
-                // Project or task not found - Map to InvalidParams as per SDK limitations/convention
-                throw new McpError(ErrorCode.InvalidParams, error.message);
-            } else {
-                // Generic internal error
-                const message = error instanceof Error ? error.message : 'An unknown error occurred while updating the task.';
-                throw new McpError(ErrorCode.InternalError, message);
-            }
-        }
-    };
+      // Map dependencies structure if provided (pass undefined otherwise)
+      const serviceDependenciesInput: Omit<WorkItemDependencyData, 'work_item_id'>[] | undefined =
+         args.dependencies?.map((dep) => ({
+             depends_on_work_item_id: dep.depends_on_work_item_id,
+             dependency_type: dep.dependency_type,
+         }));
 
-    // Register the tool with the server using the base schema's shape
-    server.tool(TOOL_NAME, TOOL_DESCRIPTION, UPDATE_TASK_BASE_SCHEMA.shape, processRequest);
+      // Call the new service method
+      const updatedWorkItem = await workItemService.updateWorkItem(
+        args.work_item_id,
+        serviceUpdateInput,
+        serviceDependenciesInput // Pass dependencies separately
+      );
 
-    logger.info(`[${TOOL_NAME}] Tool registered successfully.`);
+      logger.info(
+        `[${TOOL_NAME}] Successfully updated work item ${args.work_item_id}`
+      );
+      // Fetch the full updated item details using WorkItemService for the response
+      const fullUpdatedItem = await workItemService.getWorkItemById(updatedWorkItem.work_item_id);
+      if (!fullUpdatedItem) {
+          throw new Error(`Failed to retrieve full details for updated item ${updatedWorkItem.work_item_id}`);
+      }
+
+      return {
+        content: [{ type: 'text' as const, text: JSON.stringify(fullUpdatedItem) }],
+      };
+    } catch (error: unknown) {
+      logger.error(`[${TOOL_NAME}] Error processing request:`, error);
+      if (error instanceof ValidationError) {
+        throw new McpError(ErrorCode.InvalidParams, error.message);
+      } else if (error instanceof NotFoundError) {
+        throw new McpError(ErrorCode.InvalidParams, error.message);
+      } else {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'An unknown error occurred while updating the work item.';
+        throw new McpError(ErrorCode.InternalError, message);
+      }
+    }
+  };
+
+  // Register using the base schema's shape
+  server.tool(
+    TOOL_NAME,
+    TOOL_DESCRIPTION,
+    UPDATE_TASK_BASE_SCHEMA.shape,
+    processRequest
+  );
 };
