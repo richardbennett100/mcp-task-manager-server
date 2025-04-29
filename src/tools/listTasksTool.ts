@@ -5,16 +5,17 @@ import {
   TOOL_NAME,
   TOOL_DESCRIPTION,
   TOOL_PARAMS,
-  ListTasksArgs, // Use updated args type
-} from './listTasksParams.js'; // Use updated params file
+  ListTasksArgs,
+} from './listTasksParams.js';
 import { logger } from '../utils/logger.js';
-import { NotFoundError } from '../utils/errors.js'; // Keep for potential future use
+import { NotFoundError } from '../utils/errors.js';
 // Import necessary components for instantiation inside the handler
 import { DatabaseManager } from '../db/DatabaseManager.js';
-import { WorkItemRepository } // Import NEW repository
-  from '../repositories/WorkItemRepository.js';
-import { WorkItemService, ListWorkItemsFilter } // Import NEW service and filter type
-  from '../services/WorkItemService.js';
+import {
+    WorkItemRepository,
+    ActionHistoryRepository // Import BOTH repositories
+} from '../repositories/index.js'; // Use index export
+import { WorkItemService, ListWorkItemsFilter } from '../services/WorkItemService.js';
 
 /**
  * Registers the listTasks (now listWorkItems conceptually) tool with the MCP server.
@@ -28,7 +29,10 @@ export const listTasksTool = (server: McpServer): void => {
       const dbManager = await DatabaseManager.getInstance();
       const pool = dbManager.getPool();
       const workItemRepository = new WorkItemRepository(pool);
-      const workItemService = new WorkItemService(workItemRepository);
+      // FIX: Instantiate ActionHistoryRepository
+      const actionHistoryRepository = new ActionHistoryRepository(pool);
+      // FIX: Pass both repositories to WorkItemService constructor
+      const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository);
 
       // Construct the filter for the service
       const filter: ListWorkItemsFilter = {
@@ -37,6 +41,9 @@ export const listTasksTool = (server: McpServer): void => {
         rootsOnly: args.rootsOnly ?? false,
         // Pass parentId only if rootsOnly is not true
         parent_work_item_id: (args.rootsOnly ?? false) ? undefined : args.parent_work_item_id,
+        // Explicitly set isActive filter to true (default behavior) unless specified otherwise
+        // Currently, the tool parameters don't expose an isActive filter, so we default to true.
+        isActive: true,
       };
 
       // Call the new service method
@@ -48,7 +55,6 @@ export const listTasksTool = (server: McpServer): void => {
       };
     } catch (error: unknown) {
       logger.error(`[${TOOL_NAME}] Error processing request:`, error);
-      // Handle errors appropriately - NotFoundError might occur if parent ID validation is added
       if (error instanceof NotFoundError) {
         throw new McpError(ErrorCode.InvalidParams, error.message);
       } else {
@@ -63,6 +69,4 @@ export const listTasksTool = (server: McpServer): void => {
 
   // Register the tool with the updated Zod schema object's shape
   server.tool(TOOL_NAME, TOOL_DESCRIPTION, TOOL_PARAMS.shape, processRequest);
-
-  // Log registration from index.ts
 };

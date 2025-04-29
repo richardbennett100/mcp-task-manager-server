@@ -12,9 +12,9 @@
     "lint:fix": "eslint . --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "prepare": "husky install || true",
-    "test": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest",
+    "test": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
     "test:integration": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand src/services/WorkItemService.integration.spec.ts",
-    "test:watch": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch"
+    "test:watch": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch --runInBand"
   },
   "keywords": [
     "mcp",
@@ -65,13 +65,20 @@
   "jest": {
     "preset": "ts-jest/presets/default-esm",
     "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/dist" 
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.spec.js",
+      "**/?(*.)+(spec|test).js"
+    ],
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
     "globals": {
       "ts-jest": {
         "useESM": true,
-        "tsconfig": "tsconfig.json"
+        "tsconfig": "tsconfig.json" 
       }
     },
     "clearMocks": true
