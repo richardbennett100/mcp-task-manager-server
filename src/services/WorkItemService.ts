@@ -89,21 +89,21 @@ export class WorkItemService {
   /**
    * Soft deletes work items and their dependencies.
    */
-  public async deleteWorkItem(ids: string[], userId?: string): Promise<number> {
-    return this.deleteService.deleteWorkItem(ids, userId);
+  public async deleteWorkItem(ids: string[]): Promise<number> {
+    return this.deleteService.deleteWorkItem(ids);
   }
 
   /**
    * Undoes the last action.
    */
-  public async undoLastAction(userId?: string): Promise<ActionHistoryData | null> {
-    return this.historyService.undoLastAction(userId);
+  public async undoLastAction(): Promise<ActionHistoryData | null> {
+    return this.historyService.undoLastAction();
   }
 
   /**
    * Redoes the last undone action.
    */
-  public async redoLastUndo(userId?: string): Promise<ActionHistoryData | null> {
-    return this.historyService.redoLastUndo(userId);
+  public async redoLastUndo(): Promise<ActionHistoryData | null> {
+    return this.historyService.redoLastUndo();
   }
 }

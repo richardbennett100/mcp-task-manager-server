@@ -31,8 +31,7 @@ export const deleteTaskTool = (server: McpServer): void => {
       const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository);
 
       const deletedCount = await workItemService.deleteWorkItem(
-        args.work_item_ids,
-        userId
+        args.work_item_ids
       );
 
       logger.info(`[${TOOL_NAME}] Successfully soft-deleted ${deletedCount} work items.`);

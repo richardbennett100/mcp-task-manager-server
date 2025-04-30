@@ -28,7 +28,7 @@ import {
     /**
      * Soft deletes work items and their dependencies.
      */
-    public async deleteWorkItem(ids: string[], userId?: string): Promise<number> {
+    public async deleteWorkItem(ids: string[]): Promise<number> {
       if (!ids || ids.length === 0) {
         logger.warn('[WorkItemDeleteService] deleteWorkItem called with empty ID array.');
         return 0;
@@ -114,7 +114,7 @@ import {
           if (totalDeletedCount > 0 || depsOldData.length > 0) {
               const actionDescription = `Deleted ${totalDeletedCount} work item(s) and related active links (cascade)`;
               const actionData: CreateActionHistoryInput = {
-                  user_id: userId ?? null,
+                  user_id: null, // Always null now that userId is removed
                   action_type: 'DELETE_WORK_ITEM_CASCADE',
                   work_item_id: initialItems.length === 1 ? initialItems[0] : null,
                   description: actionDescription,

@@ -83,7 +83,7 @@ export class WorkItemAddingService {
 
             const actionDescription = `Added work item "${item.name}"`;
             const actionData: CreateActionHistoryInput = {
-                user_id: input.userId ?? null,
+                user_id: null, // Always null now that userId is removed
                 action_type: 'ADD_WORK_ITEM',
                 work_item_id: item.work_item_id,
                 description: actionDescription,

@@ -11,7 +11,7 @@ export interface AddWorkItemInput {
   order_key?: string | null;
   shortname?: string | null;
   dependencies?: { depends_on_work_item_id: string; dependency_type?: 'finish-to-start' | 'linked' }[];
-  userId?: string;
+  // userId removed
 }
 
 export interface UpdateWorkItemInput {
@@ -23,7 +23,7 @@ export interface UpdateWorkItemInput {
   due_date?: string | null;
   order_key?: string | null;
   shortname?: string | null;
-  userId?: string;
+  // userId removed
 }
 
 export interface ListWorkItemsFilter {

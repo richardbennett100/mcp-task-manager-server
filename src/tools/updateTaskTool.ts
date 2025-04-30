@@ -42,7 +42,7 @@ export const updateTaskTool = (server: McpServer): void => {
         due_date: args.due_date,
         order_key: args.order_key,
         shortname: args.shortname,
-        userId: userId,
+       // userId: userId,
       };
       Object.keys(serviceUpdateInput).forEach(key => serviceUpdateInput[key as keyof UpdateWorkItemInput] === undefined && delete serviceUpdateInput[key as keyof UpdateWorkItemInput]);
 

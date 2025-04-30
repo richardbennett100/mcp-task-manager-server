@@ -29,8 +29,8 @@ export class WorkItemHistoryService {
   /**
    * Undoes the last action.
    */
-  public async undoLastAction(userId?: string): Promise<ActionHistoryData | null> {
-      logger.info(`[WorkItemHistoryService] Attempting to undo last action for user ${userId ?? 'unknown'}.`);
+  public async undoLastAction(): Promise<ActionHistoryData | null> {
+      logger.info(`[WorkItemHistoryService] Attempting to undo last action.`);
       const originalActionToUndo = await this.actionHistoryRepository.findLastOriginalAction();
       
       if (!originalActionToUndo) { 
@@ -44,7 +44,7 @@ export class WorkItemHistoryService {
            logger.warn(`[WorkItemHistoryService] Action ${originalActionToUndo.action_id} found to undo, but has no undo steps. Marking as undone.`);
            await this.actionHistoryRepository.withTransaction(async (client) => {
                  const undoActionData: CreateActionHistoryInput = {
-                     user_id: userId ?? null, 
+                     user_id: null, // Always null now that userId is removed
                      action_type: 'UNDO_ACTION', 
                      work_item_id: originalActionToUndo.work_item_id, 
                      description: `Could not undo action (no steps): "${originalActionToUndo.description}"`,
@@ -94,7 +94,7 @@ export class WorkItemHistoryService {
           }
 
            const undoActionData: CreateActionHistoryInput = {
-               user_id: userId ?? null, 
+               user_id: null, // Always null now that userId is removed
                action_type: 'UNDO_ACTION', 
                work_item_id: originalActionToUndo.work_item_id, 
                description: `Undid action: "${originalActionToUndo.description}"`,
@@ -117,8 +117,8 @@ export class WorkItemHistoryService {
   /**
    * Redoes the last undone action.
    */
-  public async redoLastUndo(userId?: string): Promise<ActionHistoryData | null> {
-      logger.info(`[WorkItemHistoryService] Attempting to redo last undo action for user ${userId ?? 'unknown'}.`);
+  public async redoLastUndo(): Promise<ActionHistoryData | null> {
+      logger.info(`[WorkItemHistoryService] Attempting to redo last undo action.`);
       const undoActionToRedo = await this.actionHistoryRepository.findLastUndoAction();
       
       if (!undoActionToRedo) { 
@@ -145,7 +145,7 @@ export class WorkItemHistoryService {
           logger.warn(`[WorkItemHistoryService] Original action ${originalAction.action_id} has no undo steps. Cannot redo.`);
           await this.actionHistoryRepository.withTransaction(async (client) => {
               const redoActionData: CreateActionHistoryInput = {
-                 user_id: userId ?? null, 
+                 user_id: null, // Always null now that userId is removed
                  action_type: 'REDO_ACTION', 
                  work_item_id: originalAction.work_item_id, 
                  description: `Could not redo action (no steps): "${originalAction.description}"`,
@@ -186,7 +186,7 @@ export class WorkItemHistoryService {
           }
 
           const redoActionData: CreateActionHistoryInput = {
-              user_id: userId ?? null, 
+              user_id: null, // Always null now that userId is removed
               action_type: 'REDO_ACTION', 
               work_item_id: originalAction.work_item_id, 
               description: `Redid action: "${originalAction.description}"`,

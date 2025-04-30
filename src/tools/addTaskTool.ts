@@ -41,7 +41,6 @@ export const addTaskTool = (server: McpServer): void => {
           depends_on_work_item_id: dep.depends_on_work_item_id,
           dependency_type: dep.dependency_type,
         })),
-        userId: userId,
       };
 
       const newWorkItem = await workItemService.addWorkItem(serviceInput);

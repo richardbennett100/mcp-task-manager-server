@@ -8,7 +8,7 @@ import {
   WorkItemDependencyData,
 } from '../repositories/WorkItemRepository.js';
 import { ActionHistoryRepository, CreateActionHistoryInput, CreateUndoStepInput, ActionHistoryData, UndoStepData } from '../repositories/ActionHistoryRepository.js';
-import { WorkItemService} from './WorkItemService.js';
+import { WorkItemService } from './WorkItemService.js';
 import { AddWorkItemInput, UpdateWorkItemInput, FullWorkItemData } from './WorkItemServiceTypes.js';
 import { logger } from '../utils/logger.js'; // Use actual logger
 import { NotFoundError } from '../utils/errors.js'; // Import NotFoundError for specific checks
@@ -75,7 +75,7 @@ describe('WorkItemService Integration Tests', () => {
   describe('addWorkItem', () => {
     it('should add a root work item without dependencies and record history', async () => {
       const input: AddWorkItemInput = {
-        name: 'Root Project A', description: 'Test root project', priority: 'high', userId: 'test-user-add-1',
+        name: 'Root Project A', description: 'Test root project', priority: 'high',
         // No dependencies in this test
       };
       const result = await workItemService.addWorkItem(input);
@@ -98,11 +98,11 @@ describe('WorkItemService Integration Tests', () => {
 
     // Temporarily skip the dependency test to isolate the issue
     it.skip('should add a child work item with dependencies and record history', async () => {
-      const parent = await workItemService.addWorkItem({ name: 'Parent Project B', userId: 'setup-user' });
-      const depTarget = await workItemService.addWorkItem({ name: 'Dependency Target C', userId: 'setup-user' });
+      const parent = await workItemService.addWorkItem({ name: 'Parent Project B' });
+      const depTarget = await workItemService.addWorkItem({ name: 'Dependency Target C' });
 
       const childInput: AddWorkItemInput = {
-        name: 'Child Task D', parent_work_item_id: parent.work_item_id, status: 'in-progress', dependencies: [ { depends_on_work_item_id: depTarget.work_item_id, dependency_type: 'linked' }, ], userId: 'test-user-add-2',
+        name: 'Child Task D', parent_work_item_id: parent.work_item_id, status: 'in-progress', dependencies: [ { depends_on_work_item_id: depTarget.work_item_id, dependency_type: 'linked' }, ],
       };
       const childResult = await workItemService.addWorkItem(childInput);
 
@@ -125,10 +125,10 @@ describe('WorkItemService Integration Tests', () => {
 
      it('should clear the redo stack when adding a new item', async () => {
          // This test only uses addWorkItem without dependencies, so it should be okay
-         const item1 = await workItemService.addWorkItem({ name: 'Item 1', userId: 'user-a' });
+         const item1 = await workItemService.addWorkItem({ name: 'Item 1' });
          const action1 = (await actionHistoryRepository.listRecentActions({ work_item_id: item1.work_item_id }))[0];
 
-         await workItemService.undoLastAction('user-b');
+         await workItemService.undoLastAction();
          const allRecentActions = await actionHistoryRepository.listRecentActions({ limit: 10 });
          const undoAction = allRecentActions.find(a => a.action_type === 'UNDO_ACTION');
          expect(undoAction).toBeDefined();
@@ -138,7 +138,7 @@ describe('WorkItemService Integration Tests', () => {
          expect(action1AfterUndo?.is_undone).toBe(true);
          expect(action1AfterUndo?.undone_at_action_id).toBe(undoAction!.action_id); // Check link on original action
 
-         const item2 = await workItemService.addWorkItem({ name: 'Item 2', userId: 'user-c' });
+         const item2 = await workItemService.addWorkItem({ name: 'Item 2' });
          const action2 = (await actionHistoryRepository.listRecentActions({ work_item_id: item2.work_item_id }))[0];
 
          // Verify the previous UNDO action is now marked as undone (redone by action 2)
@@ -157,14 +157,14 @@ describe('WorkItemService Integration Tests', () => {
       beforeEach(async () => {
          // Setup items cleanly before each test in this suite
          await cleanDatabase(pool); // Ensure clean slate
-         itemToUpdate = await workItemService.addWorkItem({ name: 'Update Me', status: 'todo', priority: 'medium', userId: 'setup-user-update' });
+         itemToUpdate = await workItemService.addWorkItem({ name: 'Update Me', status: 'todo', priority: 'medium' });
          // initialDep = await workItemService.addWorkItem({ name: 'Initial Dep', userId: 'setup-user-update' });
          // Remove the update that adds dependency
          // await workItemService.updateWorkItem(itemToUpdate.work_item_id, {}, [{ depends_on_work_item_id: initialDep.work_item_id }]);
      });
 
      it('should update item fields and record history', async () => {
-         const updates: UpdateWorkItemInput = { name: 'Updated Name', status: 'in-progress', userId: 'test-user-update-1' };
+         const updates: UpdateWorkItemInput = { name: 'Updated Name', status: 'in-progress' };
          const result = await workItemService.updateWorkItem(itemToUpdate.work_item_id, updates);
 
          expect(result.name).toBe(updates.name); expect(result.status).toBe(updates.status);
@@ -175,7 +175,6 @@ describe('WorkItemService Integration Tests', () => {
          const history = await actionHistoryRepository.listRecentActions({ work_item_id: itemToUpdate.work_item_id });
          const updateAction = history.find(h => h.action_type === 'UPDATE_WORK_ITEM' && h.description?.includes('Updated Name'));
          expect(updateAction).toBeDefined();
-         expect(updateAction?.user_id).toBe(updates.userId);
 
          const steps = await actionHistoryRepository.findUndoStepsByActionId(updateAction!.action_id);
          expect(steps.length).toBeGreaterThanOrEqual(1);
@@ -187,11 +186,11 @@ describe('WorkItemService Integration Tests', () => {
 
      // Temporarily skip dependency update test
      it.skip('should replace dependencies and record history', async () => {
-         const initialDep = await workItemService.addWorkItem({ name: 'Initial Dep', userId: 'setup-user-update' });
+         const initialDep = await workItemService.addWorkItem({ name: 'Initial Dep' });
          await workItemService.updateWorkItem(itemToUpdate.work_item_id, {}, [{ depends_on_work_item_id: initialDep.work_item_id }]); // Add dep first
 
-         const newDep = await workItemService.addWorkItem({ name: 'New Dep', userId: 'setup-user-update' });
-         const updates: UpdateWorkItemInput = { userId: 'test-user-update-2' };
+         const newDep = await workItemService.addWorkItem({ name: 'New Dep' });
+         const updates: UpdateWorkItemInput = { };
          const newDependencies = [ { depends_on_work_item_id: newDep.work_item_id, dependency_type: 'finish-to-start' as const }, ];
 
          const originalItemState = await workItemService.getWorkItemById(itemToUpdate.work_item_id);
@@ -210,7 +209,7 @@ describe('WorkItemService Integration Tests', () => {
          expect(inactiveDbDeps).toHaveLength(1); expect(inactiveDbDeps[0].depends_on_work_item_id).toBe(initialDep.work_item_id);
 
          const history = await actionHistoryRepository.listRecentActions({ work_item_id: itemToUpdate.work_item_id });
-         const updateAction = history.find(h => h.action_type === 'UPDATE_WORK_ITEM' && h.user_id === updates.userId);
+         const updateAction = history.find(h => h.action_type === 'UPDATE_WORK_ITEM');
          expect(updateAction).toBeDefined();
 
          const steps = await actionHistoryRepository.findUndoStepsByActionId(updateAction!.action_id);
@@ -221,228 +220,226 @@ describe('WorkItemService Integration Tests', () => {
          expect(activateStep).toBeDefined(); expect((activateStep?.old_data as any)?.is_active).toBe(false); expect((activateStep?.new_data as any)?.is_active).toBe(true);
      });
 
-       it('should clear the redo stack when updating an item', async () => {
-         // This test only updates a field, no dependencies involved in the core logic being tested
-         await workItemService.updateWorkItem(itemToUpdate.work_item_id, { name: 'Update 1' }, undefined);
-         const action1 = (await actionHistoryRepository.listRecentActions({ work_item_id: itemToUpdate.work_item_id, limit: 1 }))[0];
+     it('should clear the redo stack when updating an item', async () => {
+      // This test only updates a field, no dependencies involved in the core logic being tested
+      await workItemService.updateWorkItem(itemToUpdate.work_item_id, { name: 'Update 1' }, undefined);
+      const action1 = (await actionHistoryRepository.listRecentActions({ work_item_id: itemToUpdate.work_item_id, limit: 1 }))[0];
 
-         await workItemService.undoLastAction('user-b');
-         const allRecentActionsUndo = await actionHistoryRepository.listRecentActions({ limit: 10 });
-         const undoAction = allRecentActionsUndo.find(a => a.action_type === 'UNDO_ACTION');
-         expect(undoAction).toBeDefined();
+      await workItemService.undoLastAction();
+      const allRecentActionsUndo = await actionHistoryRepository.listRecentActions({ limit: 10 });
+      const undoAction = allRecentActionsUndo.find(a => a.action_type === 'UNDO_ACTION');
+      expect(undoAction).toBeDefined();
 
-         await workItemService.updateWorkItem(itemToUpdate.work_item_id, { name: 'Update 2' }, undefined);
-         const action2 = (await actionHistoryRepository.listRecentActions({ work_item_id: itemToUpdate.work_item_id, limit: 1 }))[0];
+      await workItemService.updateWorkItem(itemToUpdate.work_item_id, { name: 'Update 2' }, undefined);
+      const action2 = (await actionHistoryRepository.listRecentActions({ work_item_id: itemToUpdate.work_item_id, limit: 1 }))[0];
 
-         const undoActionAfterAction2 = await actionHistoryRepository.findActionById(undoAction!.action_id);
-         expect(undoActionAfterAction2?.is_undone).toBe(true);
-         expect(undoActionAfterAction2?.undone_at_action_id).toBe(action2.action_id);
-     });
+      const undoActionAfterAction2 = await actionHistoryRepository.findActionById(undoAction!.action_id);
+      expect(undoActionAfterAction2?.is_undone).toBe(true);
+      expect(undoActionAfterAction2?.undone_at_action_id).toBe(action2.action_id);
   });
+});
 
 
-  // --- Delete Work Item Tests ---
-   describe('deleteWorkItem', () => {
-       let parent: WorkItemData; let child1: WorkItemData; let child2: WorkItemData; let grandchild1: WorkItemData;
-       beforeEach(async () => {
-            await cleanDatabase(pool); // Ensure clean slate
-            parent = await workItemService.addWorkItem({ name: 'Delete Parent', userId: 'setup-user-delete'});
-            child1 = await workItemService.addWorkItem({ name: 'Delete Child 1', parent_work_item_id: parent.work_item_id, userId: 'setup-user-delete'});
-            child2 = await workItemService.addWorkItem({ name: 'Delete Child 2', parent_work_item_id: parent.work_item_id, userId: 'setup-user-delete'});
-            grandchild1 = await workItemService.addWorkItem({ name: 'Delete Grandchild 1', parent_work_item_id: child1.work_item_id, userId: 'setup-user-delete'});
-            // Temporarily skip adding dependency link to isolate delete logic
-            // await workItemService.updateWorkItem(child2.work_item_id, {}, [{depends_on_work_item_id: child1.work_item_id}]);
-       });
-
-       it('should soft delete a single item and record history', async () => {
-            const deleteUserId = 'test-user-delete-1';
-            const initialCount = (await workItemRepository.findAll({isActive: true})).length;
-            const deletedCount = await workItemService.deleteWorkItem([child2.work_item_id], deleteUserId);
-            expect(deletedCount).toBe(1);
-
-            const dbItem = await workItemRepository.findById(child2.work_item_id, {isActive: false});
-            expect(dbItem?.is_active).toBe(false);
-            const finalCount = (await workItemRepository.findAll({isActive: true})).length;
-            expect(finalCount).toBe(initialCount - 1);
-
-            const history = await actionHistoryRepository.listRecentActions({ work_item_id: child2.work_item_id });
-            const deleteAction = history.find(h => h.action_type === 'DELETE_WORK_ITEM_CASCADE');
-            expect(deleteAction).toBeDefined(); expect(deleteAction?.user_id).toBe(deleteUserId);
-
-            const steps = await actionHistoryRepository.findUndoStepsByActionId(deleteAction!.action_id);
-            expect(steps).toHaveLength(1); // Only item step, no dependency step
-            expect(steps[0].step_type).toBe('UPDATE'); expect(steps[0].table_name).toBe('work_items');
-       });
-
-        // Temporarily skip cascade delete with links until dependency steps are fixed
-        it.skip('should soft delete an item and its descendants and associated links, recording history', async () => {
-             // Re-add dependency link for this specific test
-             await workItemService.updateWorkItem(child2.work_item_id, {}, [{depends_on_work_item_id: child1.work_item_id}]);
-
-            const deleteUserId = 'test-user-delete-2';
-            const initialCount = (await workItemRepository.findAll({ isActive: true })).length;
-            const idsToDelete = [parent.work_item_id];
-            const deletedCount = await workItemService.deleteWorkItem(idsToDelete, deleteUserId);
-            expect(deletedCount).toBe(4); // Parent, child1, child2, grandchild1
-
-            const dbParent = await workItemRepository.findById(parent.work_item_id, { isActive: false });
-            const dbChild1 = await workItemRepository.findById(child1.work_item_id, { isActive: false });
-            expect(dbParent?.is_active).toBe(false); expect(dbChild1?.is_active).toBe(false);
-
-            const depLink = await workItemRepository.findDependenciesByCompositeKeys([{work_item_id: child2.work_item_id, depends_on_work_item_id: child1.work_item_id}], {isActive: false});
-            expect(depLink).toHaveLength(1); expect(depLink[0].is_active).toBe(false);
-
-            const finalCount = (await workItemRepository.findAll({ isActive: true })).length;
-            expect(finalCount).toBe(initialCount - 4);
-
-            const history = await actionHistoryRepository.listRecentActions({ work_item_id: parent.work_item_id });
-            const deleteAction = history.find(h => h.action_type === 'DELETE_WORK_ITEM_CASCADE');
-            expect(deleteAction).toBeDefined(); expect(deleteAction?.description).toContain('4 work item(s)');
-
-            const steps = await actionHistoryRepository.findUndoStepsByActionId(deleteAction!.action_id);
-            expect(steps).toHaveLength(5); // 4 items + 1 dep link
-            expect(steps.filter(s => s.table_name === 'work_items').length).toBe(4);
-            expect(steps.filter(s => s.table_name === 'work_item_dependencies').length).toBe(1);
-       });
-
-       it('should clear the redo stack when deleting items', async () => {
-         // This test only deletes items, no dependencies involved in the core logic being tested
-         await workItemService.deleteWorkItem([child1.work_item_id], 'user-a');
-         const action1 = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0]; // Get latest action
-
-         await workItemService.undoLastAction('user-b');
-         const allRecentActionsUndo = await actionHistoryRepository.listRecentActions({ limit: 10 });
-         const undoAction = allRecentActionsUndo.find(a => a.action_type === 'UNDO_ACTION');
-         expect(undoAction).toBeDefined();
-
-         await workItemService.deleteWorkItem([child2.work_item_id], 'user-c');
-         const action2 = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0]; // Get latest action
-
-         const undoActionAfterAction2 = await actionHistoryRepository.findActionById(undoAction!.action_id);
-         expect(undoActionAfterAction2?.is_undone).toBe(true);
-         expect(undoActionAfterAction2?.undone_at_action_id).toBe(action2.action_id);
-     });
-   });
-
-
-  // --- Undo/Redo Tests ---
-  describe('undoLastAction and redoLastUndo', () => {
-      let item1: WorkItemData; let item2: WorkItemData; let action1: ActionHistoryData; let action2: ActionHistoryData; let action3: ActionHistoryData; let action4: ActionHistoryData;
-      beforeEach(async () => {
+// --- Delete Work Item Tests ---
+describe('deleteWorkItem', () => {
+    let parent: WorkItemData; let child1: WorkItemData; let child2: WorkItemData; let grandchild1: WorkItemData;
+    beforeEach(async () => {
          await cleanDatabase(pool); // Ensure clean slate
-         item1 = await workItemService.addWorkItem({ name: 'UndoRedo Item 1', userId: 'user-a' }); action1 = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0];
-         item2 = await workItemService.addWorkItem({ name: 'UndoRedo Item 2', userId: 'user-a' }); action2 = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0];
-         await workItemService.updateWorkItem(item1.work_item_id, { name: 'Item 1 Updated', userId: 'user-b' }); action3 = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0];
-         await workItemService.deleteWorkItem([item2.work_item_id], 'user-c'); action4 = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0];
+         parent = await workItemService.addWorkItem({ name: 'Delete Parent' });
+         child1 = await workItemService.addWorkItem({ name: 'Delete Child 1', parent_work_item_id: parent.work_item_id });
+         child2 = await workItemService.addWorkItem({ name: 'Delete Child 2', parent_work_item_id: parent.work_item_id });
+         grandchild1 = await workItemService.addWorkItem({ name: 'Delete Grandchild 1', parent_work_item_id: child1.work_item_id });
+         // Temporarily skip adding dependency link to isolate delete logic
+         // await workItemService.updateWorkItem(child2.work_item_id, {}, [{depends_on_work_item_id: child1.work_item_id}]);
+    });
 
-         const currentItem1 = await workItemRepository.findById(item1.work_item_id, {isActive: false}); const currentItem2 = await workItemRepository.findById(item2.work_item_id, {isActive: false});
-         expect(currentItem1?.name).toBe('Item 1 Updated'); expect(currentItem2?.is_active).toBe(false); expect(action4?.action_type).toBe('DELETE_WORK_ITEM_CASCADE');
-     });
+    it('should soft delete a single item and record history', async () => {
+         const initialCount = (await workItemRepository.findAll({isActive: true})).length;
+         const deletedCount = await workItemService.deleteWorkItem([child2.work_item_id]);
+         expect(deletedCount).toBe(1);
 
-     it('should undo the last action (delete item 2)', async () => {
-         const undoneAction = await workItemService.undoLastAction('user-undo-1');
-         expect(undoneAction?.action_id).toBe(action4.action_id);
+         const dbItem = await workItemRepository.findById(child2.work_item_id, {isActive: false});
+         expect(dbItem?.is_active).toBe(false);
+         const finalCount = (await workItemRepository.findAll({isActive: true})).length;
+         expect(finalCount).toBe(initialCount - 1);
 
-         const currentItem2 = await workItemRepository.findById(item2.work_item_id, {isActive: false});
-         expect(currentItem2?.is_active).toBe(true);
+         const history = await actionHistoryRepository.listRecentActions({ work_item_id: child2.work_item_id });
+         const deleteAction = history.find(h => h.action_type === 'DELETE_WORK_ITEM_CASCADE');
+         expect(deleteAction).toBeDefined();
 
-         const originalActionAfterUndo = await actionHistoryRepository.findActionById(action4.action_id); const undoActionRecord = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0];
-         expect(originalActionAfterUndo?.is_undone).toBe(true); expect(undoActionRecord.action_type).toBe('UNDO_ACTION');
-     });
+         const steps = await actionHistoryRepository.findUndoStepsByActionId(deleteAction!.action_id);
+         expect(steps).toHaveLength(1); // Only item step, no dependency step
+         expect(steps[0].step_type).toBe('UPDATE'); expect(steps[0].table_name).toBe('work_items');
+    });
 
-     it('should undo multiple actions sequentially', async () => {
-         await workItemService.undoLastAction('user-undo-1'); // Undo delete
-         const undoneAction = await workItemService.undoLastAction('user-undo-2'); // Undo update
-         expect(undoneAction?.action_id).toBe(action3.action_id);
+     // Temporarily skip cascade delete with links until dependency steps are fixed
+     it.skip('should soft delete an item and its descendants and associated links, recording history', async () => {
+          // Re-add dependency link for this specific test
+          await workItemService.updateWorkItem(child2.work_item_id, {}, [{depends_on_work_item_id: child1.work_item_id}]);
 
-         const currentItem1 = await workItemRepository.findById(item1.work_item_id, {isActive: false}); const currentItem2 = await workItemRepository.findById(item2.work_item_id, {isActive: false});
-         expect(currentItem1?.name).toBe('UndoRedo Item 1'); expect(currentItem2?.is_active).toBe(true);
+         const initialCount = (await workItemRepository.findAll({ isActive: true })).length;
+         const idsToDelete = [parent.work_item_id];
+         const deletedCount = await workItemService.deleteWorkItem(idsToDelete);
+         expect(deletedCount).toBe(4); // Parent, child1, child2, grandchild1
 
-         const action3AfterUndo = await actionHistoryRepository.findActionById(action3.action_id); const lastAction = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0];
-         expect(action3AfterUndo?.is_undone).toBe(true); expect(lastAction.action_type).toBe('UNDO_ACTION');
-     });
+         const dbParent = await workItemRepository.findById(parent.work_item_id, { isActive: false });
+         const dbChild1 = await workItemRepository.findById(child1.work_item_id, { isActive: false });
+         expect(dbParent?.is_active).toBe(false); expect(dbChild1?.is_active).toBe(false);
 
-     it('should redo the last undone action (re-delete item 2)', async () => {
-         await workItemService.undoLastAction('user-undo-1');
-         const allRecentActionsUndo = await actionHistoryRepository.listRecentActions({ limit: 10 });
-         const undoAction = allRecentActionsUndo.find(a => a.action_type === 'UNDO_ACTION');
-         expect(undoAction).toBeDefined();
+         const depLink = await workItemRepository.findDependenciesByCompositeKeys([{work_item_id: child2.work_item_id, depends_on_work_item_id: child1.work_item_id}], {isActive: false});
+         expect(depLink).toHaveLength(1); expect(depLink[0].is_active).toBe(false);
 
-         const redoneAction = await workItemService.redoLastUndo('user-redo-1');
-         expect(redoneAction?.action_id).toBe(action4.action_id);
+         const finalCount = (await workItemRepository.findAll({ isActive: true })).length;
+         expect(finalCount).toBe(initialCount - 4);
 
-         const currentItem2 = await workItemRepository.findById(item2.work_item_id, {isActive: false});
-         expect(currentItem2?.is_active).toBe(false);
+         const history = await actionHistoryRepository.listRecentActions({ work_item_id: parent.work_item_id });
+         const deleteAction = history.find(h => h.action_type === 'DELETE_WORK_ITEM_CASCADE');
+         expect(deleteAction).toBeDefined(); expect(deleteAction?.description).toContain('4 work item(s)');
 
-         const undoActionAfterRedo = await actionHistoryRepository.findActionById(undoAction!.action_id); const redoActionRecord = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0];
-         expect(undoActionAfterRedo?.is_undone).toBe(true); expect(redoActionRecord.action_type).toBe('REDO_ACTION');
-     });
+         const steps = await actionHistoryRepository.findUndoStepsByActionId(deleteAction!.action_id);
+         expect(steps).toHaveLength(5); // 4 items + 1 dep link
+         expect(steps.filter(s => s.table_name === 'work_items').length).toBe(4);
+         expect(steps.filter(s => s.table_name === 'work_item_dependencies').length).toBe(1);
+    });
 
-      it('should handle undo/redo sequence correctly', async () => {
-         await workItemService.undoLastAction('user-undo-1'); await workItemService.undoLastAction('user-undo-2');
-         const redoneAction1 = await workItemService.redoLastUndo('user-redo-1'); const redoneAction2 = await workItemService.redoLastUndo('user-redo-2');
-         expect(redoneAction1?.action_id).toBe(action3.action_id); expect(redoneAction2?.action_id).toBe(action4.action_id);
+    it('should clear the redo stack when deleting items', async () => {
+      // This test only deletes items, no dependencies involved in the core logic being tested
+      await workItemService.deleteWorkItem([child1.work_item_id]);
+      const action1 = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0]; // Get latest action
 
-         const currentItem1 = await workItemRepository.findById(item1.work_item_id, {isActive: false}); const currentItem2 = await workItemRepository.findById(item2.work_item_id, {isActive: false});
-         expect(currentItem1?.name).toBe('Item 1 Updated'); expect(currentItem2?.is_active).toBe(false);
+      await workItemService.undoLastAction();
+      const allRecentActionsUndo = await actionHistoryRepository.listRecentActions({ limit: 10 });
+      const undoAction = allRecentActionsUndo.find(a => a.action_type === 'UNDO_ACTION');
+      expect(undoAction).toBeDefined();
 
-         const lastAction = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0]; expect(lastAction.action_type).toBe('REDO_ACTION');
-     });
+      await workItemService.deleteWorkItem([child2.work_item_id]);
+      const action2 = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0]; // Get latest action
 
-     it('should return null if no action to undo', async () => {
-         await workItemService.undoLastAction('user-undo-1'); await workItemService.undoLastAction('user-undo-2'); await workItemService.undoLastAction('user-undo-3'); await workItemService.undoLastAction('user-undo-4');
-         const result = await workItemService.undoLastAction('user-undo-5'); expect(result).toBeNull();
-     });
+      const undoActionAfterAction2 = await actionHistoryRepository.findActionById(undoAction!.action_id);
+      expect(undoActionAfterAction2?.is_undone).toBe(true);
+      expect(undoActionAfterAction2?.undone_at_action_id).toBe(action2.action_id);
+  });
+});
 
-     it('should return null if no action to redo', async () => {
-         const result = await workItemService.redoLastUndo('user-redo-1'); expect(result).toBeNull();
-         await workItemService.undoLastAction('user-undo-1'); await workItemService.redoLastUndo('user-redo-2');
-         const result2 = await workItemService.redoLastUndo('user-redo-3'); expect(result2).toBeNull();
-     });
+
+// --- Undo/Redo Tests ---
+describe('undoLastAction and redoLastUndo', () => {
+   let item1: WorkItemData; let item2: WorkItemData; let action1: ActionHistoryData; let action2: ActionHistoryData; let action3: ActionHistoryData; let action4: ActionHistoryData;
+   beforeEach(async () => {
+      await cleanDatabase(pool); // Ensure clean slate
+      item1 = await workItemService.addWorkItem({ name: 'UndoRedo Item 1' }); action1 = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0];
+      item2 = await workItemService.addWorkItem({ name: 'UndoRedo Item 2' }); action2 = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0];
+      await workItemService.updateWorkItem(item1.work_item_id, { name: 'Item 1 Updated' }); action3 = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0];
+      await workItemService.deleteWorkItem([item2.work_item_id]); action4 = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0];
+
+      const currentItem1 = await workItemRepository.findById(item1.work_item_id, {isActive: false}); const currentItem2 = await workItemRepository.findById(item2.work_item_id, {isActive: false});
+      expect(currentItem1?.name).toBe('Item 1 Updated'); expect(currentItem2?.is_active).toBe(false); expect(action4?.action_type).toBe('DELETE_WORK_ITEM_CASCADE');
   });
 
+  it('should undo the last action (delete item 2)', async () => {
+      const undoneAction = await workItemService.undoLastAction();
+      expect(undoneAction?.action_id).toBe(action4.action_id);
 
-  // --- List Action History Tests ---
-  describe('listActionHistory', () => {
-     beforeEach(async () => {
-         await cleanDatabase(pool); // Ensure clean slate for history tests
-     });
+      const currentItem2 = await workItemRepository.findById(item2.work_item_id, {isActive: false});
+      expect(currentItem2?.is_active).toBe(true);
 
-     it('should list recent actions in descending timestamp order', async () => {
-         const itemA = await workItemService.addWorkItem({ name: 'History A', userId: 'hist-user-1' });
-         await workItemService.addWorkItem({ name: 'History B', userId: 'hist-user-1' });
-         await workItemService.updateWorkItem(itemA.work_item_id, { status: 'done' }, undefined);
-         // FIX: Call actionHistoryRepository directly and add type annotation
-         const history: ActionHistoryData[] = await actionHistoryRepository.listRecentActions({}); // List all recent
-         expect(history.length).toBeGreaterThanOrEqual(3); // Should include ADDs and UPDATE
-         expect(history[0].action_type).toBe('UPDATE_WORK_ITEM'); // Newest should be the update
-         // FIX: Add type annotation to the map parameter
-         const timestamps = history.map((h: ActionHistoryData) => new Date(h.timestamp).getTime());
-         for (let i = 0; i < timestamps.length - 1; i++) { expect(timestamps[i]).toBeGreaterThanOrEqual(timestamps[i+1]); }
-     });
-
-     it('should filter history by work_item_id', async () => {
-         const itemA = await workItemService.addWorkItem({ name: 'Filter A', userId: 'hist-user-2' });
-         const itemB = await workItemService.addWorkItem({ name: 'Filter B', userId: 'hist-user-2' });
-         await workItemService.updateWorkItem(itemA.work_item_id, { name: 'Filter A Updated' }, undefined);
-         // FIX: Call actionHistoryRepository directly
-         const historyA = await actionHistoryRepository.listRecentActions({ work_item_id: itemA.work_item_id });
-         const historyB = await actionHistoryRepository.listRecentActions({ work_item_id: itemB.work_item_id });
-         expect(historyA.length).toBe(2); // ADD and UPDATE for itemA
-         expect(historyB.length).toBe(1); // Only ADD for itemB
-     });
-
-     it('should limit history results', async () => {
-          await workItemService.addWorkItem({ name: 'Limit 1', userId: 'hist-user-3' });
-          await workItemService.addWorkItem({ name: 'Limit 2', userId: 'hist-user-3' });
-          await workItemService.addWorkItem({ name: 'Limit 3', userId: 'hist-user-3' });
-          // FIX: Call actionHistoryRepository directly
-          const history = await actionHistoryRepository.listRecentActions({ limit: 2 });
-          expect(history).toHaveLength(2);
-          // The most recent actions should be the ADDs for Limit 3 and Limit 2 (or 1 depending on order)
-          // Check the description of the most recent action
-          expect(history[0].description).toContain('Limit 3');
-     });
+      const originalActionAfterUndo = await actionHistoryRepository.findActionById(action4.action_id); const undoActionRecord = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0];
+      expect(originalActionAfterUndo?.is_undone).toBe(true); expect(undoActionRecord.action_type).toBe('UNDO_ACTION');
   });
+
+  it('should undo multiple actions sequentially', async () => {
+      await workItemService.undoLastAction(); // Undo delete
+      const undoneAction = await workItemService.undoLastAction(); // Undo update
+      expect(undoneAction?.action_id).toBe(action3.action_id);
+
+      const currentItem1 = await workItemRepository.findById(item1.work_item_id, {isActive: false}); const currentItem2 = await workItemRepository.findById(item2.work_item_id, {isActive: false});
+      expect(currentItem1?.name).toBe('UndoRedo Item 1'); expect(currentItem2?.is_active).toBe(true);
+
+      const action3AfterUndo = await actionHistoryRepository.findActionById(action3.action_id); const lastAction = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0];
+      expect(action3AfterUndo?.is_undone).toBe(true); expect(lastAction.action_type).toBe('UNDO_ACTION');
+  });
+
+  it('should redo the last undone action (re-delete item 2)', async () => {
+      await workItemService.undoLastAction();
+      const allRecentActionsUndo = await actionHistoryRepository.listRecentActions({ limit: 10 });
+      const undoAction = allRecentActionsUndo.find(a => a.action_type === 'UNDO_ACTION');
+      expect(undoAction).toBeDefined();
+
+      const redoneAction = await workItemService.redoLastUndo();
+      expect(redoneAction?.action_id).toBe(action4.action_id);
+
+      const currentItem2 = await workItemRepository.findById(item2.work_item_id, {isActive: false});
+      expect(currentItem2?.is_active).toBe(false);
+
+      const undoActionAfterRedo = await actionHistoryRepository.findActionById(undoAction!.action_id); const redoActionRecord = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0];
+      expect(undoActionAfterRedo?.is_undone).toBe(true); expect(redoActionRecord.action_type).toBe('REDO_ACTION');
+  });
+
+   it('should handle undo/redo sequence correctly', async () => {
+      await workItemService.undoLastAction(); await workItemService.undoLastAction();
+      const redoneAction1 = await workItemService.redoLastUndo(); const redoneAction2 = await workItemService.redoLastUndo();
+      expect(redoneAction1?.action_id).toBe(action3.action_id); expect(redoneAction2?.action_id).toBe(action4.action_id);
+
+      const currentItem1 = await workItemRepository.findById(item1.work_item_id, {isActive: false}); const currentItem2 = await workItemRepository.findById(item2.work_item_id, {isActive: false});
+      expect(currentItem1?.name).toBe('Item 1 Updated'); expect(currentItem2?.is_active).toBe(false);
+
+      const lastAction = (await actionHistoryRepository.listRecentActions({ limit: 1 }))[0]; expect(lastAction.action_type).toBe('REDO_ACTION');
+  });
+
+  it('should return null if no action to undo', async () => {
+      await workItemService.undoLastAction(); await workItemService.undoLastAction(); await workItemService.undoLastAction(); await workItemService.undoLastAction();
+      const result = await workItemService.undoLastAction(); expect(result).toBeNull();
+  });
+
+  it('should return null if no action to redo', async () => {
+      const result = await workItemService.redoLastUndo(); expect(result).toBeNull();
+      await workItemService.undoLastAction(); await workItemService.redoLastUndo();
+      const result2 = await workItemService.redoLastUndo(); expect(result2).toBeNull();
+  });
+});
+
+
+// --- List Action History Tests ---
+describe('listActionHistory', () => {
+  beforeEach(async () => {
+      await cleanDatabase(pool); // Ensure clean slate for history tests
+  });
+
+  it('should list recent actions in descending timestamp order', async () => {
+      const itemA = await workItemService.addWorkItem({ name: 'History A' });
+      await workItemService.addWorkItem({ name: 'History B' });
+      await workItemService.updateWorkItem(itemA.work_item_id, { status: 'done' }, undefined);
+      // FIX: Call actionHistoryRepository directly and add type annotation
+      const history: ActionHistoryData[] = await actionHistoryRepository.listRecentActions({}); // List all recent
+      expect(history.length).toBeGreaterThanOrEqual(3); // Should include ADDs and UPDATE
+      expect(history[0].action_type).toBe('UPDATE_WORK_ITEM'); // Newest should be the update
+      // FIX: Add type annotation to the map parameter
+      const timestamps = history.map((h: ActionHistoryData) => new Date(h.timestamp).getTime());
+      for (let i = 0; i < timestamps.length - 1; i++) { expect(timestamps[i]).toBeGreaterThanOrEqual(timestamps[i+1]); }
+  });
+
+  it('should filter history by work_item_id', async () => {
+      const itemA = await workItemService.addWorkItem({ name: 'Filter A' });
+      const itemB = await workItemService.addWorkItem({ name: 'Filter B' });
+      await workItemService.updateWorkItem(itemA.work_item_id, { name: 'Filter A Updated' }, undefined);
+      // FIX: Call actionHistoryRepository directly
+      const historyA = await actionHistoryRepository.listRecentActions({ work_item_id: itemA.work_item_id });
+      const historyB = await actionHistoryRepository.listRecentActions({ work_item_id: itemB.work_item_id });
+      expect(historyA.length).toBe(2); // ADD and UPDATE for itemA
+      expect(historyB.length).toBe(1); // Only ADD for itemB
+  });
+
+  it('should limit history results', async () => {
+       await workItemService.addWorkItem({ name: 'Limit 1' });
+       await workItemService.addWorkItem({ name: 'Limit 2' });
+       await workItemService.addWorkItem({ name: 'Limit 3' });
+       // FIX: Call actionHistoryRepository directly
+       const history = await actionHistoryRepository.listRecentActions({ limit: 2 });
+       expect(history).toHaveLength(2);
+       // The most recent actions should be the ADDs for Limit 3 and Limit 2 (or 1 depending on order)
+       // Check the description of the most recent action
+       expect(history[0].description).toContain('Limit 3');
+  });
+});
 
 });
