@@ -1,7 +1,7 @@
 // src/services/WorkItemService.spec.ts
-import { WorkItemService } from './WorkItemService.js';
-import { WorkItemRepository } from '../repositories/WorkItemRepository.js';
-import { ActionHistoryRepository } from '../repositories/ActionHistoryRepository.js';
+import { WorkItemService } from '../../WorkItemService.js';
+import { WorkItemRepository } from '../../../repositories/WorkItemRepository.js';
+import { ActionHistoryRepository } from '../../../repositories/ActionHistoryRepository.js';
 import { jest } from '@jest/globals';
 
 // --- Mock the repository classes ---
