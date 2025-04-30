@@ -8,7 +8,8 @@ import {
   WorkItemDependencyData,
 } from '../repositories/WorkItemRepository.js';
 import { ActionHistoryRepository, CreateActionHistoryInput, CreateUndoStepInput, ActionHistoryData, UndoStepData } from '../repositories/ActionHistoryRepository.js';
-import { WorkItemService, AddWorkItemInput, UpdateWorkItemInput, FullWorkItemData } from './WorkItemService.js';
+import { WorkItemService} from './WorkItemService.js';
+import { AddWorkItemInput, UpdateWorkItemInput, FullWorkItemData } from './WorkItemServiceTypes.js';
 import { logger } from '../utils/logger.js'; // Use actual logger
 import { NotFoundError } from '../utils/errors.js'; // Import NotFoundError for specific checks
 

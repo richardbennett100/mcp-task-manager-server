@@ -15,7 +15,8 @@ import {
     WorkItemRepository,
     ActionHistoryRepository // Import BOTH repositories
 } from '../repositories/index.js'; // Use index export
-import { WorkItemService, ListWorkItemsFilter } from '../services/WorkItemService.js';
+import { WorkItemService } from '../services/WorkItemService.js';
+import { ListWorkItemsFilter } from '../services/WorkItemServiceTypes.js';
 
 /**
  * Registers the listTasks (now listWorkItems conceptually) tool with the MCP server.

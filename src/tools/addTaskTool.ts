@@ -11,7 +11,8 @@ import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { DatabaseManager } from '../db/DatabaseManager.js';
 import { WorkItemRepository, ActionHistoryRepository } from '../repositories/index.js';
-import { WorkItemService, AddWorkItemInput } from '../services/WorkItemService.js';
+import { WorkItemService } from '../services/WorkItemService.js';
+import { AddWorkItemInput } from '../services/WorkItemServiceTypes.js';
 
 export const addTaskTool = (server: McpServer): void => {
   // Keep 'extra: any' as the type is not exported

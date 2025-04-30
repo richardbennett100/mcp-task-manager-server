@@ -7,7 +7,7 @@ import { jest } from '@jest/globals';
 // --- Mock the repository classes ---
 // Use jest.mock to automatically mock the classes and their methods
 // This avoids issues with private members and complex types in manual mocks.
-jest.mock('../repositories/WorkItemRepository.js');
+jest.mock('../repositories/WorkitemRepository.js');
 jest.mock('../repositories/ActionHistoryRepository.js');
 
 
