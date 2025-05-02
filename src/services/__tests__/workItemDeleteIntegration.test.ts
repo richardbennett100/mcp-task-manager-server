@@ -3,36 +3,39 @@ import { setupTestEnvironment, cleanDatabase } from './integrationSetup.js';
 // Corrected imports: Use index.js
 import { WorkItemData, WorkItemDependencyData } from '../../repositories/index.js'; // Import necessary types
 import { logger } from '../../utils/logger.js'; // Import logger
-import { Pool } from 'pg'; // Import Pool for type safety
+import { Pool, PoolClient } from 'pg'; // Import Pool and PoolClient for type safety
 
 // Helper function to query and log DB state
+// Using console.log for guaranteed visibility in test runs
 const logDatabaseState = async (
-  pool: Pool,
+  // Use PoolClient for potentially transaction-aware logging if needed, but Pool is fine here
+  poolOrClient: Pool | PoolClient,
   itemIds: string[],
   dependencyToCheck?: { itemId: string; dependsOnId: string },
   context?: string
 ) => {
   try {
-    logger.debug(`--- DB State Check${context ? `: ${context}` : ''} ---`);
+    // Use console.log directly
+    console.log(`\n--- DB State Check${context ? `: ${context}` : ''} ---`);
     // Check work items
-    const itemsResult = await pool.query(
-      `SELECT work_item_id, name, shortname, is_active, status, parent_work_item_id
+    const itemsResult = await poolOrClient.query(
+      `SELECT work_item_id, name, shortname, is_active, status, parent_work_item_id, order_key, created_at, updated_at
        FROM work_items
        WHERE work_item_id = ANY($1::uuid[])
        ORDER BY created_at`,
       [itemIds]
     );
-    logger.debug(`Work Items Found (${itemsResult.rowCount}):\n${JSON.stringify(itemsResult.rows, null, 2)}`);
+    console.log(`Work Items Found (${itemsResult.rowCount}):\n${JSON.stringify(itemsResult.rows, null, 2)}`);
 
     // Check specific dependency
     if (dependencyToCheck) {
-      const depResult = await pool.query(
-        `SELECT work_item_id, depends_on_work_item_id, is_active, dependency_type
+      const depResult = await poolOrClient.query(
+        `SELECT work_item_id, depends_on_work_item_id, is_active, dependency_type, created_at, updated_at
          FROM work_item_dependencies
          WHERE work_item_id = $1 AND depends_on_work_item_id = $2`,
         [dependencyToCheck.itemId, dependencyToCheck.dependsOnId]
       );
-      logger.debug(
+      console.log(
         `Dependency Link ${dependencyToCheck.itemId} -> ${dependencyToCheck.dependsOnId} Found (${depResult.rowCount}):\n${JSON.stringify(
           depResult.rows,
           null,
@@ -40,9 +43,20 @@ const logDatabaseState = async (
         )}`
       );
     }
-    logger.debug(`--- End DB State Check${context ? `: ${context}` : ''} ---`);
+    // Log all dependencies involving the items for better context
+    const allDepsResult = await poolOrClient.query(
+      `SELECT work_item_id, depends_on_work_item_id, is_active, dependency_type, created_at, updated_at
+        FROM work_item_dependencies
+        WHERE work_item_id = ANY($1::uuid[]) OR depends_on_work_item_id = ANY($1::uuid[])
+        ORDER BY created_at`,
+      [itemIds]
+    );
+    console.log(`All Dependencies Found (${allDepsResult.rowCount}):\n${JSON.stringify(allDepsResult.rows, null, 2)}`);
+
+    console.log(`--- End DB State Check${context ? `: ${context}` : ''} ---\n`);
   } catch (error) {
-    logger.error(`Error during DB State Check${context ? `: ${context}` : ''}:`, error);
+    // Use console.error for errors
+    console.error(`Error during DB State Check${context ? `: ${context}` : ''}:`, error);
   }
 };
 
@@ -55,9 +69,10 @@ describe('WorkItemService - Delete Work Item Integration Tests', () => {
   });
 
   beforeEach(async () => {
+    // CORRECTED: Pass the pool to cleanDatabase, which handles its own client
     await cleanDatabase(testEnvironment.pool);
 
-    // Simulate a work item hierarchy
+    // Simulate a work item hierarchy using the service
     parent = await testEnvironment.workItemService.addWorkItem({
       name: 'Parent Project',
       description: 'Top-level project to delete',
@@ -81,14 +96,16 @@ describe('WorkItemService - Delete Work Item Integration Tests', () => {
   });
 
   afterAll(async () => {
-    if (testEnvironment.pool) {
-      await testEnvironment.pool.end();
-    }
+    // Close the pool correctly
+    await testEnvironment.pool.end();
   });
 
   describe('Soft Delete Operations', () => {
     it('should soft delete single work item', async () => {
-      const initialCount = (await testEnvironment.workItemRepository.findAll({ isActive: true })).length;
+      const initialCountResult = await testEnvironment.pool.query(
+        'SELECT COUNT(*) FROM work_items WHERE is_active = true'
+      );
+      const initialCount = parseInt(initialCountResult.rows[0].count, 10);
 
       const deletedCount = await testEnvironment.workItemService.deleteWorkItem([child2.work_item_id]);
       expect(deletedCount).toBe(1);
@@ -99,16 +116,21 @@ describe('WorkItemService - Delete Work Item Integration Tests', () => {
       expect(dbItem?.is_active).toBe(false);
 
       // Verify active count decreased
-      const finalCount = (await testEnvironment.workItemRepository.findAll({ isActive: true })).length;
+      const finalCountResult = await testEnvironment.pool.query(
+        'SELECT COUNT(*) FROM work_items WHERE is_active = true'
+      );
+      const finalCount = parseInt(finalCountResult.rows[0].count, 10);
       expect(finalCount).toBe(initialCount - 1);
 
       // Verify history
       const history = await testEnvironment.actionHistoryRepository.listRecentActions({
         limit: 5, // Get a few recent actions
       });
-      const deleteAction = history.find((h) => h.action_type === 'DELETE_WORK_ITEM_CASCADE');
+      // Find the delete action related to child2 specifically
+      const deleteAction = history.find(
+        (h) => h.action_type === 'DELETE_WORK_ITEM_CASCADE' && h.work_item_id === child2.work_item_id
+      );
       expect(deleteAction).toBeDefined();
-      expect(deleteAction?.work_item_id).toBe(child2.work_item_id);
       expect(deleteAction?.description).toContain('1 work item(s)'); // Should mention 1 item deleted
       expect(deleteAction?.description).toContain('0 related active links'); // Should mention 0 links deleted
 
@@ -124,6 +146,7 @@ describe('WorkItemService - Delete Work Item Integration Tests', () => {
       expect((steps[0].new_data as WorkItemData)?.is_active).toBe(false);
     });
 
+    // --- FAILING TEST ---
     it('should soft delete parent and all descendants recursively', async () => {
       // Setup a dependency link from grandchild1 to child2 to test link deletion cascade
       await testEnvironment.workItemService.updateWorkItem(grandchild1.work_item_id, {}, [
@@ -132,45 +155,54 @@ describe('WorkItemService - Delete Work Item Integration Tests', () => {
       const initialDep = await testEnvironment.workItemRepository.findDependencies(grandchild1.work_item_id);
       expect(initialDep[0]?.is_active).toBe(true);
 
-      const initialCount = (await testEnvironment.workItemRepository.findAll({ isActive: true })).length; // Should be 4 active items
+      const initialCountResult = await testEnvironment.pool.query(
+        'SELECT COUNT(*) FROM work_items WHERE is_active = true'
+      );
+      const initialCount = parseInt(initialCountResult.rows[0].count, 10); // Should be 4 active items
       expect(initialCount).toBe(4);
 
       const descendantIds = [parent.work_item_id, child1.work_item_id, child2.work_item_id, grandchild1.work_item_id];
       const dependencyToCheck = { itemId: grandchild1.work_item_id, dependsOnId: child2.work_item_id };
 
-      // *** Log DB state BEFORE delete ***
+      // *** MINIMAL CHANGE 1: Log DB state BEFORE delete ***
       await logDatabaseState(testEnvironment.pool, descendantIds, dependencyToCheck, 'BEFORE DELETE');
 
       // Delete the parent
       const deletedCount = await testEnvironment.workItemService.deleteWorkItem([parent.work_item_id]);
 
-      // *** Log DB state AFTER delete ***
+      // *** MINIMAL CHANGE 2: Log DB state AFTER delete ***
       await logDatabaseState(testEnvironment.pool, descendantIds, dependencyToCheck, 'AFTER DELETE');
 
-      // *** REVERTED ASSERTION ***
       // Verify count of deleted items matches the full cascade size now
-      expect(deletedCount).toBe(descendantIds.length); // Should return 4 once the repo bug is fixed
+      // --- THIS IS THE FAILING ASSERTION ---
+      expect(deletedCount).toBe(descendantIds.length); // Expect 4
+      // -------------------------------------
 
       // Query each descendant to confirm soft delete (verify the cascade *intent* worked)
       logger.debug('Verifying final state after delete cascade using repository...');
       for (const descendantId of descendantIds) {
         const descendant = await testEnvironment.workItemRepository.findById(descendantId, { isActive: false });
-        expect(descendant).toBeDefined(); // This should now pass if the UPDATE worked
+        expect(descendant).toBeDefined();
         expect(descendant?.is_active).toBe(false);
       }
       logger.debug('Final state verification using repository complete.');
 
       // Verify active count reduction in DB reflects all items becoming inactive
-      const finalCount = (await testEnvironment.workItemRepository.findAll({ isActive: true })).length;
+      const finalCountResult = await testEnvironment.pool.query(
+        'SELECT COUNT(*) FROM work_items WHERE is_active = true'
+      );
+      const finalCount = parseInt(finalCountResult.rows[0].count, 10);
       expect(finalCount).toBe(initialCount - descendantIds.length); // Should be 0, verifying all are inactive now
 
       // Verify action history for the parent (should reflect the intended scope)
       const history = await testEnvironment.actionHistoryRepository.listRecentActions({
         limit: 10, // Get enough history
       });
-      const deleteAction = history.find((h) => h.action_type === 'DELETE_WORK_ITEM_CASCADE');
+      // Find the delete action linked to the parent
+      const deleteAction = history.find(
+        (h) => h.action_type === 'DELETE_WORK_ITEM_CASCADE' && h.work_item_id === parent.work_item_id
+      );
       expect(deleteAction).toBeDefined();
-      expect(deleteAction?.work_item_id).toBe(parent.work_item_id); // Action linked to the initiating item
       expect(deleteAction?.description).toContain(`${descendantIds.length} work item(s)`); // Check intended item count (4)
       expect(deleteAction?.description).toContain('1 related active links'); // Check intended link deletion description
 
@@ -196,7 +228,7 @@ describe('WorkItemService - Delete Work Item Integration Tests', () => {
         isActive: false, // Fetch inactive links
       });
       expect(finalDep).toHaveLength(1); // Should find the one link
-      expect(finalDep[0]?.is_active).toBe(false); // Verify it's inactive
+      expect(finalDep[0]?.is_active).toBe(false);
     });
 
     it('should clear the redo stack when deleting items', async () => {
@@ -232,16 +264,19 @@ describe('WorkItemService - Delete Work Item Integration Tests', () => {
       )[0];
       expect(action2.action_type).toBe('DELETE_WORK_ITEM_CASCADE');
 
-      // 4. Verify the previous undo action is now marked as redone/invalidated by action2
+      // 4. Verify the previous undo action is now marked as invalidated by action2
       const undoAction_after_action2 = await testEnvironment.actionHistoryRepository.findActionById(
         undoAction!.action_id
       );
-      expect(undoAction_after_action2?.is_undone).toBe(true); // Still 'undone', but means invalidated now
-      expect(undoAction_after_action2?.undone_at_action_id).toBe(action2.action_id); // Linked to action2
+      // ActionHistoryRepositoryBase correctly finds the action
+      expect(undoAction_after_action2).toBeDefined();
+      // Check that the undo action is marked as 'undone' by action2
+      expect(undoAction_after_action2?.is_undone).toBe(true); // is_undone field is true
+      expect(undoAction_after_action2?.undone_at_action_id).toBe(action2.action_id); // linked to action2
 
       // 5. Attempt to Redo - should return null
       const redoResult = await testEnvironment.workItemService.redoLastUndo();
       expect(redoResult).toBeNull();
     });
   });
-});
+}); // End of describe block

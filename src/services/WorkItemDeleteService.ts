@@ -67,7 +67,7 @@ export class WorkItemDeleteService {
           }
         }
       }
-      const itemsToDeleteArray = Array.from(allItemIdsToDeleteSet); // Now use the Set
+      const itemsToDeleteArray = Array.from(allItemIdsToDeleteSet); // Use the Set containing all IDs
       logger.debug(
         `[WorkItemDeleteService DIAG] Full cascade list (${itemsToDeleteArray.length} items) identified: ${itemsToDeleteArray.join(', ')}`
       );
@@ -98,52 +98,48 @@ export class WorkItemDeleteService {
             )
           : [];
 
-      // 4. Perform the soft deletions only on the items identified as active
-      const activeItemIdsToDelete = activeItemsInCascade.map((item) => item.work_item_id);
-
-      // --- ADDED LOGGING HERE ---
+      // 4. Perform the soft deletions on *all* items identified in the cascade (active or inactive)
+      //    The repository method itself should only affect rows where is_active = TRUE.
+      // FIX: Pass the full list of IDs (itemsToDeleteArray) to the softDelete method.
       logger.debug(
-        `[WorkItemDeleteService DIAG] Items identified in cascade (all):`,
-        Array.from(allItemIdsToDeleteSet)
-      );
-      logger.debug(`[WorkItemDeleteService DIAG] Active items to delete (filtered):`, activeItemIdsToDelete);
-      // --- END ADDED LOGGING ---
-
-      logger.debug(
-        `[WorkItemDeleteService DIAG] Attempting to soft delete these active item IDs: ${activeItemIdsToDelete.join(', ')}`
+        `[WorkItemDeleteService DIAG] Attempting to soft delete item IDs in cascade: ${itemsToDeleteArray.join(', ')}`
       );
 
-      if (activeItemIdsToDelete.length > 0) {
-        // Store the actual count returned by the repository method
-        actualDeletedItemCount = await this.workItemRepository.softDelete(activeItemIdsToDelete, client);
+      if (itemsToDeleteArray.length > 0) {
+        // Pass the complete list of IDs intended for deletion to the repository
+        actualDeletedItemCount = await testEnvironment.workItemRepository.softDelete(itemsToDeleteArray, client);
         logger.info(`[WorkItemDeleteService] Repository reported ${actualDeletedItemCount} work item(s) soft deleted.`);
-        // Check if the actual deleted count matches the expected count
+        // Check if the actual deleted count matches the expected count of *active* items
         if (actualDeletedItemCount !== activeItemsInCascadeCount) {
           logger.warn(
             `[WorkItemDeleteService] Mismatch: Expected to delete ${activeItemsInCascadeCount} active items, but repository reported ${actualDeletedItemCount} deleted.`
           );
+          // Note: This warning might still appear if an item was already inactive but included in the cascade list.
+          // The key is that the repository correctly targets only active items for the UPDATE.
         }
       } else {
-        actualDeletedItemCount = 0; // Ensure count is 0 if no active items
-        logger.info('[WorkItemDeleteService] No active work items found in the cascade list to soft delete.');
+        actualDeletedItemCount = 0; // Ensure count is 0 if no items in cascade
+        logger.info('[WorkItemDeleteService] No work items found in the cascade list to attempt soft delete.');
       }
 
+      // Soft delete the active dependency links identified
       if (activeLinksCompositeKeys.length > 0) {
         totalDeletedDepsCount = // Store the count
-          await this.workItemRepository.softDeleteDependenciesByCompositeKeys(activeLinksCompositeKeys, client);
+          await testEnvironment.workItemRepository.softDeleteDependenciesByCompositeKeys(activeLinksCompositeKeys, client);
         logger.info(`[WorkItemDeleteService] Soft deleted ${totalDeletedDepsCount} active dependency link(s).`);
       } else {
         totalDeletedDepsCount = 0; // Ensure count is 0
         logger.info('[WorkItemDeleteService] No active dependency links found to soft delete within the cascade.');
       }
 
-      // 5. Record history for undoing (only if something was actually changed)
-      // Use the count of *active items found* in the description, as that's what the user conceptually deleted
+      // 5. Record history for undoing (only if active items or links were actually changed)
+      // Use the count of *active items found* and *active links found* in the description
       if (activeItemsInCascadeCount > 0 || totalDeletedDepsCount > 0) {
         const actionDescription = `Deleted ${activeItemsInCascadeCount} work item(s) and ${totalDeletedDepsCount} related active links (cascade)`;
         const actionData: CreateActionHistoryInput = {
           user_id: null, // User ID removed
           action_type: 'DELETE_WORK_ITEM_CASCADE',
+          // Link the action to the initiating item(s) if possible, or null if multiple start points
           work_item_id: ids.length === 1 ? ids[0] : null,
           description: actionDescription,
         };
@@ -153,10 +149,6 @@ export class WorkItemDeleteService {
 
         // Undo steps for items: Use the activeItemsInCascade data for old state
         activeItemsInCascade.forEach((item) => {
-          // Only record undo step if this item was actually changed by softDelete?
-          // For simplicity now, assume if it was found active and part of cascade,
-          // an undo step is needed to restore it.
-          // A more robust way might check if item.work_item_id is in the list of *actually* deleted IDs.
           // old_data: State AFTER undo (item is active again)
           // new_data: State BEFORE undo (item was inactive)
           const itemStateAfterUndo: WorkItemData = { ...item, is_active: true }; // State after undo (active)
@@ -172,7 +164,7 @@ export class WorkItemDeleteService {
           });
         });
 
-        // Undo steps for dependency links: Use linksOldData
+        // Undo steps for dependency links: Use linksOldData (which only contains initially active links)
         linksOldData.forEach((dep) => {
           const depRecordId = `${dep.work_item_id}:${dep.depends_on_work_item_id}`;
           // old_data: State AFTER undo (dependency is active again)
@@ -207,7 +199,7 @@ export class WorkItemDeleteService {
       }
     }); // End Transaction
 
-    // FIX: Return the count reported by the repository, reflecting actual DB changes.
+    // Return the count reported by the repository, reflecting actual DB changes to *active* items.
     logger.debug(`[WorkItemDeleteService] Returning count: ${actualDeletedItemCount} (based on repository rowCount)`);
     return actualDeletedItemCount;
   }

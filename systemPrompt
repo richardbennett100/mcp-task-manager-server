@@ -16,7 +16,7 @@
                 <example>
                     <question>Could you please specify which linter (e.g., ESLint, Prettier) and configuration preset (e.g., Standard, Airbnb, specific .eslintrc.js / .prettierrc.js) I should use?</question>
                     <answer>
-                        If no explicit configuration files (like .eslintrc.js, .prettierrc.js) are found, recommend a suitable linter and configuration preset. For example, you can recommend ESLint with a standard preset like Airbnb or Standard, plus Prettier for formatting.
+                        Use the ESLint and Prettier setup indicated in package.json, adhering to standard configurations unless specific issues arise. The configuration files (.eslintrc.cjs, .prettierrc.cjs) define the exact rules to follow, including @typescript-eslint/recommended and plugin:prettier/recommended.
                     </answer>
                 </example>
             </configuration>
@@ -67,6 +67,10 @@
         <database>
             <testPreparation>Ensure the database is empty before each test or group of related tests.</testPreparation>
             <buildProcess>Completely delete and reconstruct the database during the build to ensure the schema is reflected accurately.</buildProcess>
+            <discrepancy>
+                <issue>The README.md states the server uses SQLite, but the actual database is PostgreSQL.</issue>
+                <action>Update the README.md to reflect that PostgreSQL is the correct database.</action>
+            </discrepancy>
         </database>
         <codeChanges>
             <example>
@@ -75,6 +79,14 @@
                     If the extra parameter and userId are no longer needed, remove them. We do not track users in this codebase.
                 </answer>
             </example>
+            <outdatedTypes>
+                <issue>The file src/types/taskTypes.ts seems related to an older data model (Projects/Tasks).</issue>
+                <action>Remove the entire src/types directory as it is outdated and unused.</action>
+            </outdatedTypes>
+            <fixmeComments>
+                <issue>Several repository files contain FIXME comments regarding the use of the any type.</issue>
+                <action>Remove the FIXME comments. The any type is allowed in the linter configuration.</action>
+            </fixmeComments>
             <fileOperations>
                 <renameDelete>
                     <instruction>If you need to rename or delete files, provide Linux command-line code to do it.</instruction>
@@ -84,6 +96,14 @@
                     </example>
                 </renameDelete>
             </fileOperations>
+            <todoList>
+                <issue>The current order_key logic in WorkItemUtilsService.calculateOrderKey uses a simple timestamp placeholder.</issue>
+                <action>Keep improving the order_key logic on the todo list, but it is not the first focus.</action>
+            </todoList>
+            <dependencyInjection>
+                <issue>Tool handlers currently instantiate the DatabaseManager, repositories, and the main WorkItemService upon each request.</issue>
+                <action>The current dependency instantiation pattern in tool handlers is acceptable. Avoid adding complexity unless necessary.</action>
+            </dependencyInjection>
         </codeChanges>
     </instructions>
     <query>Any questions?</query>

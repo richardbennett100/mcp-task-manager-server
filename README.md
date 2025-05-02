@@ -4,7 +4,7 @@
   <img src="public/images/mcp-task-manager-logo.svg" alt="MCP Task Manager Logo" width="200" height="200" />
 </div>
 
-A local Model Context Protocol (MCP) server providing backend tools for client-driven project and task management using a SQLite database.
+A local Model Context Protocol (MCP) server providing backend tools for client-driven project and task management using a **PostgreSQL** database.
 
 ## Overview
 
@@ -13,7 +13,7 @@ This server acts as a persistent backend for local MCP clients (like AI agents o
 **Key Features:**
 
 * **Project-Based:** Tasks are organized within distinct projects.
-* **SQLite Persistence:** Uses a local SQLite file (`./data/taskmanager.db` by default) for simple, self-contained data storage.
+* **PostgreSQL Persistence:** Uses a local PostgreSQL database for data storage. See `start_local_pg.sh` and configuration options.
 * **Client-Driven:** Provides tools for clients; does not dictate workflow.
 * **MCP Compliant:** Adheres to the Model Context Protocol for tool definition and communication.
 * **Task Management:** Supports creating projects, adding tasks, listing/showing tasks, updating status, expanding tasks into subtasks, and identifying the next actionable task.
@@ -76,27 +76,34 @@ The following tools are available for MCP clients:
 
 ## Getting Started
 
-1. **Prerequisites:** Node.js (LTS recommended), npm.
-2. **Install Dependencies:**
+1.  **Prerequisites:** Node.js (LTS recommended), npm, Docker (for local PostgreSQL).
+2.  **Install Dependencies:**
 
     ```bash
     npm install
     ```
 
-3. **Run in Development Mode:** (Uses `ts-node` and `nodemon` for auto-reloading)
+3.  **Setup Local Database:** Run the script to start a local PostgreSQL container:
+
+    ```bash
+    bash ./start_local_pg.sh
+    ```
+
+    This will use the default credentials configured in the script and expected by the server (or set via environment variables).
+4.  **Run in Development Mode:** (Uses `ts-node` and `nodemon` for auto-reloading)
 
     ```bash
     npm run dev
     ```
 
-    The server will connect via stdio. Logs (JSON format) will be printed to stderr. The SQLite database will be created/updated in `./data/taskmanager.db`.
-4. **Build for Production:**
+    The server will connect via stdio. Logs (JSON format) will be printed to stderr. The server will connect to the PostgreSQL database specified in the configuration.
+5.  **Build for Production:**
 
     ```bash
     npm run build
     ```
 
-5. **Run Production Build:**
+6.  **Run Production Build:** Ensure your PostgreSQL database is running and accessible, and necessary environment variables (see Configuration) are set.
 
     ```bash
     npm start
@@ -104,26 +111,33 @@ The following tools are available for MCP clients:
 
 ## Configuration
 
-* **Database Path:** The location of the SQLite database file can be overridden by setting the `DATABASE_PATH` environment variable. The default is `./data/taskmanager.db`.
-* **Log Level:** The logging level can be set using the `LOG_LEVEL` environment variable (e.g., `debug`, `info`, `warn`, `error`). The default is `info`.
+Environment variables can be used to configure the database connection:
+
+* **`PGHOST`**: Database host (default: `localhost`)
+* **`PGPORT`**: Database port (default: `5432`)
+* **`PGUSER`**: Database user (default: `taskmanager_user`)
+* **`PGPASSWORD`**: Database password (no default, **required**)
+* **`PGDATABASE`**: Database name (default: `taskmanager_db`)
+* **`LOG_LEVEL`**: The logging level (e.g., `debug`, `info`, `warn`, `error`). The default is `info`.
+
+You can set these directly or use a `.env` file (e.g., `.env.development`, `.env.production`) with a tool like `dotenv-cli`.
 
 ## Project Structure
 
 * `/src`: Source code.
   * `/config`: Configuration management.
   * `/db`: Database manager and schema (`schema.sql`).
-  * `/repositories`: Data access layer (SQLite interaction).
+  * `/repositories`: Data access layer (PostgreSQL interaction).
   * `/services`: Core business logic.
   * `/tools`: MCP tool definitions (*Params.ts) and implementation (*Tool.ts).
-  * `/types`: Shared TypeScript interfaces (currently minimal, mostly in repos/services).
   * `/utils`: Logging, custom errors, etc.
   * `createServer.ts`: Server instance creation.
   * `server.ts`: Main application entry point.
 * `/dist`: Compiled JavaScript output.
 * `/docs`: Project documentation (PRD, Feature Specs, RFC).
-* `/data`: Default location for the SQLite database file (created automatically).
+* `start_local_pg.sh`: Script to run a local PostgreSQL Docker container.
 * `tasks.md`: Manual task tracking file for development.
-* Config files (`package.json`, `tsconfig.json`, `.eslintrc.json`, etc.)
+* Config files (`package.json`, `tsconfig.json`, `.eslintrc.cjs`, etc.)
 
 ## Linting and Formatting
 

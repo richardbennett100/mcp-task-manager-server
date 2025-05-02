@@ -1,5 +1,5 @@
 // src/tools/addTaskTool.ts
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'; // Ensure RequestHandlerExtra is NOT imported
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { TOOL_NAME, TOOL_DESCRIPTION, TOOL_PARAMS, AddTaskArgs } from './addTaskParams.js';
 import { logger } from '../utils/logger.js';
@@ -10,9 +10,9 @@ import { WorkItemService } from '../services/WorkItemService.js';
 import { AddWorkItemInput } from '../services/WorkItemServiceTypes.js';
 
 export const addTaskTool = (server: McpServer): void => {
-  const processRequest = async (args: AddTaskArgs, extra: any) => {
+  // Removed 'extra' parameter
+  const processRequest = async (args: AddTaskArgs) => {
     logger.info(`[${TOOL_NAME}] Received request with args:`, args);
-    logger.debug(`[${TOOL_NAME}] Request extra:`, extra);
 
     try {
       const dbManager = await DatabaseManager.getInstance();
