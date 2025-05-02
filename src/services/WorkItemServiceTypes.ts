@@ -1,5 +1,6 @@
 // src/services/WorkItemServiceTypes.ts
-import { WorkItemData, WorkItemDependencyData } from '../repositories/WorkItemRepository.js';
+// Corrected imports: Use index.js
+import { WorkItemData, WorkItemDependencyData } from '../repositories/index.js';
 
 export interface AddWorkItemInput {
   parent_work_item_id?: string | null;
@@ -7,11 +8,13 @@ export interface AddWorkItemInput {
   description?: string | null;
   priority?: 'high' | 'medium' | 'low';
   status?: 'todo' | 'in-progress' | 'review' | 'done';
-  due_date?: string | null;
+  due_date?: string | null; // ISO string
   order_key?: string | null;
   shortname?: string | null;
-  dependencies?: { depends_on_work_item_id: string; dependency_type?: 'finish-to-start' | 'linked' }[];
-  // userId removed
+  dependencies?: {
+    depends_on_work_item_id: string;
+    dependency_type?: 'finish-to-start' | 'linked';
+  }[];
 }
 
 export interface UpdateWorkItemInput {
@@ -20,21 +23,22 @@ export interface UpdateWorkItemInput {
   description?: string | null;
   priority?: 'high' | 'medium' | 'low';
   status?: 'todo' | 'in-progress' | 'review' | 'done';
-  due_date?: string | null;
+  due_date?: string | null; // ISO string
   order_key?: string | null;
   shortname?: string | null;
-  // userId removed
+  // is_active cannot be updated directly via this input
 }
 
 export interface ListWorkItemsFilter {
-  parent_work_item_id?: string | null;
-  rootsOnly?: boolean;
+  parent_work_item_id?: string | null; // Specific parent or null/undefined for roots/all
+  rootsOnly?: boolean; // Convenience flag for roots
   status?: WorkItemData['status'];
-  isActive?: boolean;
+  isActive?: boolean; // Filter by active status (defaults to true)
 }
 
+// Represents the full data for a single work item, including relations
 export interface FullWorkItemData extends WorkItemData {
-  dependencies: WorkItemDependencyData[];
-  dependents: WorkItemDependencyData[];
-  children: WorkItemData[];
+  dependencies: WorkItemDependencyData[]; // Outgoing dependencies (item -> depends_on)
+  dependents: WorkItemDependencyData[]; // Incoming dependencies (dependent -> item)
+  children: WorkItemData[]; // Direct children
 }

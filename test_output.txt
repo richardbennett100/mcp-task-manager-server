@@ -1,0 +1,875 @@
+
+> mcp-task-manager-server@0.1.0 test
+> dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand
+
+{"level":"INFO","time":"2025-05-01T22:27:50.069Z","pid":70204,"hostname":"richard","msg":"Loading environment variable overrides for configuration..."}
+(node:70204) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{"level":"INFO","time":"2025-05-01T22:27:50.070Z","pid":70204,"hostname":"richard","msg":"Overriding pgHost from env: localhost"}
+{"level":"INFO","time":"2025-05-01T22:27:50.070Z","pid":70204,"hostname":"richard","msg":"Overriding pgPort from env: 5432"}
+{"level":"INFO","time":"2025-05-01T22:27:50.070Z","pid":70204,"hostname":"richard","msg":"Overriding pgUser from env: taskmanager_user"}
+{"level":"INFO","time":"2025-05-01T22:27:50.070Z","pid":70204,"hostname":"richard","msg":"Overriding pgPassword from env."}
+{"level":"INFO","time":"2025-05-01T22:27:50.070Z","pid":70204,"hostname":"richard","msg":"Overriding pgDatabase from env: taskmanager_db"}
+{"level":"INFO","time":"2025-05-01T22:27:50.070Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Setting up PostgreSQL connection pool..."}
+{"level":"INFO","time":"2025-05-01T22:27:50.070Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] PostgreSQL connection pool configured."}
+{"level":"INFO","time":"2025-05-01T22:27:50.070Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Starting database schema initialization..."}
+{"level":"INFO","time":"2025-05-01T22:27:50.090Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Connected to PostgreSQL for schema check/application."}
+{"level":"INFO","time":"2025-05-01T22:27:50.090Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Force schema run enabled or tables missing. Initializing/Re-initializing schema..."}
+{"level":"INFO","time":"2025-05-01T22:27:50.090Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Looking for schema file at: /home/richard/repos/mcp-task-manager-server/dist/db/schema.sql"}
+{"level":"INFO","time":"2025-05-01T22:27:50.107Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Full schema script executed."}
+{"level":"INFO","time":"2025-05-01T22:27:50.108Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Confirmed work_items table exists after schema execution."}
+{"level":"INFO","time":"2025-05-01T22:27:50.108Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Initialization marked as complete."}
+{"level":"INFO","time":"2025-05-01T22:27:50.108Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Released schema check/application client."}
+{"level":"INFO","time":"2025-05-01T22:27:50.108Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Instance created and database initialized."}
+{"level":"INFO","time":"2025-05-01T22:27:50.162Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: root-project-a"}
+{"level":"WARN","time":"2025-05-01T22:27:50.162Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470162"}
+{"level":"INFO","time":"2025-05-01T22:27:50.163Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item dbfed420-e8e8-4598-86a1-9cbff199e9a0 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.166Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item dbfed420-e8e8-4598-86a1-9cbff199e9a0 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.203Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1"}
+{"level":"WARN","time":"2025-05-01T22:27:50.203Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470203"}
+{"level":"INFO","time":"2025-05-01T22:27:50.204Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 32ee2e63-5de3-4791-9dc4-0578ca83e821 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.205Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 32ee2e63-5de3-4791-9dc4-0578ca83e821 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.206Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:50.208Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action 1c564fc6-87b4-49c4-84b0-6906ee570138"}
+{"level":"INFO","time":"2025-05-01T22:27:50.211Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-2"}
+{"level":"WARN","time":"2025-05-01T22:27:50.211Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470211"}
+{"level":"INFO","time":"2025-05-01T22:27:50.211Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item c6507027-6942-46d4-871e-7397e351a155 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.212Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item c6507027-6942-46d4-871e-7397e351a155 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.249Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: update-me"}
+{"level":"WARN","time":"2025-05-01T22:27:50.249Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470249"}
+{"level":"INFO","time":"2025-05-01T22:27:50.250Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item e1d2ab4c-509b-418c-9b9e-caefa0825042 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.251Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item e1d2ab4c-509b-418c-9b9e-caefa0825042 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.255Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: updated-name"}
+{"level":"INFO","time":"2025-05-01T22:27:50.256Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item e1d2ab4c-509b-418c-9b9e-caefa0825042."}
+{"level":"INFO","time":"2025-05-01T22:27:50.257Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item e1d2ab4c-509b-418c-9b9e-caefa0825042."}
+{"level":"INFO","time":"2025-05-01T22:27:50.319Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: update-me"}
+{"level":"WARN","time":"2025-05-01T22:27:50.319Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470319"}
+{"level":"INFO","time":"2025-05-01T22:27:50.320Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 3bb205cc-48be-42ba-a453-aa447ec7e9f7 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.321Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 3bb205cc-48be-42ba-a453-aa447ec7e9f7 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.324Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: update-1"}
+{"level":"INFO","time":"2025-05-01T22:27:50.324Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item 3bb205cc-48be-42ba-a453-aa447ec7e9f7."}
+{"level":"INFO","time":"2025-05-01T22:27:50.325Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item 3bb205cc-48be-42ba-a453-aa447ec7e9f7."}
+{"level":"INFO","time":"2025-05-01T22:27:50.328Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:50.329Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action 55ba35dd-31b3-440a-a40e-d0e89ac67d8f"}
+{"level":"INFO","time":"2025-05-01T22:27:50.332Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: update-2"}
+{"level":"INFO","time":"2025-05-01T22:27:50.332Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item 3bb205cc-48be-42ba-a453-aa447ec7e9f7."}
+{"level":"INFO","time":"2025-05-01T22:27:50.334Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item 3bb205cc-48be-42ba-a453-aa447ec7e9f7."}
+{"level":"INFO","time":"2025-05-01T22:27:50.373Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: delete-parent"}
+{"level":"WARN","time":"2025-05-01T22:27:50.373Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470373"}
+{"level":"INFO","time":"2025-05-01T22:27:50.374Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 6afb796b-6e70-4806-beb8-e97b52f7600c with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.376Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 6afb796b-6e70-4806-beb8-e97b52f7600c and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.382Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: delete-child-1"}
+{"level":"WARN","time":"2025-05-01T22:27:50.382Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470382"}
+{"level":"INFO","time":"2025-05-01T22:27:50.384Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item e41319dc-fdce-43b1-9b55-0dc8980dacd0 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.386Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item e41319dc-fdce-43b1-9b55-0dc8980dacd0 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.390Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: delete-child-2"}
+{"level":"WARN","time":"2025-05-01T22:27:50.391Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470391"}
+{"level":"INFO","time":"2025-05-01T22:27:50.391Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item fdea3fba-9d1a-47c5-bc33-fbc4dc9c6f26 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.393Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item fdea3fba-9d1a-47c5-bc33-fbc4dc9c6f26 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.395Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: delete-grandchild-1"}
+{"level":"WARN","time":"2025-05-01T22:27:50.395Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470395"}
+{"level":"INFO","time":"2025-05-01T22:27:50.396Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 3005e087-04c5-4a7b-88a9-4fa00d78af21 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.397Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 3005e087-04c5-4a7b-88a9-4fa00d78af21 and recorded history"}
+{"level":"WARN","time":"2025-05-01T22:27:50.399Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: fdea3fba-9d1a-47c5-bc33-fbc4dc9c6f26"}
+{"level":"INFO","time":"2025-05-01T22:27:50.402Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:50.402Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:50.402Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:50.403Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action 6caf0762-17f0-4e13-aa6c-1313dfbd5c7a."}
+{"level":"INFO","time":"2025-05-01T22:27:50.443Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: delete-parent"}
+{"level":"WARN","time":"2025-05-01T22:27:50.443Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470443"}
+{"level":"INFO","time":"2025-05-01T22:27:50.443Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item eda17d9f-b5ce-4ee4-9e3e-9292723a8f61 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.446Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item eda17d9f-b5ce-4ee4-9e3e-9292723a8f61 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.448Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: delete-child-1"}
+{"level":"WARN","time":"2025-05-01T22:27:50.448Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470448"}
+{"level":"INFO","time":"2025-05-01T22:27:50.448Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item a11cd5d8-9924-4522-8b69-da1700312a2f with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.449Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item a11cd5d8-9924-4522-8b69-da1700312a2f and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.450Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: delete-child-2"}
+{"level":"WARN","time":"2025-05-01T22:27:50.450Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470450"}
+{"level":"INFO","time":"2025-05-01T22:27:50.451Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item c823dbce-311c-457e-adba-3987e9937dd3 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.452Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item c823dbce-311c-457e-adba-3987e9937dd3 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.455Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: delete-grandchild-1"}
+{"level":"WARN","time":"2025-05-01T22:27:50.455Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470455"}
+{"level":"INFO","time":"2025-05-01T22:27:50.456Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 4701dd9d-5876-4007-b0ca-6761053421e2 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.457Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 4701dd9d-5876-4007-b0ca-6761053421e2 and recorded history"}
+{"level":"WARN","time":"2025-05-01T22:27:50.459Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: a11cd5d8-9924-4522-8b69-da1700312a2f"}
+{"level":"INFO","time":"2025-05-01T22:27:50.461Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:50.461Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:50.461Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:50.462Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action 0b171dd9-965d-4726-a50c-e3b781b18071."}
+{"level":"INFO","time":"2025-05-01T22:27:50.463Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:50.466Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action 0b171dd9-965d-4726-a50c-e3b781b18071"}
+{"level":"WARN","time":"2025-05-01T22:27:50.468Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: c823dbce-311c-457e-adba-3987e9937dd3"}
+{"level":"INFO","time":"2025-05-01T22:27:50.470Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:50.470Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:50.470Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:50.470Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action 8700e28a-1c25-4688-9ad5-c789714b74f3."}
+{"level":"INFO","time":"2025-05-01T22:27:50.511Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: undoredo-item-1"}
+{"level":"WARN","time":"2025-05-01T22:27:50.511Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470511"}
+{"level":"INFO","time":"2025-05-01T22:27:50.511Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item adc1d79f-86f3-4140-bee1-989750b6c6e9 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.513Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item adc1d79f-86f3-4140-bee1-989750b6c6e9 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.514Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: undoredo-item-2"}
+{"level":"WARN","time":"2025-05-01T22:27:50.514Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470514"}
+{"level":"INFO","time":"2025-05-01T22:27:50.515Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 8be5cc4f-8ea9-453b-b03e-38ef2c3d7c9e with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.515Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 8be5cc4f-8ea9-453b-b03e-38ef2c3d7c9e and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.517Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1-updated"}
+{"level":"INFO","time":"2025-05-01T22:27:50.518Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item adc1d79f-86f3-4140-bee1-989750b6c6e9."}
+{"level":"INFO","time":"2025-05-01T22:27:50.519Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item adc1d79f-86f3-4140-bee1-989750b6c6e9."}
+{"level":"WARN","time":"2025-05-01T22:27:50.522Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: 8be5cc4f-8ea9-453b-b03e-38ef2c3d7c9e"}
+{"level":"INFO","time":"2025-05-01T22:27:50.524Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:50.524Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:50.524Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:50.526Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action 46cdf1f7-7a4a-41ff-bce0-38a28eca91d3."}
+{"level":"INFO","time":"2025-05-01T22:27:50.565Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: undoredo-item-1"}
+{"level":"WARN","time":"2025-05-01T22:27:50.565Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470565"}
+{"level":"INFO","time":"2025-05-01T22:27:50.566Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 45b2bc26-9849-48b5-9e21-5b83e3362d45 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.568Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 45b2bc26-9849-48b5-9e21-5b83e3362d45 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.570Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: undoredo-item-2"}
+{"level":"WARN","time":"2025-05-01T22:27:50.570Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470570"}
+{"level":"INFO","time":"2025-05-01T22:27:50.571Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 6c051cce-fa90-42d5-8ff2-8b308928763c with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.572Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 6c051cce-fa90-42d5-8ff2-8b308928763c and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.573Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1-updated"}
+{"level":"INFO","time":"2025-05-01T22:27:50.574Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item 45b2bc26-9849-48b5-9e21-5b83e3362d45."}
+{"level":"INFO","time":"2025-05-01T22:27:50.575Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item 45b2bc26-9849-48b5-9e21-5b83e3362d45."}
+{"level":"WARN","time":"2025-05-01T22:27:50.577Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: 6c051cce-fa90-42d5-8ff2-8b308928763c"}
+{"level":"INFO","time":"2025-05-01T22:27:50.578Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:50.578Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:50.578Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:50.579Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action b9d3c5b0-9449-40b1-a023-68ccd1302834."}
+{"level":"INFO","time":"2025-05-01T22:27:50.617Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: undoredo-item-1"}
+{"level":"WARN","time":"2025-05-01T22:27:50.617Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470617"}
+{"level":"INFO","time":"2025-05-01T22:27:50.617Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 0f4171fc-7879-40ca-8e27-9b1544e0f7ef with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.618Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 0f4171fc-7879-40ca-8e27-9b1544e0f7ef and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.620Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: undoredo-item-2"}
+{"level":"WARN","time":"2025-05-01T22:27:50.620Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470620"}
+{"level":"INFO","time":"2025-05-01T22:27:50.621Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 5de00048-4a9d-49e4-bc44-138692cb18b8 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.622Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 5de00048-4a9d-49e4-bc44-138692cb18b8 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.624Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1-updated"}
+{"level":"INFO","time":"2025-05-01T22:27:50.624Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item 0f4171fc-7879-40ca-8e27-9b1544e0f7ef."}
+{"level":"INFO","time":"2025-05-01T22:27:50.625Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item 0f4171fc-7879-40ca-8e27-9b1544e0f7ef."}
+{"level":"WARN","time":"2025-05-01T22:27:50.627Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: 5de00048-4a9d-49e4-bc44-138692cb18b8"}
+{"level":"INFO","time":"2025-05-01T22:27:50.628Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:50.628Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:50.628Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:50.629Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action 98322060-91c2-4fd9-9e85-dcb69b8fb57f."}
+{"level":"INFO","time":"2025-05-01T22:27:50.665Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: undoredo-item-1"}
+{"level":"WARN","time":"2025-05-01T22:27:50.665Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470665"}
+{"level":"INFO","time":"2025-05-01T22:27:50.665Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 27e44633-5319-4db1-ab60-73bb27ec6361 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.670Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 27e44633-5319-4db1-ab60-73bb27ec6361 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.674Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: undoredo-item-2"}
+{"level":"WARN","time":"2025-05-01T22:27:50.675Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470675"}
+{"level":"INFO","time":"2025-05-01T22:27:50.675Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 39c21109-fc4c-4b8b-ae01-22292f778d3a with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.677Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 39c21109-fc4c-4b8b-ae01-22292f778d3a and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.681Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1-updated"}
+{"level":"INFO","time":"2025-05-01T22:27:50.681Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item 27e44633-5319-4db1-ab60-73bb27ec6361."}
+{"level":"INFO","time":"2025-05-01T22:27:50.683Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item 27e44633-5319-4db1-ab60-73bb27ec6361."}
+{"level":"WARN","time":"2025-05-01T22:27:50.686Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: 39c21109-fc4c-4b8b-ae01-22292f778d3a"}
+{"level":"INFO","time":"2025-05-01T22:27:50.688Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:50.688Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:50.688Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:50.689Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action 6d5bf46e-4b38-452d-bc73-96226f1d4f80."}
+{"level":"INFO","time":"2025-05-01T22:27:50.732Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: undoredo-item-1"}
+{"level":"WARN","time":"2025-05-01T22:27:50.732Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470732"}
+{"level":"INFO","time":"2025-05-01T22:27:50.733Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item b075b3d7-7440-4638-946b-ce27a0ac4f34 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.734Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item b075b3d7-7440-4638-946b-ce27a0ac4f34 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.736Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: undoredo-item-2"}
+{"level":"WARN","time":"2025-05-01T22:27:50.736Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470736"}
+{"level":"INFO","time":"2025-05-01T22:27:50.736Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item c48a9e85-48c5-4029-900e-8fc50870f34a with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.737Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item c48a9e85-48c5-4029-900e-8fc50870f34a and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.739Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1-updated"}
+{"level":"INFO","time":"2025-05-01T22:27:50.739Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item b075b3d7-7440-4638-946b-ce27a0ac4f34."}
+{"level":"INFO","time":"2025-05-01T22:27:50.740Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item b075b3d7-7440-4638-946b-ce27a0ac4f34."}
+{"level":"WARN","time":"2025-05-01T22:27:50.743Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: c48a9e85-48c5-4029-900e-8fc50870f34a"}
+{"level":"INFO","time":"2025-05-01T22:27:50.745Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:50.745Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:50.745Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:50.745Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action 937f86fc-1ed4-435c-9ca9-86646ea7db5f."}
+{"level":"INFO","time":"2025-05-01T22:27:50.784Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: undoredo-item-1"}
+{"level":"WARN","time":"2025-05-01T22:27:50.784Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470784"}
+{"level":"INFO","time":"2025-05-01T22:27:50.784Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item b6db529d-de60-4343-9286-652001fd9d3b with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.785Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item b6db529d-de60-4343-9286-652001fd9d3b and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.787Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: undoredo-item-2"}
+{"level":"WARN","time":"2025-05-01T22:27:50.787Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470787"}
+{"level":"INFO","time":"2025-05-01T22:27:50.787Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 7824fea9-13c1-4db7-927e-8451842a2d9e with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.787Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 7824fea9-13c1-4db7-927e-8451842a2d9e and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.790Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1-updated"}
+{"level":"INFO","time":"2025-05-01T22:27:50.790Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item b6db529d-de60-4343-9286-652001fd9d3b."}
+{"level":"INFO","time":"2025-05-01T22:27:50.792Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item b6db529d-de60-4343-9286-652001fd9d3b."}
+{"level":"WARN","time":"2025-05-01T22:27:50.794Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: 7824fea9-13c1-4db7-927e-8451842a2d9e"}
+{"level":"INFO","time":"2025-05-01T22:27:50.795Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:50.795Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:50.795Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:50.796Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action 5aaca6bb-26f8-437b-af45-38ec4f070a69."}
+{"level":"INFO","time":"2025-05-01T22:27:50.851Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: history-a"}
+{"level":"WARN","time":"2025-05-01T22:27:50.851Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470851"}
+{"level":"INFO","time":"2025-05-01T22:27:50.852Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item e821043d-0acd-45c2-9a14-dd1dd467d1ff with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.854Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item e821043d-0acd-45c2-9a14-dd1dd467d1ff and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.856Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: history-b"}
+{"level":"WARN","time":"2025-05-01T22:27:50.856Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470856"}
+{"level":"INFO","time":"2025-05-01T22:27:50.857Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 562ddce6-a4be-491e-b58e-5811934ae665 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.858Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 562ddce6-a4be-491e-b58e-5811934ae665 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.860Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item e821043d-0acd-45c2-9a14-dd1dd467d1ff."}
+{"level":"INFO","time":"2025-05-01T22:27:50.861Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item e821043d-0acd-45c2-9a14-dd1dd467d1ff."}
+{"level":"INFO","time":"2025-05-01T22:27:50.906Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: filter-a"}
+{"level":"WARN","time":"2025-05-01T22:27:50.906Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470906"}
+{"level":"INFO","time":"2025-05-01T22:27:50.907Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 88668234-4d52-46f4-93e0-d20bcaca50c5 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.908Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 88668234-4d52-46f4-93e0-d20bcaca50c5 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.910Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: filter-b"}
+{"level":"WARN","time":"2025-05-01T22:27:50.910Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470910"}
+{"level":"INFO","time":"2025-05-01T22:27:50.910Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 325e09e7-a6c0-4444-bd99-322f9ce2dcf4 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.911Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 325e09e7-a6c0-4444-bd99-322f9ce2dcf4 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.913Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: filter-a-updated"}
+{"level":"INFO","time":"2025-05-01T22:27:50.914Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item 88668234-4d52-46f4-93e0-d20bcaca50c5."}
+{"level":"INFO","time":"2025-05-01T22:27:50.915Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item 88668234-4d52-46f4-93e0-d20bcaca50c5."}
+{"level":"INFO","time":"2025-05-01T22:27:50.957Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: limit-1"}
+{"level":"WARN","time":"2025-05-01T22:27:50.957Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470957"}
+{"level":"INFO","time":"2025-05-01T22:27:50.957Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item b57f150d-5950-482f-950b-70b2271eeab0 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.958Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item b57f150d-5950-482f-950b-70b2271eeab0 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.960Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: limit-2"}
+{"level":"WARN","time":"2025-05-01T22:27:50.960Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470960"}
+{"level":"INFO","time":"2025-05-01T22:27:50.960Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 1c1a6bf9-9d5d-4266-8f26-8afb26e6eb73 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.961Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 1c1a6bf9-9d5d-4266-8f26-8afb26e6eb73 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:50.963Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: limit-3"}
+{"level":"WARN","time":"2025-05-01T22:27:50.963Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138470963"}
+{"level":"INFO","time":"2025-05-01T22:27:50.963Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 2880cc3c-d397-403c-bcb6-e0f3b2ff8447 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:50.963Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 2880cc3c-d397-403c-bcb6-e0f3b2ff8447 and recorded history"}
+FAIL dist/services/WorkItemService.integration.spec.js
+  ● WorkItemService Integration Tests › addWorkItem › should add a root work item without dependencies and record history
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "DELETE"
+    Received: "UPDATE"
+
+      at Object.<anonymous> (src/services/WorkItemService.integration.spec.ts:94:34)
+
+  ● WorkItemService Integration Tests › undoLastAction and redoLastUndo › should undo the last action (delete item 2)
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Item 1 Updated"
+    Received: undefined
+
+      at Object.<anonymous> (src/services/WorkItemService.integration.spec.ts:336:34)
+
+  ● WorkItemService Integration Tests › undoLastAction and redoLastUndo › should undo multiple actions sequentially
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Item 1 Updated"
+    Received: undefined
+
+      at Object.<anonymous> (src/services/WorkItemService.integration.spec.ts:336:34)
+
+  ● WorkItemService Integration Tests › undoLastAction and redoLastUndo › should redo the last undone action (re-delete item 2)
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Item 1 Updated"
+    Received: undefined
+
+      at Object.<anonymous> (src/services/WorkItemService.integration.spec.ts:336:34)
+
+  ● WorkItemService Integration Tests › undoLastAction and redoLastUndo › should handle undo/redo sequence correctly
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Item 1 Updated"
+    Received: undefined
+
+      at Object.<anonymous> (src/services/WorkItemService.integration.spec.ts:336:34)
+
+  ● WorkItemService Integration Tests › undoLastAction and redoLastUndo › should return null if no action to undo
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Item 1 Updated"
+    Received: undefined
+
+      at Object.<anonymous> (src/services/WorkItemService.integration.spec.ts:336:34)
+
+  ● WorkItemService Integration Tests › undoLastAction and redoLastUndo › should return null if no action to redo
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Item 1 Updated"
+    Received: undefined
+
+      at Object.<anonymous> (src/services/WorkItemService.integration.spec.ts:336:34)
+
+{"level":"INFO","time":"2025-05-01T22:27:51.061Z","pid":70204,"hostname":"richard","msg":"Loading environment variable overrides for configuration..."}
+{"level":"INFO","time":"2025-05-01T22:27:51.061Z","pid":70204,"hostname":"richard","msg":"Overriding pgHost from env: localhost"}
+{"level":"INFO","time":"2025-05-01T22:27:51.061Z","pid":70204,"hostname":"richard","msg":"Overriding pgPort from env: 5432"}
+{"level":"INFO","time":"2025-05-01T22:27:51.061Z","pid":70204,"hostname":"richard","msg":"Overriding pgUser from env: taskmanager_user"}
+{"level":"INFO","time":"2025-05-01T22:27:51.061Z","pid":70204,"hostname":"richard","msg":"Overriding pgPassword from env."}
+{"level":"INFO","time":"2025-05-01T22:27:51.061Z","pid":70204,"hostname":"richard","msg":"Overriding pgDatabase from env: taskmanager_db"}
+{"level":"INFO","time":"2025-05-01T22:27:51.061Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Setting up PostgreSQL connection pool..."}
+{"level":"INFO","time":"2025-05-01T22:27:51.061Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] PostgreSQL connection pool configured."}
+{"level":"INFO","time":"2025-05-01T22:27:51.061Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Starting database schema initialization..."}
+{"level":"INFO","time":"2025-05-01T22:27:51.073Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Connected to PostgreSQL for schema check/application."}
+{"level":"INFO","time":"2025-05-01T22:27:51.073Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Force schema run enabled or tables missing. Initializing/Re-initializing schema..."}
+{"level":"INFO","time":"2025-05-01T22:27:51.073Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Looking for schema file at: /home/richard/repos/mcp-task-manager-server/dist/db/schema.sql"}
+{"level":"INFO","time":"2025-05-01T22:27:51.091Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Full schema script executed."}
+{"level":"INFO","time":"2025-05-01T22:27:51.093Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Confirmed work_items table exists after schema execution."}
+{"level":"INFO","time":"2025-05-01T22:27:51.093Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Initialization marked as complete."}
+{"level":"INFO","time":"2025-05-01T22:27:51.093Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Released schema check/application client."}
+{"level":"INFO","time":"2025-05-01T22:27:51.093Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Instance created and database initialized."}
+{"level":"INFO","time":"2025-05-01T22:27:51.115Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: parent-project"}
+{"level":"WARN","time":"2025-05-01T22:27:51.115Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471115"}
+{"level":"INFO","time":"2025-05-01T22:27:51.116Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 53af7269-c5b3-4206-8177-ad978f95ea13 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.118Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 53af7269-c5b3-4206-8177-ad978f95ea13 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.119Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: update-me"}
+{"level":"WARN","time":"2025-05-01T22:27:51.119Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471119"}
+{"level":"INFO","time":"2025-05-01T22:27:51.120Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item f8297b44-1388-46f5-b15e-1d85c2f6e47d with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.121Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item f8297b44-1388-46f5-b15e-1d85c2f6e47d and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.125Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: updated-name"}
+{"level":"INFO","time":"2025-05-01T22:27:51.125Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item f8297b44-1388-46f5-b15e-1d85c2f6e47d."}
+{"level":"INFO","time":"2025-05-01T22:27:51.126Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item f8297b44-1388-46f5-b15e-1d85c2f6e47d."}
+{"level":"INFO","time":"2025-05-01T22:27:51.164Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: parent-project"}
+{"level":"WARN","time":"2025-05-01T22:27:51.164Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471164"}
+{"level":"INFO","time":"2025-05-01T22:27:51.164Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 1cd50523-6f0d-4bf0-8a46-b4712903f9d9 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.166Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 1cd50523-6f0d-4bf0-8a46-b4712903f9d9 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.167Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: update-me"}
+{"level":"WARN","time":"2025-05-01T22:27:51.167Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471167"}
+{"level":"INFO","time":"2025-05-01T22:27:51.167Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item cc29317c-f0d7-41f9-a171-0f3654ed3d1b with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.168Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item cc29317c-f0d7-41f9-a171-0f3654ed3d1b and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.172Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: update-me"}
+{"level":"WARN","time":"2025-05-01T22:27:51.172Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471172"}
+{"level":"INFO","time":"2025-05-01T22:27:51.173Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item cc29317c-f0d7-41f9-a171-0f3654ed3d1b."}
+{"level":"INFO","time":"2025-05-01T22:27:51.174Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item cc29317c-f0d7-41f9-a171-0f3654ed3d1b."}
+{"level":"INFO","time":"2025-05-01T22:27:51.198Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: parent-project"}
+{"level":"WARN","time":"2025-05-01T22:27:51.198Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471198"}
+{"level":"INFO","time":"2025-05-01T22:27:51.198Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item f5d852d2-3b39-47e6-aa0f-1fe00ab1fa85 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.200Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item f5d852d2-3b39-47e6-aa0f-1fe00ab1fa85 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.201Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: update-me"}
+{"level":"WARN","time":"2025-05-01T22:27:51.201Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471201"}
+{"level":"INFO","time":"2025-05-01T22:27:51.201Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item b1de30a9-82ef-479e-88a1-dcb171341080 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.202Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item b1de30a9-82ef-479e-88a1-dcb171341080 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.204Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: dependency-1"}
+{"level":"WARN","time":"2025-05-01T22:27:51.204Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471204"}
+{"level":"INFO","time":"2025-05-01T22:27:51.204Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item f1e3e564-ac72-408d-a41f-b1f7a1f66625 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.204Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item f1e3e564-ac72-408d-a41f-b1f7a1f66625 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.206Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: dependency-2"}
+{"level":"WARN","time":"2025-05-01T22:27:51.206Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471206"}
+{"level":"INFO","time":"2025-05-01T22:27:51.206Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 51f7297c-9352-4001-8d44-629faa693f69 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.206Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 51f7297c-9352-4001-8d44-629faa693f69 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.209Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item b1de30a9-82ef-479e-88a1-dcb171341080."}
+{"level":"INFO","time":"2025-05-01T22:27:51.209Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Update called for b1de30a9-82ef-479e-88a1-dcb171341080, but no effective changes detected (Item: false, Deps: false). Skipping history."}
+{"level":"INFO","time":"2025-05-01T22:27:51.213Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item b1de30a9-82ef-479e-88a1-dcb171341080."}
+{"level":"INFO","time":"2025-05-01T22:27:51.215Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item b1de30a9-82ef-479e-88a1-dcb171341080."}
+{"level":"INFO","time":"2025-05-01T22:27:51.243Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: parent-project"}
+{"level":"WARN","time":"2025-05-01T22:27:51.244Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471244"}
+{"level":"INFO","time":"2025-05-01T22:27:51.244Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 77a9e6e6-a940-411d-b89f-c687685a28a4 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.246Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 77a9e6e6-a940-411d-b89f-c687685a28a4 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.248Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: update-me"}
+{"level":"WARN","time":"2025-05-01T22:27:51.248Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471248"}
+{"level":"INFO","time":"2025-05-01T22:27:51.248Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item ad4e8b7e-db28-4d79-bda3-96a785395820 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.249Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item ad4e8b7e-db28-4d79-bda3-96a785395820 and recorded history"}
+{"level":"ERROR","time":"2025-05-01T22:27:51.251Z","pid":70204,"hostname":"richard","err":{"type":"ValidationError","message":"New parent work item with ID f47ac10b-58cc-4372-a567-0e02b2c3d479 not found or is inactive.","stack":"ValidationError: New parent work item with ID f47ac10b-58cc-4372-a567-0e02b2c3d479 not found or is inactive.\n    at /home/richard/repos/mcp-task-manager-server/src/services/WorkItemUpdateService.ts:88:17\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at ActionHistoryRepository.withTransaction (/home/richard/repos/mcp-task-manager-server/src/repositories/ActionHistoryRepositoryBase.ts:107:22)\n    at WorkItemUpdateService.updateWorkItem (/home/richard/repos/mcp-task-manager-server/src/services/WorkItemUpdateService.ts:57:25)\n    at Object.<anonymous> (/home/richard/repos/mcp-task-manager-server/src/services/__tests__/workItemUpdateIntegration.test.ts:160:7)","name":"ValidationError"},"msg":"[ActionHistoryRepositoryBase.withTransaction] Transaction error, attempting rollback"}
+{"level":"INFO","time":"2025-05-01T22:27:51.255Z","pid":70204,"hostname":"richard","msg":"[ActionHistoryRepositoryBase.withTransaction] Transaction rolled back successfully."}
+{"level":"ERROR","time":"2025-05-01T22:27:51.257Z","pid":70204,"hostname":"richard","err":{"type":"ValidationError","message":"New parent work item with ID f47ac10b-58cc-4372-a567-0e02b2c3d479 not found or is inactive.","stack":"ValidationError: New parent work item with ID f47ac10b-58cc-4372-a567-0e02b2c3d479 not found or is inactive.\n    at /home/richard/repos/mcp-task-manager-server/src/services/WorkItemUpdateService.ts:88:17\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at ActionHistoryRepository.withTransaction (/home/richard/repos/mcp-task-manager-server/src/repositories/ActionHistoryRepositoryBase.ts:107:22)\n    at WorkItemUpdateService.updateWorkItem (/home/richard/repos/mcp-task-manager-server/src/services/WorkItemUpdateService.ts:57:25)\n    at Object.<anonymous> (/home/richard/repos/mcp-task-manager-server/src/services/__tests__/workItemUpdateIntegration.test.ts:165:7)","name":"ValidationError"},"msg":"[ActionHistoryRepositoryBase.withTransaction] Transaction error, attempting rollback"}
+{"level":"INFO","time":"2025-05-01T22:27:51.257Z","pid":70204,"hostname":"richard","msg":"[ActionHistoryRepositoryBase.withTransaction] Transaction rolled back successfully."}
+{"level":"INFO","time":"2025-05-01T22:27:51.275Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: parent-project"}
+{"level":"WARN","time":"2025-05-01T22:27:51.275Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471275"}
+{"level":"INFO","time":"2025-05-01T22:27:51.275Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 23dc6353-f020-4a09-ae67-aba237dc15c7 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.276Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 23dc6353-f020-4a09-ae67-aba237dc15c7 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.278Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: update-me"}
+{"level":"WARN","time":"2025-05-01T22:27:51.278Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471278"}
+{"level":"INFO","time":"2025-05-01T22:27:51.278Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 11ecdfcb-1a5e-4201-a453-427c6a5952da with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.278Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 11ecdfcb-1a5e-4201-a453-427c6a5952da and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.284Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item 11ecdfcb-1a5e-4201-a453-427c6a5952da."}
+{"level":"INFO","time":"2025-05-01T22:27:51.285Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Update called for 11ecdfcb-1a5e-4201-a453-427c6a5952da, but no effective changes detected (Item: false, Deps: false). Skipping history."}
+FAIL dist/services/__tests__/workItemUpdateIntegration.test.js
+  ● WorkItemService - Update Work Item Integration Tests › Dependency Management › should add, modify, and manage dependencies
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      143 |
+      144 |       // These are the failing assertions
+    > 145 |       expect(activeDeps).toHaveLength(1);
+          |                          ^
+      146 |       expect(activeDeps[0].depends_on_work_item_id).toBe(dep2.work_item_id);
+      147 |       expect(activeDeps[0].dependency_type).toBe('linked');
+      148 |
+
+      at Object.<anonymous> (src/services/__tests__/workItemUpdateIntegration.test.ts:145:26)
+
+{"level":"INFO","time":"2025-05-01T22:27:51.380Z","pid":70204,"hostname":"richard","msg":"Loading environment variable overrides for configuration..."}
+{"level":"INFO","time":"2025-05-01T22:27:51.381Z","pid":70204,"hostname":"richard","msg":"Overriding pgHost from env: localhost"}
+{"level":"INFO","time":"2025-05-01T22:27:51.381Z","pid":70204,"hostname":"richard","msg":"Overriding pgPort from env: 5432"}
+{"level":"INFO","time":"2025-05-01T22:27:51.381Z","pid":70204,"hostname":"richard","msg":"Overriding pgUser from env: taskmanager_user"}
+{"level":"INFO","time":"2025-05-01T22:27:51.381Z","pid":70204,"hostname":"richard","msg":"Overriding pgPassword from env."}
+{"level":"INFO","time":"2025-05-01T22:27:51.381Z","pid":70204,"hostname":"richard","msg":"Overriding pgDatabase from env: taskmanager_db"}
+{"level":"INFO","time":"2025-05-01T22:27:51.381Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Setting up PostgreSQL connection pool..."}
+{"level":"INFO","time":"2025-05-01T22:27:51.381Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] PostgreSQL connection pool configured."}
+{"level":"INFO","time":"2025-05-01T22:27:51.381Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Starting database schema initialization..."}
+{"level":"INFO","time":"2025-05-01T22:27:51.389Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Connected to PostgreSQL for schema check/application."}
+{"level":"INFO","time":"2025-05-01T22:27:51.389Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Force schema run enabled or tables missing. Initializing/Re-initializing schema..."}
+{"level":"INFO","time":"2025-05-01T22:27:51.390Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Looking for schema file at: /home/richard/repos/mcp-task-manager-server/dist/db/schema.sql"}
+{"level":"INFO","time":"2025-05-01T22:27:51.417Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Full schema script executed."}
+{"level":"INFO","time":"2025-05-01T22:27:51.419Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Confirmed work_items table exists after schema execution."}
+{"level":"INFO","time":"2025-05-01T22:27:51.419Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Initialization marked as complete."}
+{"level":"INFO","time":"2025-05-01T22:27:51.419Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Released schema check/application client."}
+{"level":"INFO","time":"2025-05-01T22:27:51.419Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Instance created and database initialized."}
+{"level":"INFO","time":"2025-05-01T22:27:51.442Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: root-project-a"}
+{"level":"WARN","time":"2025-05-01T22:27:51.442Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471442"}
+{"level":"INFO","time":"2025-05-01T22:27:51.443Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 65f29bca-248d-4d9f-94f8-2a47e1846936 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.444Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 65f29bca-248d-4d9f-94f8-2a47e1846936 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.469Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: parent-project"}
+{"level":"WARN","time":"2025-05-01T22:27:51.469Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471469"}
+{"level":"INFO","time":"2025-05-01T22:27:51.469Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item a14c680a-3384-4bde-8ab7-5d2c84d04cd1 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.470Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item a14c680a-3384-4bde-8ab7-5d2c84d04cd1 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.472Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: child-task"}
+{"level":"WARN","time":"2025-05-01T22:27:51.472Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471472"}
+{"level":"INFO","time":"2025-05-01T22:27:51.473Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item bc4573fd-74c7-4ec0-b51d-bcb7a9b86785 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.473Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item bc4573fd-74c7-4ec0-b51d-bcb7a9b86785 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.493Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: dependency-target"}
+{"level":"WARN","time":"2025-05-01T22:27:51.493Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471493"}
+{"level":"INFO","time":"2025-05-01T22:27:51.494Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 437eacba-41e5-49eb-bcde-1e46b3215bf2 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.498Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 437eacba-41e5-49eb-bcde-1e46b3215bf2 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.499Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-with-dependency"}
+{"level":"WARN","time":"2025-05-01T22:27:51.499Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471499"}
+{"level":"ERROR","time":"2025-05-01T22:27:51.500Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Error creating item afe7b4b0-2f24-4241-8e3b-4afa8177e76c in transaction:"}
+{"level":"ERROR","time":"2025-05-01T22:27:51.500Z","pid":70204,"hostname":"richard","err":{"type":"DatabaseError","message":"bind message supplies 4 parameters, but prepared statement \"\" requires 3","stack":"error: bind message supplies 4 parameters, but prepared statement \"\" requires 3\n    at /home/richard/repos/mcp-task-manager-server/node_modules/pg/lib/client.js:545:17\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at WorkItemRepositoryCRUD.create (/home/richard/repos/mcp-task-manager-server/src/repositories/WorkItemRepositoryCRUD.ts:79:11)\n    at /home/richard/repos/mcp-task-manager-server/src/services/WorkItemAddingService.ts:81:22\n    at ActionHistoryRepository.withTransaction (/home/richard/repos/mcp-task-manager-server/src/repositories/ActionHistoryRepositoryBase.ts:107:22)\n    at WorkItemAddingService.addWorkItem (/home/richard/repos/mcp-task-manager-server/src/services/WorkItemAddingService.ts:54:27)\n    at Object.<anonymous> (/home/richard/repos/mcp-task-manager-server/src/services/__tests__/workItemAddIntegration.test.ts:104:22)","length":137,"name":"error","severity":"ERROR","code":"08P01","file":"postgres.c","line":"1733","routine":"exec_bind_message"},"msg":"[ActionHistoryRepositoryBase.withTransaction] Transaction error, attempting rollback"}
+{"level":"INFO","time":"2025-05-01T22:27:51.512Z","pid":70204,"hostname":"richard","msg":"[ActionHistoryRepositoryBase.withTransaction] Transaction rolled back successfully."}
+{"level":"ERROR","time":"2025-05-01T22:27:51.512Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Error adding work item \"Item with Dependency\":"}
+{"level":"INFO","time":"2025-05-01T22:27:51.532Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1"}
+{"level":"WARN","time":"2025-05-01T22:27:51.532Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471532"}
+{"level":"INFO","time":"2025-05-01T22:27:51.533Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item ef1146c4-234d-48b4-93f8-31648c125b63 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.534Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item ef1146c4-234d-48b4-93f8-31648c125b63 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.535Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:51.537Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action d3bbf00b-8df2-42ec-8737-ff92ae4c9630"}
+{"level":"INFO","time":"2025-05-01T22:27:51.539Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-2"}
+{"level":"WARN","time":"2025-05-01T22:27:51.539Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471539"}
+{"level":"INFO","time":"2025-05-01T22:27:51.539Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 0350d95b-f4eb-4305-b51b-cc5a11a2c636 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.540Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 0350d95b-f4eb-4305-b51b-cc5a11a2c636 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.542Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to redo last undo action."}
+{"level":"INFO","time":"2025-05-01T22:27:51.543Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] No undo action found to redo."}
+{"level":"INFO","time":"2025-05-01T22:27:51.565Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: parent-project"}
+{"level":"WARN","time":"2025-05-01T22:27:51.565Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471565"}
+{"level":"INFO","time":"2025-05-01T22:27:51.565Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 6a1113d1-772b-4841-84d4-b69eea4997c5 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.566Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 6a1113d1-772b-4841-84d4-b69eea4997c5 and recorded history"}
+{"level":"WARN","time":"2025-05-01T22:27:51.568Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: 6a1113d1-772b-4841-84d4-b69eea4997c5"}
+{"level":"INFO","time":"2025-05-01T22:27:51.570Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:51.570Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:51.570Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:51.573Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action d3585058-08d5-45dc-84b0-4ed4bc717b50."}
+{"level":"ERROR","time":"2025-05-01T22:27:51.579Z","pid":70204,"hostname":"richard","err":{"type":"ValidationError","message":"Parent work item with ID 6a1113d1-772b-4841-84d4-b69eea4997c5 not found or is inactive.","stack":"ValidationError: Parent work item with ID 6a1113d1-772b-4841-84d4-b69eea4997c5 not found or is inactive.\n    at /home/richard/repos/mcp-task-manager-server/src/services/WorkItemAddingService.ts:58:19\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at ActionHistoryRepository.withTransaction (/home/richard/repos/mcp-task-manager-server/src/repositories/ActionHistoryRepositoryBase.ts:107:22)\n    at WorkItemAddingService.addWorkItem (/home/richard/repos/mcp-task-manager-server/src/services/WorkItemAddingService.ts:54:27)\n    at Object.<anonymous> (/home/richard/repos/mcp-task-manager-server/src/services/__tests__/workItemAddIntegration.test.ts:235:7)","name":"ValidationError"},"msg":"[ActionHistoryRepositoryBase.withTransaction] Transaction error, attempting rollback"}
+{"level":"INFO","time":"2025-05-01T22:27:51.580Z","pid":70204,"hostname":"richard","msg":"[ActionHistoryRepositoryBase.withTransaction] Transaction rolled back successfully."}
+{"level":"WARN","time":"2025-05-01T22:27:51.580Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Validation error adding work item \"Child Task\": Parent work item with ID 6a1113d1-772b-4841-84d4-b69eea4997c5 not found or is inactive."}
+{"level":"ERROR","time":"2025-05-01T22:27:51.581Z","pid":70204,"hostname":"richard","err":{"type":"ValidationError","message":"Parent work item with ID 6a1113d1-772b-4841-84d4-b69eea4997c5 not found or is inactive.","stack":"ValidationError: Parent work item with ID 6a1113d1-772b-4841-84d4-b69eea4997c5 not found or is inactive.\n    at /home/richard/repos/mcp-task-manager-server/src/services/WorkItemAddingService.ts:58:19\n    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n    at ActionHistoryRepository.withTransaction (/home/richard/repos/mcp-task-manager-server/src/repositories/ActionHistoryRepositoryBase.ts:107:22)\n    at WorkItemAddingService.addWorkItem (/home/richard/repos/mcp-task-manager-server/src/services/WorkItemAddingService.ts:54:27)\n    at Object.<anonymous> (/home/richard/repos/mcp-task-manager-server/src/services/__tests__/workItemAddIntegration.test.ts:241:7)","name":"ValidationError"},"msg":"[ActionHistoryRepositoryBase.withTransaction] Transaction error, attempting rollback"}
+{"level":"INFO","time":"2025-05-01T22:27:51.582Z","pid":70204,"hostname":"richard","msg":"[ActionHistoryRepositoryBase.withTransaction] Transaction rolled back successfully."}
+FAIL dist/services/__tests__/workItemAddIntegration.test.js
+  ● WorkItemService - Add Work Item Integration Tests › addWorkItem › should add a work item with dependencies
+
+    error: bind message supplies 4 parameters, but prepared statement "" requires 3
+
+      77 |             `[WorkItemRepositoryCRUD] create: Inserting dependency ${dep.work_item_id} -> ${dep.depends_on_work_item_id}`
+      78 |           );
+    > 79 |           await dbClient.query(insertDepSql, [
+         |           ^
+      80 |             dep.work_item_id,
+      81 |             dep.depends_on_work_item_id,
+      82 |             dep.dependency_type,
+
+      at node_modules/pg/lib/client.js:545:17
+      at WorkItemRepositoryCRUD.create (src/repositories/WorkItemRepositoryCRUD.ts:79:11)
+      at src/services/WorkItemAddingService.ts:81:22
+      at ActionHistoryRepository.withTransaction (src/repositories/ActionHistoryRepositoryBase.ts:107:22)
+      at WorkItemAddingService.addWorkItem (src/services/WorkItemAddingService.ts:54:27)
+      at Object.<anonymous> (src/services/__tests__/workItemAddIntegration.test.ts:104:22)
+
+{"level":"INFO","time":"2025-05-01T22:27:51.672Z","pid":70204,"hostname":"richard","msg":"Loading environment variable overrides for configuration..."}
+{"level":"WARN","time":"2025-05-01T22:27:51.582Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Validation error adding work item \"Child Task\": Parent work item with ID 6a1113d1-772b-4841-84d4-b69eea4997c5 not found or is inactive."}
+{"level":"INFO","time":"2025-05-01T22:27:51.672Z","pid":70204,"hostname":"richard","msg":"Overriding pgHost from env: localhost"}
+{"level":"INFO","time":"2025-05-01T22:27:51.672Z","pid":70204,"hostname":"richard","msg":"Overriding pgPort from env: 5432"}
+{"level":"INFO","time":"2025-05-01T22:27:51.672Z","pid":70204,"hostname":"richard","msg":"Overriding pgUser from env: taskmanager_user"}
+{"level":"INFO","time":"2025-05-01T22:27:51.672Z","pid":70204,"hostname":"richard","msg":"Overriding pgPassword from env."}
+{"level":"INFO","time":"2025-05-01T22:27:51.672Z","pid":70204,"hostname":"richard","msg":"Overriding pgDatabase from env: taskmanager_db"}
+{"level":"INFO","time":"2025-05-01T22:27:51.672Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Setting up PostgreSQL connection pool..."}
+{"level":"INFO","time":"2025-05-01T22:27:51.672Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] PostgreSQL connection pool configured."}
+{"level":"INFO","time":"2025-05-01T22:27:51.672Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Starting database schema initialization..."}
+{"level":"INFO","time":"2025-05-01T22:27:51.685Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Connected to PostgreSQL for schema check/application."}
+{"level":"INFO","time":"2025-05-01T22:27:51.685Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Force schema run enabled or tables missing. Initializing/Re-initializing schema..."}
+{"level":"INFO","time":"2025-05-01T22:27:51.685Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Looking for schema file at: /home/richard/repos/mcp-task-manager-server/dist/db/schema.sql"}
+{"level":"INFO","time":"2025-05-01T22:27:51.703Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Full schema script executed."}
+{"level":"INFO","time":"2025-05-01T22:27:51.704Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Confirmed work_items table exists after schema execution."}
+{"level":"INFO","time":"2025-05-01T22:27:51.704Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Initialization marked as complete."}
+{"level":"INFO","time":"2025-05-01T22:27:51.704Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Released schema check/application client."}
+{"level":"INFO","time":"2025-05-01T22:27:51.704Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Instance created and database initialized."}
+{"level":"INFO","time":"2025-05-01T22:27:51.726Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: parent-project"}
+{"level":"WARN","time":"2025-05-01T22:27:51.726Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471726"}
+{"level":"INFO","time":"2025-05-01T22:27:51.728Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item f1162acb-b38c-461f-b996-f7f23c584bb2 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.729Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item f1162acb-b38c-461f-b996-f7f23c584bb2 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.731Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: child-task-1"}
+{"level":"WARN","time":"2025-05-01T22:27:51.732Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471732"}
+{"level":"INFO","time":"2025-05-01T22:27:51.733Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item e16ce3b8-1f2c-41a7-9e18-792b5011fced with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.734Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item e16ce3b8-1f2c-41a7-9e18-792b5011fced and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.735Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: child-task-2"}
+{"level":"WARN","time":"2025-05-01T22:27:51.735Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471735"}
+{"level":"INFO","time":"2025-05-01T22:27:51.736Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 8fdbdab9-e953-4bc8-915f-8eeca726a5d1 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.736Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 8fdbdab9-e953-4bc8-915f-8eeca726a5d1 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.738Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: grandchild-task-1"}
+{"level":"WARN","time":"2025-05-01T22:27:51.738Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471738"}
+{"level":"INFO","time":"2025-05-01T22:27:51.738Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item b65ac849-82d6-4953-9c12-1069e3ab6539 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.738Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item b65ac849-82d6-4953-9c12-1069e3ab6539 and recorded history"}
+{"level":"WARN","time":"2025-05-01T22:27:51.740Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: 8fdbdab9-e953-4bc8-915f-8eeca726a5d1"}
+{"level":"INFO","time":"2025-05-01T22:27:51.742Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:51.742Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:51.742Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:51.743Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action 22351191-0ab7-4ef4-a7c2-1042ed86e4a6."}
+{"level":"INFO","time":"2025-05-01T22:27:51.766Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: parent-project"}
+{"level":"WARN","time":"2025-05-01T22:27:51.766Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471766"}
+{"level":"INFO","time":"2025-05-01T22:27:51.766Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 74935842-2748-486d-9cf1-73669ed299cd with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.767Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 74935842-2748-486d-9cf1-73669ed299cd and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.768Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: child-task-1"}
+{"level":"WARN","time":"2025-05-01T22:27:51.768Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471768"}
+{"level":"INFO","time":"2025-05-01T22:27:51.769Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 59c5fca0-b47c-413f-b8b7-4c6c2c22635d with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.769Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 59c5fca0-b47c-413f-b8b7-4c6c2c22635d and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.771Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: child-task-2"}
+{"level":"WARN","time":"2025-05-01T22:27:51.771Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471771"}
+{"level":"INFO","time":"2025-05-01T22:27:51.771Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item df4f4e5f-ff2d-4eb4-9488-1f064d9e1e41 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.772Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item df4f4e5f-ff2d-4eb4-9488-1f064d9e1e41 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.773Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: grandchild-task-1"}
+{"level":"WARN","time":"2025-05-01T22:27:51.773Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471773"}
+{"level":"INFO","time":"2025-05-01T22:27:51.773Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item e6ebef22-1317-486b-9379-44800e45d154 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.774Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item e6ebef22-1317-486b-9379-44800e45d154 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.777Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item e6ebef22-1317-486b-9379-44800e45d154."}
+{"level":"INFO","time":"2025-05-01T22:27:51.778Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Update called for e6ebef22-1317-486b-9379-44800e45d154, but no effective changes detected (Item: false, Deps: false). Skipping history."}
+{"level":"WARN","time":"2025-05-01T22:27:51.800Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: 74935842-2748-486d-9cf1-73669ed299cd"}
+{"level":"INFO","time":"2025-05-01T22:27:51.802Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:51.802Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:51.802Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:51.804Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action 23358675-c7ae-4ceb-8ec8-160457139ad7."}
+{"level":"INFO","time":"2025-05-01T22:27:51.842Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: parent-project"}
+{"level":"WARN","time":"2025-05-01T22:27:51.842Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471842"}
+{"level":"INFO","time":"2025-05-01T22:27:51.843Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item cd4dbf30-7389-44c6-983d-0cf01e3332c2 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.845Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item cd4dbf30-7389-44c6-983d-0cf01e3332c2 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.848Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: child-task-1"}
+{"level":"WARN","time":"2025-05-01T22:27:51.848Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471848"}
+{"level":"INFO","time":"2025-05-01T22:27:51.849Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 4241f2e5-ba95-4096-88c6-931ef5e8ac7c with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.850Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 4241f2e5-ba95-4096-88c6-931ef5e8ac7c and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.853Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: child-task-2"}
+{"level":"WARN","time":"2025-05-01T22:27:51.853Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471853"}
+{"level":"INFO","time":"2025-05-01T22:27:51.853Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 6edd49c1-9b0c-4e05-8a56-f1ecffe21acf with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.855Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 6edd49c1-9b0c-4e05-8a56-f1ecffe21acf and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:51.857Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: grandchild-task-1"}
+{"level":"WARN","time":"2025-05-01T22:27:51.857Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138471857"}
+{"level":"INFO","time":"2025-05-01T22:27:51.858Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item af8bbf0f-888a-4cba-aa2c-a0c1636b6b52 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:51.860Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item af8bbf0f-888a-4cba-aa2c-a0c1636b6b52 and recorded history"}
+{"level":"WARN","time":"2025-05-01T22:27:51.861Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: 4241f2e5-ba95-4096-88c6-931ef5e8ac7c"}
+{"level":"INFO","time":"2025-05-01T22:27:51.863Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:51.863Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:51.863Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:51.864Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action b69630f0-3f25-4afa-b7de-a84ed35a9658."}
+{"level":"INFO","time":"2025-05-01T22:27:51.865Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:51.867Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action b69630f0-3f25-4afa-b7de-a84ed35a9658"}
+{"level":"WARN","time":"2025-05-01T22:27:51.871Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: 6edd49c1-9b0c-4e05-8a56-f1ecffe21acf"}
+{"level":"INFO","time":"2025-05-01T22:27:51.872Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:51.872Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:51.872Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:51.873Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action 271f5f34-54a4-4520-94b0-2f61858954e3."}
+{"level":"INFO","time":"2025-05-01T22:27:51.875Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to redo last undo action."}
+{"level":"INFO","time":"2025-05-01T22:27:51.875Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] No undo action found to redo."}
+FAIL dist/services/__tests__/workItemDeleteIntegration.test.js
+  ● WorkItemService - Delete Work Item Integration Tests › Soft Delete Operations › should soft delete parent and all descendants recursively
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 4
+    Received: 1
+
+       95 |
+       96 |       // Verify count of deleted items matches cascade size
+    >  97 |       expect(deletedCount).toBe(descendants.length);
+          |                            ^
+       98 |
+       99 |       // Query each descendant to confirm soft delete
+      100 |       for (const descendantId of descendants) {
+
+      at Object.<anonymous> (src/services/__tests__/workItemDeleteIntegration.test.ts:97:28)
+
+{"level":"INFO","time":"2025-05-01T22:27:51.965Z","pid":70204,"hostname":"richard","msg":"Loading environment variable overrides for configuration..."}
+{"level":"INFO","time":"2025-05-01T22:27:51.966Z","pid":70204,"hostname":"richard","msg":"Overriding pgHost from env: localhost"}
+{"level":"INFO","time":"2025-05-01T22:27:51.966Z","pid":70204,"hostname":"richard","msg":"Overriding pgPort from env: 5432"}
+{"level":"INFO","time":"2025-05-01T22:27:51.966Z","pid":70204,"hostname":"richard","msg":"Overriding pgUser from env: taskmanager_user"}
+{"level":"INFO","time":"2025-05-01T22:27:51.966Z","pid":70204,"hostname":"richard","msg":"Overriding pgPassword from env."}
+{"level":"INFO","time":"2025-05-01T22:27:51.966Z","pid":70204,"hostname":"richard","msg":"Overriding pgDatabase from env: taskmanager_db"}
+{"level":"INFO","time":"2025-05-01T22:27:51.966Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Setting up PostgreSQL connection pool..."}
+{"level":"INFO","time":"2025-05-01T22:27:51.966Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] PostgreSQL connection pool configured."}
+{"level":"INFO","time":"2025-05-01T22:27:51.966Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Starting database schema initialization..."}
+{"level":"INFO","time":"2025-05-01T22:27:51.978Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Connected to PostgreSQL for schema check/application."}
+{"level":"INFO","time":"2025-05-01T22:27:51.978Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Force schema run enabled or tables missing. Initializing/Re-initializing schema..."}
+{"level":"INFO","time":"2025-05-01T22:27:51.978Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Looking for schema file at: /home/richard/repos/mcp-task-manager-server/dist/db/schema.sql"}
+{"level":"INFO","time":"2025-05-01T22:27:51.999Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Full schema script executed."}
+{"level":"INFO","time":"2025-05-01T22:27:52.001Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Confirmed work_items table exists after schema execution."}
+{"level":"INFO","time":"2025-05-01T22:27:52.001Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Initialization marked as complete."}
+{"level":"INFO","time":"2025-05-01T22:27:52.001Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Released schema check/application client."}
+{"level":"INFO","time":"2025-05-01T22:27:52.001Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Instance created and database initialized."}
+{"level":"INFO","time":"2025-05-01T22:27:52.024Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1"}
+{"level":"WARN","time":"2025-05-01T22:27:52.024Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472024"}
+{"level":"INFO","time":"2025-05-01T22:27:52.025Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 4e6e602a-f551-4644-9361-5d9be4f826a9 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.027Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 4e6e602a-f551-4644-9361-5d9be4f826a9 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.030Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-2"}
+{"level":"WARN","time":"2025-05-01T22:27:52.030Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472030"}
+{"level":"INFO","time":"2025-05-01T22:27:52.031Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 6de90813-c256-43e7-9609-8fe0b7c8bb95 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.033Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 6de90813-c256-43e7-9609-8fe0b7c8bb95 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.037Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1-updated"}
+{"level":"INFO","time":"2025-05-01T22:27:52.037Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item 4e6e602a-f551-4644-9361-5d9be4f826a9."}
+{"level":"INFO","time":"2025-05-01T22:27:52.039Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item 4e6e602a-f551-4644-9361-5d9be4f826a9."}
+{"level":"WARN","time":"2025-05-01T22:27:52.053Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: 6de90813-c256-43e7-9609-8fe0b7c8bb95"}
+{"level":"INFO","time":"2025-05-01T22:27:52.056Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:52.056Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:52.056Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:52.058Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action 1ea51e74-149c-4d3a-8d92-b96ddca866f6."}
+{"level":"INFO","time":"2025-05-01T22:27:52.060Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.063Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action 1ea51e74-149c-4d3a-8d92-b96ddca866f6"}
+{"level":"INFO","time":"2025-05-01T22:27:52.087Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1"}
+{"level":"WARN","time":"2025-05-01T22:27:52.087Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472087"}
+{"level":"INFO","time":"2025-05-01T22:27:52.088Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 241d79ed-7257-4158-8027-9f92df8b6208 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.090Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 241d79ed-7257-4158-8027-9f92df8b6208 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.092Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-2"}
+{"level":"WARN","time":"2025-05-01T22:27:52.092Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472092"}
+{"level":"INFO","time":"2025-05-01T22:27:52.092Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 38e06573-3995-4d12-ab78-66e3c8dec5e7 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.093Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 38e06573-3995-4d12-ab78-66e3c8dec5e7 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.095Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1-updated"}
+{"level":"INFO","time":"2025-05-01T22:27:52.095Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item 241d79ed-7257-4158-8027-9f92df8b6208."}
+{"level":"INFO","time":"2025-05-01T22:27:52.096Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item 241d79ed-7257-4158-8027-9f92df8b6208."}
+{"level":"WARN","time":"2025-05-01T22:27:52.101Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: 38e06573-3995-4d12-ab78-66e3c8dec5e7"}
+{"level":"INFO","time":"2025-05-01T22:27:52.104Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:52.104Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:52.104Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:52.106Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action f39a8b50-dc3f-4bd9-9544-e6e71cd00e0a."}
+{"level":"INFO","time":"2025-05-01T22:27:52.108Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.110Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action f39a8b50-dc3f-4bd9-9544-e6e71cd00e0a"}
+{"level":"INFO","time":"2025-05-01T22:27:52.112Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.113Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action 342cf426-193e-45cf-9ed8-c9b3f4a76c9b"}
+{"level":"INFO","time":"2025-05-01T22:27:52.135Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1"}
+{"level":"WARN","time":"2025-05-01T22:27:52.135Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472135"}
+{"level":"INFO","time":"2025-05-01T22:27:52.135Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 2b72fe48-99c5-4f9c-9921-473867531961 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.136Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 2b72fe48-99c5-4f9c-9921-473867531961 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.138Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-2"}
+{"level":"WARN","time":"2025-05-01T22:27:52.138Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472138"}
+{"level":"INFO","time":"2025-05-01T22:27:52.138Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 2a5d618e-be47-461e-91fd-50e8ebcc24d7 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.138Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 2a5d618e-be47-461e-91fd-50e8ebcc24d7 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.140Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1-updated"}
+{"level":"INFO","time":"2025-05-01T22:27:52.140Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item 2b72fe48-99c5-4f9c-9921-473867531961."}
+{"level":"INFO","time":"2025-05-01T22:27:52.141Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item 2b72fe48-99c5-4f9c-9921-473867531961."}
+{"level":"WARN","time":"2025-05-01T22:27:52.144Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: 2a5d618e-be47-461e-91fd-50e8ebcc24d7"}
+{"level":"INFO","time":"2025-05-01T22:27:52.145Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:52.145Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:52.145Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:52.146Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action 27d39cff-7952-4d45-8576-24825f6a1075."}
+{"level":"INFO","time":"2025-05-01T22:27:52.148Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.149Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action 27d39cff-7952-4d45-8576-24825f6a1075"}
+{"level":"INFO","time":"2025-05-01T22:27:52.150Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.151Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action 2031905e-f7b4-4226-a4a4-8d9be2eadc46"}
+{"level":"INFO","time":"2025-05-01T22:27:52.152Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.153Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action c8f804e0-c2b2-4fc5-8a38-35c322adda1f"}
+{"level":"INFO","time":"2025-05-01T22:27:52.155Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.155Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action 5e970a88-1d5b-4e26-acb3-02b2ad297684"}
+{"level":"INFO","time":"2025-05-01T22:27:52.157Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.157Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] No original action found to undo."}
+{"level":"INFO","time":"2025-05-01T22:27:52.176Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1"}
+{"level":"WARN","time":"2025-05-01T22:27:52.176Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472176"}
+{"level":"INFO","time":"2025-05-01T22:27:52.176Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item f9c7cdff-9593-4377-b536-b34469fc6c6c with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.177Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item f9c7cdff-9593-4377-b536-b34469fc6c6c and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.179Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-2"}
+{"level":"WARN","time":"2025-05-01T22:27:52.179Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472179"}
+{"level":"INFO","time":"2025-05-01T22:27:52.179Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 12bf9aa6-d6c4-4512-b1cc-966882445f15 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.179Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 12bf9aa6-d6c4-4512-b1cc-966882445f15 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.182Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1-updated"}
+{"level":"INFO","time":"2025-05-01T22:27:52.182Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item f9c7cdff-9593-4377-b536-b34469fc6c6c."}
+{"level":"INFO","time":"2025-05-01T22:27:52.183Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item f9c7cdff-9593-4377-b536-b34469fc6c6c."}
+{"level":"WARN","time":"2025-05-01T22:27:52.185Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: 12bf9aa6-d6c4-4512-b1cc-966882445f15"}
+{"level":"INFO","time":"2025-05-01T22:27:52.186Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:52.186Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:52.186Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:52.187Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action 375f1d33-b750-4124-81dc-9a8d522fa746."}
+{"level":"INFO","time":"2025-05-01T22:27:52.189Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.190Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action 375f1d33-b750-4124-81dc-9a8d522fa746"}
+{"level":"INFO","time":"2025-05-01T22:27:52.191Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to redo last undo action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.194Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully redid action 375f1d33-b750-4124-81dc-9a8d522fa746"}
+{"level":"INFO","time":"2025-05-01T22:27:52.218Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1"}
+{"level":"WARN","time":"2025-05-01T22:27:52.218Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472218"}
+{"level":"INFO","time":"2025-05-01T22:27:52.218Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 01c424ec-12e0-49d5-be63-276e4dad645d with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.219Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 01c424ec-12e0-49d5-be63-276e4dad645d and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.221Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-2"}
+{"level":"WARN","time":"2025-05-01T22:27:52.221Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472221"}
+{"level":"INFO","time":"2025-05-01T22:27:52.221Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item dd93978e-019d-4f84-996b-7ba0e70dd8f2 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.222Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item dd93978e-019d-4f84-996b-7ba0e70dd8f2 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.224Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1-updated"}
+{"level":"INFO","time":"2025-05-01T22:27:52.224Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item 01c424ec-12e0-49d5-be63-276e4dad645d."}
+{"level":"INFO","time":"2025-05-01T22:27:52.225Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item 01c424ec-12e0-49d5-be63-276e4dad645d."}
+{"level":"WARN","time":"2025-05-01T22:27:52.229Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: dd93978e-019d-4f84-996b-7ba0e70dd8f2"}
+{"level":"INFO","time":"2025-05-01T22:27:52.230Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:52.230Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:52.230Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:52.231Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action 018ccb68-8319-46df-8b06-253a84a9465f."}
+{"level":"INFO","time":"2025-05-01T22:27:52.233Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.234Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action 018ccb68-8319-46df-8b06-253a84a9465f"}
+{"level":"INFO","time":"2025-05-01T22:27:52.235Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.236Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action 79a3da9c-2190-4ded-9be0-0f630d468217"}
+{"level":"INFO","time":"2025-05-01T22:27:52.238Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to redo last undo action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.239Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully redid action 79a3da9c-2190-4ded-9be0-0f630d468217"}
+{"level":"INFO","time":"2025-05-01T22:27:52.241Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to redo last undo action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.243Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully redid action 018ccb68-8319-46df-8b06-253a84a9465f"}
+{"level":"INFO","time":"2025-05-01T22:27:52.263Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1"}
+{"level":"WARN","time":"2025-05-01T22:27:52.263Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472263"}
+{"level":"INFO","time":"2025-05-01T22:27:52.263Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 25210ded-5a3f-4047-989e-31440eb652fc with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.265Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 25210ded-5a3f-4047-989e-31440eb652fc and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.267Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-2"}
+{"level":"WARN","time":"2025-05-01T22:27:52.267Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472267"}
+{"level":"INFO","time":"2025-05-01T22:27:52.267Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 8a0ec970-8859-4bf0-b913-105e695f9005 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.268Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 8a0ec970-8859-4bf0-b913-105e695f9005 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.270Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1-updated"}
+{"level":"INFO","time":"2025-05-01T22:27:52.270Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item 25210ded-5a3f-4047-989e-31440eb652fc."}
+{"level":"INFO","time":"2025-05-01T22:27:52.271Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item 25210ded-5a3f-4047-989e-31440eb652fc."}
+{"level":"WARN","time":"2025-05-01T22:27:52.274Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: 8a0ec970-8859-4bf0-b913-105e695f9005"}
+{"level":"INFO","time":"2025-05-01T22:27:52.275Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:52.275Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:52.275Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:52.276Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action ab17cd2a-6795-484a-be91-959f544fed56."}
+{"level":"INFO","time":"2025-05-01T22:27:52.277Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.278Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action ab17cd2a-6795-484a-be91-959f544fed56"}
+{"level":"INFO","time":"2025-05-01T22:27:52.280Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.280Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action 1c66b083-5685-4bef-8e66-0fb1d5f7d48d"}
+{"level":"INFO","time":"2025-05-01T22:27:52.282Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.283Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action 98f7160d-6b7f-42f1-a4e1-e56bf2446132"}
+{"level":"INFO","time":"2025-05-01T22:27:52.284Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.285Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action 5138d5f5-bbcd-4a76-afbd-828f038ae031"}
+{"level":"INFO","time":"2025-05-01T22:27:52.286Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.286Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] No original action found to undo."}
+{"level":"INFO","time":"2025-05-01T22:27:52.305Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1"}
+{"level":"WARN","time":"2025-05-01T22:27:52.305Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472305"}
+{"level":"INFO","time":"2025-05-01T22:27:52.305Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 1f005512-9af3-408d-adf7-0d7f16ca69e3 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.306Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 1f005512-9af3-408d-adf7-0d7f16ca69e3 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.308Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-2"}
+{"level":"WARN","time":"2025-05-01T22:27:52.308Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472308"}
+{"level":"INFO","time":"2025-05-01T22:27:52.308Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 9a9cc2f8-6f9f-4c35-a92e-b003036435a1 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.308Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 9a9cc2f8-6f9f-4c35-a92e-b003036435a1 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.311Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1-updated"}
+{"level":"INFO","time":"2025-05-01T22:27:52.311Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item 1f005512-9af3-408d-adf7-0d7f16ca69e3."}
+{"level":"INFO","time":"2025-05-01T22:27:52.312Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item 1f005512-9af3-408d-adf7-0d7f16ca69e3."}
+{"level":"WARN","time":"2025-05-01T22:27:52.315Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: 9a9cc2f8-6f9f-4c35-a92e-b003036435a1"}
+{"level":"INFO","time":"2025-05-01T22:27:52.316Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:52.316Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:52.316Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:52.317Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action a45d642f-4d15-4959-b6dc-edea53c89238."}
+{"level":"INFO","time":"2025-05-01T22:27:52.318Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to redo last undo action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.318Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] No undo action found to redo."}
+{"level":"INFO","time":"2025-05-01T22:27:52.319Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.319Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action a45d642f-4d15-4959-b6dc-edea53c89238"}
+{"level":"INFO","time":"2025-05-01T22:27:52.321Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to redo last undo action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.322Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully redid action a45d642f-4d15-4959-b6dc-edea53c89238"}
+{"level":"INFO","time":"2025-05-01T22:27:52.323Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to redo last undo action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.324Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] No undo action found to redo."}
+{"level":"INFO","time":"2025-05-01T22:27:52.343Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1"}
+{"level":"WARN","time":"2025-05-01T22:27:52.343Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472343"}
+{"level":"INFO","time":"2025-05-01T22:27:52.343Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 980c5d19-7563-4cba-a216-36c00a743fc6 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.344Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 980c5d19-7563-4cba-a216-36c00a743fc6 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.346Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-2"}
+{"level":"WARN","time":"2025-05-01T22:27:52.346Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472346"}
+{"level":"INFO","time":"2025-05-01T22:27:52.347Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 1a55bbce-9f31-4d2d-8d54-7700ac6c6b5f with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.348Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 1a55bbce-9f31-4d2d-8d54-7700ac6c6b5f and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.350Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: item-1-updated"}
+{"level":"INFO","time":"2025-05-01T22:27:52.350Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item 980c5d19-7563-4cba-a216-36c00a743fc6."}
+{"level":"INFO","time":"2025-05-01T22:27:52.351Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item 980c5d19-7563-4cba-a216-36c00a743fc6."}
+{"level":"WARN","time":"2025-05-01T22:27:52.354Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Attempting to soft delete 1 work item(s) and cascade: 1a55bbce-9f31-4d2d-8d54-7700ac6c6b5f"}
+{"level":"INFO","time":"2025-05-01T22:27:52.355Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Soft deleted 1 work item(s)."}
+{"level":"INFO","time":"2025-05-01T22:27:52.355Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Repository reported 1 work item(s) soft deleted."}
+{"level":"INFO","time":"2025-05-01T22:27:52.355Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] No active dependency links found to soft delete within the cascade."}
+{"level":"INFO","time":"2025-05-01T22:27:52.356Z","pid":70204,"hostname":"richard","msg":"[WorkItemDeleteService] Recorded history for delete action a17af94e-a030-4805-a230-d02376fa806e."}
+{"level":"INFO","time":"2025-05-01T22:27:52.358Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to undo last action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.359Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Successfully undid action a17af94e-a030-4805-a230-d02376fa806e"}
+{"level":"INFO","time":"2025-05-01T22:27:52.361Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item 980c5d19-7563-4cba-a216-36c00a743fc6."}
+{"level":"INFO","time":"2025-05-01T22:27:52.364Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Recorded history for update of work item 980c5d19-7563-4cba-a216-36c00a743fc6."}
+{"level":"INFO","time":"2025-05-01T22:27:52.366Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] Attempting to redo last undo action."}
+{"level":"INFO","time":"2025-05-01T22:27:52.367Z","pid":70204,"hostname":"richard","msg":"[WorkItemHistoryService] No undo action found to redo."}
+PASS dist/services/__tests__/workItemHistoryIntegration.test.js
+{"level":"INFO","time":"2025-05-01T22:27:52.450Z","pid":70204,"hostname":"richard","msg":"Loading environment variable overrides for configuration..."}
+{"level":"INFO","time":"2025-05-01T22:27:52.451Z","pid":70204,"hostname":"richard","msg":"Overriding pgHost from env: localhost"}
+{"level":"INFO","time":"2025-05-01T22:27:52.451Z","pid":70204,"hostname":"richard","msg":"Overriding pgPort from env: 5432"}
+{"level":"INFO","time":"2025-05-01T22:27:52.451Z","pid":70204,"hostname":"richard","msg":"Overriding pgUser from env: taskmanager_user"}
+{"level":"INFO","time":"2025-05-01T22:27:52.451Z","pid":70204,"hostname":"richard","msg":"Overriding pgPassword from env."}
+{"level":"INFO","time":"2025-05-01T22:27:52.451Z","pid":70204,"hostname":"richard","msg":"Overriding pgDatabase from env: taskmanager_db"}
+{"level":"INFO","time":"2025-05-01T22:27:52.451Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Setting up PostgreSQL connection pool..."}
+{"level":"INFO","time":"2025-05-01T22:27:52.451Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] PostgreSQL connection pool configured."}
+{"level":"INFO","time":"2025-05-01T22:27:52.451Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Starting database schema initialization..."}
+{"level":"INFO","time":"2025-05-01T22:27:52.460Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Connected to PostgreSQL for schema check/application."}
+{"level":"INFO","time":"2025-05-01T22:27:52.460Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Force schema run enabled or tables missing. Initializing/Re-initializing schema..."}
+{"level":"INFO","time":"2025-05-01T22:27:52.460Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Looking for schema file at: /home/richard/repos/mcp-task-manager-server/dist/db/schema.sql"}
+{"level":"INFO","time":"2025-05-01T22:27:52.483Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Full schema script executed."}
+{"level":"INFO","time":"2025-05-01T22:27:52.485Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Confirmed work_items table exists after schema execution."}
+{"level":"INFO","time":"2025-05-01T22:27:52.485Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Initialization marked as complete."}
+{"level":"INFO","time":"2025-05-01T22:27:52.485Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Released schema check/application client."}
+{"level":"INFO","time":"2025-05-01T22:27:52.485Z","pid":70204,"hostname":"richard","msg":"[DatabaseManager] Instance created and database initialized."}
+{"level":"INFO","time":"2025-05-01T22:27:52.508Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: root-project-1"}
+{"level":"WARN","time":"2025-05-01T22:27:52.508Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472508"}
+{"level":"INFO","time":"2025-05-01T22:27:52.509Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item cc13bb92-9e21-4a9e-9900-c3c4ec90bde1 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.511Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item cc13bb92-9e21-4a9e-9900-c3c4ec90bde1 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.512Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: root-project-2"}
+{"level":"WARN","time":"2025-05-01T22:27:52.513Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472513"}
+{"level":"INFO","time":"2025-05-01T22:27:52.513Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item f4d96497-83a6-4c5f-b5ae-9e7424de044a with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.514Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item f4d96497-83a6-4c5f-b5ae-9e7424de044a and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.516Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: child-task-1-in-progress"}
+{"level":"WARN","time":"2025-05-01T22:27:52.516Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472516"}
+{"level":"INFO","time":"2025-05-01T22:27:52.517Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 47705013-c233-4cc5-9bca-404524fb8ef9 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.517Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 47705013-c233-4cc5-9bca-404524fb8ef9 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.519Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: child-task-2-todo"}
+{"level":"WARN","time":"2025-05-01T22:27:52.519Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472519"}
+{"level":"INFO","time":"2025-05-01T22:27:52.520Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 67fada98-f79a-46f2-9456-8389de6313ef with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.520Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 67fada98-f79a-46f2-9456-8389de6313ef and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.522Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: dependency-target"}
+{"level":"WARN","time":"2025-05-01T22:27:52.522Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472522"}
+{"level":"INFO","time":"2025-05-01T22:27:52.522Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item eb2e44c9-5cde-4cef-860a-cd94a4c1fdc8 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.523Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item eb2e44c9-5cde-4cef-860a-cd94a4c1fdc8 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.526Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Successfully processed update for item 47705013-c233-4cc5-9bca-404524fb8ef9."}
+{"level":"INFO","time":"2025-05-01T22:27:52.527Z","pid":70204,"hostname":"richard","msg":"[WorkItemUpdateService] Update called for 47705013-c233-4cc5-9bca-404524fb8ef9, but no effective changes detected (Item: false, Deps: false). Skipping history."}
+{"level":"INFO","time":"2025-05-01T22:27:52.589Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: root-project-1"}
+{"level":"WARN","time":"2025-05-01T22:27:52.590Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472590"}
+{"level":"INFO","time":"2025-05-01T22:27:52.591Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item e464f31f-338c-451f-b822-f868fe08ad3d with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.596Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item e464f31f-338c-451f-b822-f868fe08ad3d and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.600Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: root-project-2"}
+{"level":"WARN","time":"2025-05-01T22:27:52.600Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472600"}
+{"level":"INFO","time":"2025-05-01T22:27:52.600Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 9e0981c8-c200-47d8-8210-1aed9e946e1c with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.601Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 9e0981c8-c200-47d8-8210-1aed9e946e1c and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.603Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: child-task-1-in-progress"}
+{"level":"WARN","time":"2025-05-01T22:27:52.603Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472603"}
+{"level":"INFO","time":"2025-05-01T22:27:52.604Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 4df63ad1-4514-4afd-840f-f50349610796 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.604Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 4df63ad1-4514-4afd-840f-f50349610796 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.606Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: child-task-2-todo"}
+{"level":"WARN","time":"2025-05-01T22:27:52.606Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472606"}
+{"level":"INFO","time":"2025-05-01T22:27:52.606Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 29106b8b-cb9b-4f22-8753-3c5470109a8f with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.608Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 29106b8b-cb9b-4f22-8753-3c5470109a8f and recorded history"}
+{"level":"WARN","time":"2025-05-01T22:27:52.609Z","pid":70204,"hostname":"richard","msg":"[WorkItemReadingService] Work item f47ac10b-58cc-4372-a567-0e02b2c3d479 not found or filtered out (isActive: true)."}
+{"level":"INFO","time":"2025-05-01T22:27:52.629Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: root-project-1"}
+{"level":"WARN","time":"2025-05-01T22:27:52.629Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472629"}
+{"level":"INFO","time":"2025-05-01T22:27:52.630Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item fe259182-1a19-4736-a283-7576f2c995a9 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.631Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item fe259182-1a19-4736-a283-7576f2c995a9 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.633Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: root-project-2"}
+{"level":"WARN","time":"2025-05-01T22:27:52.633Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472633"}
+{"level":"INFO","time":"2025-05-01T22:27:52.633Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item e897289c-964a-4fd6-9627-1a6b63200a52 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.634Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item e897289c-964a-4fd6-9627-1a6b63200a52 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.635Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: child-task-1-in-progress"}
+{"level":"WARN","time":"2025-05-01T22:27:52.635Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472635"}
+{"level":"INFO","time":"2025-05-01T22:27:52.636Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 275ed93b-586b-475c-aa51-b6fd2ddca2de with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.639Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 275ed93b-586b-475c-aa51-b6fd2ddca2de and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.643Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Generated shortname: child-task-2-todo"}
+{"level":"WARN","time":"2025-05-01T22:27:52.643Z","pid":70204,"hostname":"richard","msg":"[WorkItemUtilsService] Using placeholder order key generation: 1746138472643"}
+{"level":"INFO","time":"2025-05-01T22:27:52.644Z","pid":70204,"hostname":"richard","msg":"[WorkItemRepositoryCRUD] Created work item 36935684-ac2d-47ef-8548-e311d2e2f768 with 0 dependencies."}
+{"level":"INFO","time":"2025-05-01T22:27:52.644Z","pid":70204,"hostname":"richard","msg":"[WorkItemAddingService] Added work item 36935684-ac2d-47ef-8548-e311d2e2f768 and recorded history"}
+{"level":"INFO","time":"2025-05-01T22:27:52.646Z","pid":70204,"hostname":"richard","msg":"[WorkItemReadingService] Listing all items (active: true, status: todo)."}
+{"level":"INFO","time":"2025-05-01T22:27:52.647Z","pid":70204,"hostname":"richard","msg":"[WorkItemReadingService] Listing all items (active: true, status: in-progress)."}
+PASS dist/services/__tests__/workItemReadIntegration.test.js
+PASS dist/services/__tests__/unit/WorkItemService.spec.js
+PASS dist/services/WorkItemService.spec.js
+
+Test Suites: 4 failed, 4 passed, 8 total
+Tests:       10 failed, 3 skipped, 31 passed, 44 total
+Snapshots:   0 total
+Time:        3.032 s
+Ran all test suites.

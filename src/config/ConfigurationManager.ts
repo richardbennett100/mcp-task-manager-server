@@ -108,9 +108,7 @@ export class ConfigurationManager {
         this.config.pgPort = port;
         logger.info(`Overriding pgPort from env: ${this.config.pgPort}`);
       } else {
-        logger.warn(
-          `Invalid PGPORT environment variable: ${process.env.PGPORT}. Using default ${this.config.pgPort}.`
-        );
+        logger.warn(`Invalid PGPORT environment variable: ${process.env.PGPORT}. Using default ${this.config.pgPort}.`);
       }
     }
     if (process.env.PGUSER) {

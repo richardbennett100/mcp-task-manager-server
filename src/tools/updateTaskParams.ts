@@ -25,9 +25,7 @@ export const UPDATE_TASK_BASE_SCHEMA = z.object({
   work_item_id: z // Renamed from task_id
     .string()
     .uuid('The work_item_id must be a valid UUID.')
-    .describe(
-      'Required. The unique identifier (UUID) of the work item to update.'
-    ),
+    .describe('Required. The unique identifier (UUID) of the work item to update.'),
 
   // Add other updatable fields as optional
   parent_work_item_id: z
@@ -35,34 +33,23 @@ export const UPDATE_TASK_BASE_SCHEMA = z.object({
     .uuid('parent_work_item_id must be a valid UUID if provided.')
     .nullable()
     .optional()
-    .describe(
-      'Optional. The new parent work item ID. Set to null to make it a top-level project.'
-    ),
+    .describe('Optional. The new parent work item ID. Set to null to make it a top-level project.'),
 
   name: z
     .string()
     .min(1, 'Name cannot be empty if provided.')
     .max(255, 'Name cannot exceed 255 characters.')
     .optional()
-    .describe(
-      'Optional. The new name or title for the work item (1-255 characters).'
-    ),
+    .describe('Optional. The new name or title for the work item (1-255 characters).'),
 
   description: z
     .string()
     .max(1024, 'Description cannot exceed 1024 characters.')
     .nullable() // Allow setting description to null
     .optional()
-    .describe(
-      'Optional. The new textual description for the work item (max 1024 characters).'
-    ),
+    .describe('Optional. The new textual description for the work item (max 1024 characters).'),
 
-  priority: z
-    .enum(priorities)
-    .optional()
-    .describe(
-      "Optional. The new priority level ('high', 'medium', or 'low')."
-    ),
+  priority: z.enum(priorities).optional().describe("Optional. The new priority level ('high', 'medium', or 'low')."),
 
   status: z
     .enum(updateableStatuses) // Use enum excluding 'deleted'
@@ -71,40 +58,36 @@ export const UPDATE_TASK_BASE_SCHEMA = z.object({
       "Optional. The new status ('todo', 'in-progress', 'review', 'done'). Use deleteTask tool to mark as deleted."
     ),
 
-   due_date: z
-     .string()
-     .datetime({ message: 'Due date must be a valid ISO 8601 timestamp string if provided.'})
-     .nullable() // Allow setting due date to null
-     .optional()
-     .describe('Optional. The new due date (ISO 8601 format) or null to remove it.'),
+  due_date: z
+    .string()
+    .datetime({ message: 'Due date must be a valid ISO 8601 timestamp string if provided.' })
+    .nullable() // Allow setting due date to null
+    .optional()
+    .describe('Optional. The new due date (ISO 8601 format) or null to remove it.'),
 
-   order_key: z
-     .string()
-     .nullable() // Allow setting order key to null (though app logic might regenerate)
-     .optional()
-     .describe('Optional. Explicitly set the lexicographical order key (advanced use).'),
+  order_key: z
+    .string()
+    .nullable() // Allow setting order key to null (though app logic might regenerate)
+    .optional()
+    .describe('Optional. Explicitly set the lexicographical order key (advanced use).'),
 
-   shortname: z
-     .string()
-     .nullable() // Allow setting shortname to null
-     .optional()
-     .describe('Optional. Explicitly set the shortname (advanced use).'),
+  shortname: z
+    .string()
+    .nullable() // Allow setting shortname to null
+    .optional()
+    .describe('Optional. Explicitly set the shortname (advanced use).'),
 
   // Updated dependencies structure
   dependencies: z
     .array(
       z.object({
-        depends_on_work_item_id: z
-          .string()
-          .uuid('Each depends_on_work_item_id must be a valid UUID.'),
+        depends_on_work_item_id: z.string().uuid('Each depends_on_work_item_id must be a valid UUID.'),
         dependency_type: z.enum(dependencyTypes).default('finish-to-start'),
       })
     )
     .max(50, 'A work item cannot have more than 50 dependencies.')
     .optional()
-    .describe(
-      'Optional. The complete list of dependencies. Replaces the existing list entirely. Max 50 dependencies.'
-    ),
+    .describe('Optional. The complete list of dependencies. Replaces the existing list entirely. Max 50 dependencies.'),
 });
 
 // Refined schema to ensure at least one field is being updated

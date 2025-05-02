@@ -12,12 +12,7 @@ Returns an array of work item objects matching the criteria. Does not fetch nest
 `;
 
 // Enum for status filtering
-const WorkItemStatusEnum = z.enum([
-  'todo',
-  'in-progress',
-  'review',
-  'done',
-]);
+const WorkItemStatusEnum = z.enum(['todo', 'in-progress', 'review', 'done']);
 
 // Zod schema adapted for work items
 export const TOOL_PARAMS = z.object({

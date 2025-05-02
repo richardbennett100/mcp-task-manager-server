@@ -29,13 +29,8 @@ export function registerTools(server: McpServer): void {
   } catch (error) {
     // Catch errors during the registration calls themselves (less likely)
     logger.error('Failed during synchronous tool registration:', error);
-    console.error(
-      'Fallback console log: Failed during synchronous tool registration:',
-      error
-    );
+    console.error('Fallback console log: Failed during synchronous tool registration:', error);
     // Throw error to prevent server starting with incomplete tools
-    throw new Error(
-      `Failed to register tools: ${error instanceof Error ? error.message : error}`
-    );
+    throw new Error(`Failed to register tools: ${error instanceof Error ? error.message : error}`);
   }
 }

@@ -57,3 +57,5 @@ else
 fi
 
 exit 0
+
+# export PGPASSWORD='mysecretpassword' && npm run build && npm test > test_output.txt 2>&1

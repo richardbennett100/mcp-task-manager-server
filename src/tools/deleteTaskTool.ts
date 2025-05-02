@@ -1,12 +1,7 @@
 // src/tools/deleteTaskTool.ts
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'; // Ensure RequestHandlerExtra is NOT imported
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
-import {
-  TOOL_NAME,
-  TOOL_DESCRIPTION,
-  TOOL_PARAMS,
-  DeleteTaskArgs,
-} from './deleteTaskParams.js';
+import { TOOL_NAME, TOOL_DESCRIPTION, TOOL_PARAMS, DeleteTaskArgs } from './deleteTaskParams.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError } from '../utils/errors.js';
 import { DatabaseManager } from '../db/DatabaseManager.js';
@@ -14,14 +9,8 @@ import { WorkItemRepository, ActionHistoryRepository } from '../repositories/ind
 import { WorkItemService } from '../services/WorkItemService.js';
 
 export const deleteTaskTool = (server: McpServer): void => {
-  // Keep 'extra: any' as the type is not exported
-  const processRequest = async (
-    args: DeleteTaskArgs,
-    extra: any
-  ): Promise<{ content: { type: 'text'; text: string }[] }> => {
-    const userId = extra?.userId ?? undefined;
+  const processRequest = async (args: DeleteTaskArgs): Promise<{ content: { type: 'text'; text: string }[] }> => {
     logger.info(`[${TOOL_NAME}] Received request to delete ${args.work_item_ids.length} work items.`);
-    logger.debug(`[${TOOL_NAME}] Request extra:`, extra);
 
     try {
       const dbManager = await DatabaseManager.getInstance();
@@ -30,13 +19,16 @@ export const deleteTaskTool = (server: McpServer): void => {
       const actionHistoryRepository = new ActionHistoryRepository(pool);
       const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository);
 
-      const deletedCount = await workItemService.deleteWorkItem(
-        args.work_item_ids
-      );
+      const deletedCount = await workItemService.deleteWorkItem(args.work_item_ids);
 
       logger.info(`[${TOOL_NAME}] Successfully soft-deleted ${deletedCount} work items.`);
       return {
-        content: [ { type: 'text' as const, text: JSON.stringify({ success: true, deleted_count: deletedCount }), }, ],
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify({ success: true, deleted_count: deletedCount }),
+          },
+        ],
       };
     } catch (error: unknown) {
       logger.error(`[${TOOL_NAME}] Error processing request:`, error);

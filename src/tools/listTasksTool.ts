@@ -1,19 +1,14 @@
 // src/tools/listTasksTool.ts
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
-import {
-  TOOL_NAME,
-  TOOL_DESCRIPTION,
-  TOOL_PARAMS,
-  ListTasksArgs,
-} from './listTasksParams.js';
+import { TOOL_NAME, TOOL_DESCRIPTION, TOOL_PARAMS, ListTasksArgs } from './listTasksParams.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError } from '../utils/errors.js';
 // Import necessary components for instantiation inside the handler
 import { DatabaseManager } from '../db/DatabaseManager.js';
 import {
-    WorkItemRepository,
-    ActionHistoryRepository // Import BOTH repositories
+  WorkItemRepository,
+  ActionHistoryRepository, // Import BOTH repositories
 } from '../repositories/index.js'; // Use index export
 import { WorkItemService } from '../services/WorkItemService.js';
 import { ListWorkItemsFilter } from '../services/WorkItemServiceTypes.js';
@@ -59,10 +54,7 @@ export const listTasksTool = (server: McpServer): void => {
       if (error instanceof NotFoundError) {
         throw new McpError(ErrorCode.InvalidParams, error.message);
       } else {
-        const message =
-          error instanceof Error
-            ? error.message
-            : 'An unknown error occurred while listing work items.';
+        const message = error instanceof Error ? error.message : 'An unknown error occurred while listing work items.';
         throw new McpError(ErrorCode.InternalError, message);
       }
     }

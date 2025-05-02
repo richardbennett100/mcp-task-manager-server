@@ -1,25 +1,15 @@
 // src/services/WorkItemService.ts
-import { v4 as uuidv4 } from 'uuid';
-import { PoolClient } from 'pg';
 import {
-  WorkItemRepository,
-  WorkItemData,
-  WorkItemDependencyData,
-} from '../repositories/WorkItemRepository.js';
+  WorkItemRepository, // Import main repo class
+  ActionHistoryRepository, // Import main repo class
+  ActionHistoryData, // Import type via index
+} from '../repositories/index.js'; // USE BARREL FILE
 import {
-  ActionHistoryRepository,
-  CreateActionHistoryInput,
-  CreateUndoStepInput,
-  ActionHistoryData,
-} from '../repositories/ActionHistoryRepository.js';
-import { logger } from '../utils/logger.js';
-import { NotFoundError, ValidationError } from '../utils/errors.js';
-import {
-  AddWorkItemInput,
-  UpdateWorkItemInput,
-  ListWorkItemsFilter,
-  FullWorkItemData
-} from './WorkItemServiceTypes.js';
+  AddWorkItemInput, // Import type
+  UpdateWorkItemInput, // Import type
+  ListWorkItemsFilter, // Import type
+  FullWorkItemData, // Import type
+} from './WorkItemServiceTypes.js'; // Assuming path is correct
 import { WorkItemAddingService } from './WorkItemAddingService.js';
 import { WorkItemReadingService } from './WorkItemReadingService.js';
 import { WorkItemUpdateService } from './WorkItemUpdateService.js';
@@ -39,14 +29,11 @@ export class WorkItemService {
   private deleteService: WorkItemDeleteService;
   private historyService: WorkItemHistoryService;
 
-  constructor(
-    workItemRepository: WorkItemRepository,
-    actionHistoryRepository: ActionHistoryRepository
-  ) {
+  constructor(workItemRepository: WorkItemRepository, actionHistoryRepository: ActionHistoryRepository) {
     this.workItemRepository = workItemRepository;
     this.actionHistoryRepository = actionHistoryRepository;
-    
-    // Initialize specialized service classes
+
+    // Initialize specialized service classes, passing the repositories
     this.addingService = new WorkItemAddingService(workItemRepository, actionHistoryRepository);
     this.readingService = new WorkItemReadingService(workItemRepository);
     this.updateService = new WorkItemUpdateService(workItemRepository, actionHistoryRepository);
@@ -57,7 +44,7 @@ export class WorkItemService {
   /**
    * Creates a new work item with optional dependencies.
    */
-  public async addWorkItem(input: AddWorkItemInput): Promise<WorkItemData> {
+  public async addWorkItem(input: AddWorkItemInput): Promise<any> {
     return this.addingService.addWorkItem(input);
   }
 
@@ -71,7 +58,7 @@ export class WorkItemService {
   /**
    * Lists work items based on filters.
    */
-  public async listWorkItems(filter: ListWorkItemsFilter): Promise<WorkItemData[]> {
+  public async listWorkItems(filter: ListWorkItemsFilter): Promise<any[]> {
     return this.readingService.listWorkItems(filter);
   }
 
@@ -81,7 +68,10 @@ export class WorkItemService {
   public async updateWorkItem(
     id: string,
     updates: UpdateWorkItemInput,
-    dependenciesInput?: { depends_on_work_item_id: string; dependency_type?: 'finish-to-start' | 'linked' }[],
+    dependenciesInput?: {
+      depends_on_work_item_id: string;
+      dependency_type?: 'finish-to-start' | 'linked';
+    }[]
   ): Promise<FullWorkItemData> {
     return this.updateService.updateWorkItem(id, updates, dependenciesInput);
   }

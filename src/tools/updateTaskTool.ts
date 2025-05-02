@@ -1,28 +1,24 @@
 // src/tools/updateTaskTool.ts
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'; // Ensure RequestHandlerExtra is NOT imported
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
-import {
-  TOOL_NAME,
-  TOOL_DESCRIPTION,
-  UPDATE_TASK_BASE_SCHEMA,
-  UpdateTaskArgs,
-} from './updateTaskParams.js';
+import { TOOL_NAME, TOOL_DESCRIPTION, UPDATE_TASK_BASE_SCHEMA, UpdateTaskArgs } from './updateTaskParams.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
-import { DatabaseManager } from '../db/DatabaseManager.js';
+import { DatabaseManager } from '../db/DatabaseManager.js'; // Import DatabaseManager directly
 import { WorkItemRepository, ActionHistoryRepository } from '../repositories/index.js';
 import { WorkItemService } from '../services/WorkItemService.js';
 import { UpdateWorkItemInput } from '../services/WorkItemServiceTypes.js';
 
 export const updateTaskTool = (server: McpServer): void => {
-  // Keep 'extra: any' as the type is not exported
+  // Keep 'extra: any' as the type is not exported // FIXME: Replace 'any' with a specific type or remove if unused
   const processRequest = async (
     args: UpdateTaskArgs,
-    extra: any
+    extra: any // FIXME: Replace 'any'
   ): Promise<{ content: { type: 'text'; text: string }[] }> => {
-    const userId = extra?.userId ?? undefined;
-    const logArgs: Record<string, any> = { ...args };
-    if (args.dependencies) { logArgs.dependencies = `[${args.dependencies.length} items]`; }
+    const logArgs: Record<string, any> = { ...args }; // FIXME: Replace 'any' with a more specific type if needed for logging
+    if (args.dependencies) {
+      logArgs.dependencies = `[${args.dependencies.length} items]`;
+    }
     logger.info(`[${TOOL_NAME}] Received request with args:`, logArgs);
     logger.debug(`[${TOOL_NAME}] Request extra:`, extra);
 
@@ -42,9 +38,13 @@ export const updateTaskTool = (server: McpServer): void => {
         due_date: args.due_date,
         order_key: args.order_key,
         shortname: args.shortname,
-       // userId: userId,
+        // userId: userId, // User ID removed
       };
-      Object.keys(serviceUpdateInput).forEach(key => serviceUpdateInput[key as keyof UpdateWorkItemInput] === undefined && delete serviceUpdateInput[key as keyof UpdateWorkItemInput]);
+      Object.keys(serviceUpdateInput).forEach(
+        (key) =>
+          serviceUpdateInput[key as keyof UpdateWorkItemInput] === undefined &&
+          delete serviceUpdateInput[key as keyof UpdateWorkItemInput]
+      );
 
       const serviceDependenciesInput = args.dependencies?.map((dep) => ({
         depends_on_work_item_id: dep.depends_on_work_item_id,

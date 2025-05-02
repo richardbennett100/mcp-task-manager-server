@@ -22,9 +22,7 @@ export const TOOL_PARAMS = z.object({
     )
     .min(1, 'At least one work_item_id must be provided.')
     .max(100, 'Cannot delete more than 100 work items per call.')
-    .describe(
-      'Required. An array of work item IDs (UUIDs, 1-100) to be marked as deleted.'
-    ),
+    .describe('Required. An array of work item IDs (UUIDs, 1-100) to be marked as deleted.'),
 });
 
 // Define the expected type for arguments based on the Zod schema

@@ -33,26 +33,20 @@ export const TOOL_PARAMS = z.object({
     .string()
     .min(1, 'Work item name cannot be empty.')
     .max(255, 'Work item name cannot exceed 255 characters.') // Use same limit as old project name?
-    .describe(
-      'Required. The primary name or title for the work item (1-255 characters).'
-    ),
+    .describe('Required. The primary name or title for the work item (1-255 characters).'),
 
   description: z
     .string()
     .max(1024, 'Description cannot exceed 1024 characters.')
     .optional()
     .nullable() // Allow null description
-    .describe(
-      'Optional. A detailed description for the work item (max 1024 characters).'
-    ),
+    .describe('Optional. A detailed description for the work item (max 1024 characters).'),
 
   // Dependencies now include type
   dependencies: z
     .array(
       z.object({
-        depends_on_work_item_id: z
-          .string()
-          .uuid('Each depends_on_work_item_id must be a valid UUID.'),
+        depends_on_work_item_id: z.string().uuid('Each depends_on_work_item_id must be a valid UUID.'),
         dependency_type: DependencyTypeEnum.default('finish-to-start'), // Default type
       })
     )
@@ -64,15 +58,11 @@ export const TOOL_PARAMS = z.object({
 
   priority: WorkItemPriorityEnum.optional()
     .default('medium')
-    .describe(
-      "Optional work item priority. Defaults to 'medium' if not specified."
-    ),
+    .describe("Optional work item priority. Defaults to 'medium' if not specified."),
 
   status: WorkItemStatusEnum.optional()
     .default('todo')
-    .describe(
-      "Optional initial status of the work item. Defaults to 'todo' if not specified."
-    ),
+    .describe("Optional initial status of the work item. Defaults to 'todo' if not specified."),
 
   due_date: z
     .string()
@@ -81,14 +71,11 @@ export const TOOL_PARAMS = z.object({
     })
     .optional()
     .nullable() // Allow null due date
-    .describe(
-      'Optional due date for the work item in ISO 8601 format (e.g., "2025-12-31T23:59:59Z").'
-    ),
+    .describe('Optional due date for the work item in ISO 8601 format (e.g., "2025-12-31T23:59:59Z").'),
 
-   // Allow optionally specifying order/shortname, though service will generate if omitted
-   order_key: z.string().optional().nullable().describe('Optional explicit order key (advanced use).'),
-   shortname: z.string().optional().nullable().describe('Optional explicit shortname (advanced use).'),
-
+  // Allow optionally specifying order/shortname, though service will generate if omitted
+  order_key: z.string().optional().nullable().describe('Optional explicit order key (advanced use).'),
+  shortname: z.string().optional().nullable().describe('Optional explicit shortname (advanced use).'),
 });
 
 // Define the expected type for arguments based on the Zod schema
