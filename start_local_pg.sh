@@ -59,3 +59,6 @@ fi
 exit 0
 
 # export PGPASSWORD='mysecretpassword' && npm run build && npm test > test_output.txt 2>&1
+
+# export PGPASSWORD='mysecretpassword' && export LOG_LEVEL='debug' && npm test -- dist/services/__tests__/workItemDeleteIntegration.test.js > delete_test_output.txt 2>&1
+

@@ -100,6 +100,15 @@ export class WorkItemDeleteService {
 
       // 4. Perform the soft deletions only on the items identified as active
       const activeItemIdsToDelete = activeItemsInCascade.map((item) => item.work_item_id);
+
+      // --- ADDED LOGGING HERE ---
+      logger.debug(
+        `[WorkItemDeleteService DIAG] Items identified in cascade (all):`,
+        Array.from(allItemIdsToDeleteSet)
+      );
+      logger.debug(`[WorkItemDeleteService DIAG] Active items to delete (filtered):`, activeItemIdsToDelete);
+      // --- END ADDED LOGGING ---
+
       logger.debug(
         `[WorkItemDeleteService DIAG] Attempting to soft delete these active item IDs: ${activeItemIdsToDelete.join(', ')}`
       );
@@ -144,10 +153,10 @@ export class WorkItemDeleteService {
 
         // Undo steps for items: Use the activeItemsInCascade data for old state
         activeItemsInCascade.forEach((item) => {
-          // Only record undo step if this item was actually deleted (check actual count vs expected?)
-          // For simplicity now, assume if it was found active, an undo step is needed.
-          // A more robust way might check if item.work_item_id is in the list of *actually* deleted IDs,
-          // but `softDelete` only returns the count.
+          // Only record undo step if this item was actually changed by softDelete?
+          // For simplicity now, assume if it was found active and part of cascade,
+          // an undo step is needed to restore it.
+          // A more robust way might check if item.work_item_id is in the list of *actually* deleted IDs.
           // old_data: State AFTER undo (item is active again)
           // new_data: State BEFORE undo (item was inactive)
           const itemStateAfterUndo: WorkItemData = { ...item, is_active: true }; // State after undo (active)

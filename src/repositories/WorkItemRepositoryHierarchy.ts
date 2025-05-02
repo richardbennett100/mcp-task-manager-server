@@ -59,7 +59,15 @@ export class WorkItemRepositoryHierarchy extends WorkItemRepositoryBase {
     filter?: { isActive?: boolean; status?: WorkItemData['status'] },
     client?: PoolClient
   ): Promise<WorkItemData[]> {
+    logger.debug(
+      `[WorkItemRepositoryHierarchy DIAG] findChildren called for parentId: ${parentWorkItemId} with filter:`,
+      filter
+    );
+
     if (!this.validateUuid(parentWorkItemId, 'findChildren parentId')) {
+      logger.warn(
+        `[WorkItemRepositoryHierarchy] findChildren called with invalid parentId: "${parentWorkItemId}". Returning empty array.`
+      );
       return [];
     }
 
@@ -82,16 +90,26 @@ export class WorkItemRepositoryHierarchy extends WorkItemRepositoryBase {
 
     sql += ` ORDER BY order_key ASC, created_at ASC;`;
 
+    // --- ADDED LOGGING HERE ---
+    logger.debug(`[WorkItemRepositoryHierarchy DIAG] findChildren executing SQL: ${sql} with params:`, params);
+    // --- END ADDED LOGGING ---
+
     try {
       const result = await dbClient.query(sql, params);
       logger.debug(
-        `[WorkItemRepositoryHierarchy] Found ${
-          result.rows.length
-        } children for parent ${parentWorkItemId} (active: ${isActiveFilter}, status: ${filter?.status ?? 'any'}).`
+        `[WorkItemRepositoryHierarchy DIAG] findChildren query for parent ${parentWorkItemId} (active: ${isActiveFilter}, status: ${filter?.status ?? 'any'}) executed. Rows found: ${result.rows.length}`
+      );
+      logger.debug(
+        `[WorkItemRepositoryHierarchy] Found ${result.rows.length} children for parent ${parentWorkItemId} (active: ${isActiveFilter}, status: ${filter?.status ?? 'any'}).`
       );
       return result.rows.map(this.mapRowToWorkItemData);
     } catch (error: unknown) {
-      logger.error(`[WorkItemRepositoryHierarchy] Failed to find children for parent ${parentWorkItemId}:`, error);
+      logger.error(
+        `[WorkItemRepositoryHierarchy] Failed to find children for parent ${parentWorkItemId} with params: ${JSON.stringify(
+          params
+        )}`,
+        error
+      );
       throw error;
     }
   }

@@ -61,9 +61,10 @@ export class WorkItemRepositoryCRUD extends WorkItemRepositoryBase {
         logger.debug(
           `[WorkItemRepositoryCRUD] create: Inserting ${dependencies.length} dependencies for item ${item.work_item_id}.`
         );
+        // Corrected INSERT query and parameter passing for dependencies
         const insertDepSql = `
           INSERT INTO work_item_dependencies (work_item_id, depends_on_work_item_id, dependency_type, is_active)
-          VALUES ($1, $2, $3, TRUE)
+          VALUES ($1, $2, $3, $4) -- Now expects 4 parameters
           ON CONFLICT(work_item_id, depends_on_work_item_id) DO NOTHING;
         `;
         for (const dep of dependencies) {
@@ -76,11 +77,12 @@ export class WorkItemRepositoryCRUD extends WorkItemRepositoryBase {
           logger.debug(
             `[WorkItemRepositoryCRUD] create: Inserting dependency ${dep.work_item_id} -> ${dep.depends_on_work_item_id}`
           );
+          // Explicitly pass all four values for the four placeholders
           await dbClient.query(insertDepSql, [
-            dep.work_item_id,
+            item.work_item_id, // Should be the new work item's ID
             dep.depends_on_work_item_id,
-            dep.dependency_type,
-            dep.is_active ?? true, // Default is_active
+            dep.dependency_type ?? 'finish-to-start', // Default type if not provided
+            dep.is_active ?? true, // Default is_active to true if not provided
           ]);
         }
         logger.debug(`[WorkItemRepositoryCRUD] create: Finished inserting dependencies for item ${item.work_item_id}.`);
@@ -366,7 +368,7 @@ export class WorkItemRepositoryCRUD extends WorkItemRepositoryBase {
           );
           const insertUpdateSql = `
             INSERT INTO work_item_dependencies (work_item_id, depends_on_work_item_id, dependency_type, is_active)
-            VALUES ($1, $2, $3, TRUE)
+            VALUES ($1, $2, $3, $4) -- Use placeholders for all values
             ON CONFLICT (work_item_id, depends_on_work_item_id)
             DO UPDATE SET
               dependency_type = EXCLUDED.dependency_type,
@@ -380,10 +382,12 @@ export class WorkItemRepositoryCRUD extends WorkItemRepositoryBase {
               );
               continue;
             }
+            // Pass all four parameters explicitly
             const result = await dbClient.query(insertUpdateSql, [
-              workItemId,
-              dep.depends_on_work_item_id,
-              dep.dependency_type,
+              workItemId, // work_item_id (source of dependency)
+              dep.depends_on_work_item_id, // depends_on_work_item_id (target of dependency)
+              dep.dependency_type ?? 'finish-to-start', // dependency_type
+              dep.is_active ?? true, // is_active
             ]);
             affectedCount += result.rowCount ?? 0;
           }
