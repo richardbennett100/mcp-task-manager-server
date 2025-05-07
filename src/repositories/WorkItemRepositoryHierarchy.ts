@@ -1,49 +1,38 @@
 // src/repositories/WorkItemRepositoryHierarchy.ts
-import { Pool, PoolClient } from 'pg';
+import { type Pool, type PoolClient } from 'pg';
 import { logger } from '../utils/logger.js';
-import { WorkItemRepositoryBase, WorkItemData } from './WorkItemRepositoryBase.js';
-//import { validate as uuidValidate } from 'uuid';
+import { WorkItemRepositoryBase, type WorkItemData } from './WorkItemRepositoryBase.js';
 
-/**
- * Handles operations related to the hierarchy of Work Items (roots, children, descendants, siblings).
- */
 export class WorkItemRepositoryHierarchy extends WorkItemRepositoryBase {
   constructor(pool: Pool) {
     super(pool);
   }
 
-  /**
-   * Finds all root work items (projects), optionally filtering by active status and/or status.
-   * Uses the connection pool directly.
-   */
   public async findRoots(
-    filter?: { isActive?: boolean; status?: WorkItemData['status'] }
-    // client parameter removed
+    filter?: { isActive?: boolean; status?: WorkItemData['status'] },
+    client?: PoolClient | Pool // Made client optional
   ): Promise<WorkItemData[]> {
-    const dbClient = this.pool; // Use pool
-
+    const dbClient = client || this.pool; // Use provided client or default to pool
     let sql = ` SELECT * FROM work_items WHERE parent_work_item_id IS NULL `;
     const params: (string | boolean)[] = [];
     let paramIndex = 1;
 
-    const isActiveFilter = filter?.isActive === undefined ? true : filter.isActive;
-    sql += ` AND is_active = $${paramIndex++}`;
-    params.push(isActiveFilter);
+    if (filter?.isActive === true) {
+      sql += ` AND is_active = $${paramIndex++}`;
+      params.push(true);
+    } else if (filter?.isActive === false) {
+      sql += ` AND is_active = $${paramIndex++}`;
+      params.push(false);
+    }
 
     if (filter?.status) {
       sql += ` AND status = $${paramIndex++}`;
       params.push(filter.status);
     }
-
     sql += ` ORDER BY order_key ASC, created_at ASC;`;
 
     try {
       const result = await dbClient.query(sql, params);
-      logger.debug(
-        `[WorkItemRepositoryHierarchy] Found ${
-          result.rows.length
-        } root work items (active: ${isActiveFilter}, status: ${filter?.status ?? 'any'}).`
-      );
       return result.rows.map(this.mapRowToWorkItemData);
     } catch (error: unknown) {
       logger.error(`[WorkItemRepositoryHierarchy] Failed to find root work items with filter:`, { filter, error });
@@ -51,72 +40,47 @@ export class WorkItemRepositoryHierarchy extends WorkItemRepositoryBase {
     }
   }
 
-  /**
-   * Finds all direct children of a given parent work item, optionally filtering by active status and/or status.
-   * Uses the connection pool directly.
-   */
   public async findChildren(
     parentWorkItemId: string,
-    filter?: { isActive?: boolean; status?: WorkItemData['status'] }
-    // client parameter removed
+    filter?: { isActive?: boolean; status?: WorkItemData['status'] },
+    client?: PoolClient | Pool // Made client optional
   ): Promise<WorkItemData[]> {
-    logger.debug(
-      `[WorkItemRepositoryHierarchy DIAG] findChildren called for parentId: ${parentWorkItemId} with filter:`,
-      filter
-    );
-
     if (!this.validateUuid(parentWorkItemId, 'findChildren parentId')) {
-      logger.warn(
-        `[WorkItemRepositoryHierarchy] findChildren called with invalid parentId: "${parentWorkItemId}". Returning empty array.`
-      );
       return [];
     }
-
-    const dbClient = this.pool; // Use pool
-
+    const dbClient = client || this.pool; // Use provided client or default to pool
     let sql = ` SELECT * FROM work_items WHERE parent_work_item_id = $1 `;
     const params: (string | boolean)[] = [parentWorkItemId];
     let paramIndex = 2;
 
-    const isActiveFilter = filter?.isActive === undefined ? true : filter.isActive;
-    sql += ` AND is_active = $${paramIndex++}`;
-    params.push(isActiveFilter);
+    if (filter?.isActive === true) {
+      sql += ` AND is_active = $${paramIndex++}`;
+      params.push(true);
+    } else if (filter?.isActive === false) {
+      sql += ` AND is_active = $${paramIndex++}`;
+      params.push(false);
+    }
 
     if (filter?.status) {
       sql += ` AND status = $${paramIndex++}`;
       params.push(filter.status);
     }
-
     sql += ` ORDER BY order_key ASC, created_at ASC;`;
-
-    logger.debug(`[WorkItemRepositoryHierarchy DIAG] findChildren executing SQL: ${sql} with params:`, params);
 
     try {
       const result = await dbClient.query(sql, params);
-      logger.debug(
-        `[WorkItemRepositoryHierarchy DIAG] findChildren query for parent ${parentWorkItemId} (active: ${isActiveFilter}, status: ${filter?.status ?? 'any'}) executed. Rows found: ${result.rows.length}`
-      );
-      logger.debug(
-        `[WorkItemRepositoryHierarchy] Found ${result.rows.length} children for parent ${parentWorkItemId} (active: ${isActiveFilter}, status: ${filter?.status ?? 'any'}).`
-      );
       return result.rows.map(this.mapRowToWorkItemData);
     } catch (error: unknown) {
-      logger.error(
-        `[WorkItemRepositoryHierarchy] Failed to find children for parent ${parentWorkItemId} with params: ${JSON.stringify(
-          params
-        )}`,
-        error
-      );
+      logger.error(`[WorkItemRepositoryHierarchy] Failed to find children for parent ${parentWorkItemId}`, error);
       throw error;
     }
   }
 
-  /**
-   * Recursively finds all descendant work item IDs (children, grandchildren, etc.) of a given work item.
-   * Fetches IDs regardless of their active status. Requires a client.
-   */
-  public async findDescendantWorkItemIds(workItemId: string, client: PoolClient): Promise<string[]> {
-    // Requires client
+  public async findDescendantWorkItemIds(
+    workItemId: string,
+    client: PoolClient // Requires client
+  ): Promise<string[]> {
+    // ... (this method already correctly uses the passed client)
     if (!this.validateUuid(workItemId, 'findDescendantWorkItemIds workItemId')) {
       return [];
     }
@@ -142,35 +106,19 @@ export class WorkItemRepositoryHierarchy extends WorkItemRepositoryBase {
         }
       }
     }
-
-    logger.debug(`[WorkItemRepositoryHierarchy] Found ${allDescendants.size} descendants for item ${workItemId}.`);
     return Array.from(allDescendants);
   }
 
-  /**
-   * Finds all sibling work items (same parent, excluding self), optionally filtering by active status.
-   * Uses the connection pool directly.
-   */
   public async findSiblings(
     workItemId: string,
     parentWorkItemId: string | null,
-    filter?: { isActive?: boolean }
-    // client parameter removed
+    filter?: { isActive?: boolean },
+    client?: PoolClient | Pool // Made client optional
   ): Promise<WorkItemData[]> {
-    if (!this.validateUuid(workItemId, 'findSiblings workItemId')) {
-      logger.warn(
-        `[WorkItemRepositoryHierarchy] findSiblings called with invalid workItemId: "${workItemId}". Returning empty array.`
-      );
-      return [];
-    }
-    if (parentWorkItemId !== null && !this.validateUuid(parentWorkItemId, 'findSiblings parentWorkItemId')) {
-      logger.warn(
-        `[WorkItemRepositoryHierarchy] findSiblings called with invalid parentWorkItemId: "${parentWorkItemId}". Returning empty array.`
-      );
-      return [];
-    }
+    if (!this.validateUuid(workItemId, 'findSiblings workItemId')) return [];
+    if (parentWorkItemId !== null && !this.validateUuid(parentWorkItemId, 'findSiblings parentWorkItemId')) return [];
 
-    const dbClient = this.pool; // Use pool
+    const dbClient = client || this.pool; // Use provided client or default to pool
     let sql;
     const params: (string | boolean)[] = [];
     let paramIndex = 1;
@@ -183,27 +131,20 @@ export class WorkItemRepositoryHierarchy extends WorkItemRepositoryBase {
       params.push(parentWorkItemId, workItemId);
     }
 
-    const isActiveFilter = filter?.isActive === undefined ? true : filter.isActive;
-    sql += ` AND is_active = $${paramIndex++}`;
-    params.push(isActiveFilter);
-
+    if (filter?.isActive === true) {
+      sql += ` AND is_active = $${paramIndex++}`;
+      params.push(true);
+    } else if (filter?.isActive === false) {
+      sql += ` AND is_active = $${paramIndex++}`;
+      params.push(false);
+    }
     sql += ` ORDER BY order_key ASC, created_at ASC;`;
 
     try {
       const result = await dbClient.query(sql, params);
-      logger.debug(
-        `[WorkItemRepositoryHierarchy] Found ${result.rows.length} siblings for item ${workItemId} (parent: ${
-          parentWorkItemId ?? 'null'
-        }, active filter: ${isActiveFilter}).`
-      );
       return result.rows.map(this.mapRowToWorkItemData);
     } catch (error: unknown) {
-      logger.error(
-        `[WorkItemRepositoryHierarchy] Failed to find siblings for item ${workItemId} (parent: ${parentWorkItemId}) with params: ${JSON.stringify(
-          params
-        )}`,
-        error
-      );
+      logger.error(`[WorkItemRepositoryHierarchy] Failed to find siblings for item ${workItemId}`, error);
       throw error;
     }
   }

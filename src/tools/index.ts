@@ -22,7 +22,8 @@ import { moveItemToStartTool } from './move_item_to_start_tool.js';
 import { moveItemToEndTool } from './move_item_to_end_tool.js';
 import { moveItemAfterTool } from './move_item_after_tool.js';
 import { moveItemBeforeTool } from './move_item_before_tool.js';
-import { getFullTreeTool } from './get_full_tree_tool.js'; // New
+import { getFullTreeTool } from './get_full_tree_tool.js';
+import { promoteToProjectTool } from './promote_to_project_tool.js'; // New import
 
 /**
  * Register all defined tools with the MCP server instance.
@@ -51,12 +52,13 @@ export function registerTools(server: McpServer): void {
     moveItemToEndTool(server);
     moveItemAfterTool(server);
     moveItemBeforeTool(server);
-    getFullTreeTool(server); // New
+    getFullTreeTool(server);
+    promoteToProjectTool(server); // New registration
 
     logger.info('All tools registered successfully.');
   } catch (error) {
     logger.error('Failed during synchronous tool registration:', error);
     console.error('Fallback console log: Failed during synchronous tool registration:', error);
-    throw new Error(`Failed to register tools: ${error instanceof Error ? error.message : error}`);
+    throw new Error(`Failed to register tools: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

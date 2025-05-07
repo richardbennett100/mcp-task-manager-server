@@ -1,8 +1,7 @@
 // src/repositories/WorkItemRepositoryDependencies.ts
-import { Pool, PoolClient } from 'pg';
+import { type Pool, type PoolClient } from 'pg';
 import { logger } from '../utils/logger.js';
-import { WorkItemRepositoryBase, WorkItemDependencyData } from './WorkItemRepositoryBase.js';
-//import { validate as uuidValidate } from 'uuid';
+import { WorkItemRepositoryBase, type WorkItemDependencyData } from './WorkItemRepositoryBase.js';
 
 /**
  * Handles operations related to Work Item dependencies.
@@ -13,17 +12,18 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
   }
 
   /**
-   * Finds dependencies for a given work item, optionally filtering by active status of the link and linked items.
+   * Finds dependencies for a given work item.
+   * Uses the provided client if in a transaction, otherwise the pool.
    */
   public async findDependencies(
     workItemId: string,
-    filter?: { isActive?: boolean; dependsOnActive?: boolean } //,
-    //client?: PoolClient | Pool
+    filter?: { isActive?: boolean; dependsOnActive?: boolean },
+    client?: PoolClient | Pool
   ): Promise<WorkItemDependencyData[]> {
     if (!this.validateUuid(workItemId, 'findDependencies workItemId')) {
       return [];
     }
-    const dbClient = this.pool;
+    const dbClient = client || this.pool;
 
     let sql = `
             SELECT wid.* FROM work_item_dependencies wid
@@ -32,23 +32,29 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
     const params: (string | boolean)[] = [workItemId];
     let paramIndex = 2;
 
-    const linkIsActive = filter?.isActive === undefined ? true : filter.isActive;
-    sql += ` AND wid.is_active = $${paramIndex++}`;
-    params.push(linkIsActive);
+    if (filter?.isActive === true) {
+      sql += ` AND wid.is_active = $${paramIndex++}`;
+      params.push(true);
+    } else if (filter?.isActive === false) {
+      sql += ` AND wid.is_active = $${paramIndex++}`;
+      params.push(false);
+    }
+    // If filter?.isActive is undefined, no clause for wid.is_active is added, fetching all.
 
     if (filter?.dependsOnActive !== undefined) {
       sql += ` AND wi_dep_on.is_active = $${paramIndex++}`;
       params.push(filter.dependsOnActive);
     }
+    sql += ` ORDER BY wid.depends_on_work_item_id;`;
 
     try {
       const result = await dbClient.query(sql, params);
       logger.debug(
-        `[WorkItemRepositoryDependencies] Found ${
-          result.rows.length
-        } dependencies for item ${workItemId} (link active: ${linkIsActive}, dependsOn active: ${
-          filter?.dependsOnActive ?? 'any'
-        }).`
+        `[WorkItemRepositoryDependencies] findDependencies for item ${workItemId} (link active: ${
+          filter?.isActive === undefined ? 'any' : filter.isActive
+        }, dependsOn active: ${
+          filter?.dependsOnActive === undefined ? 'any' : filter.dependsOnActive
+        }). Found ${result.rows.length} rows.`
       );
       return result.rows.map(this.mapRowToWorkItemDependencyData);
     } catch (error: unknown) {
@@ -57,13 +63,10 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
     }
   }
 
-  /**
-   * Finds dependencies where the work_item_id is in a given list, optionally filtering by active status.
-   */
   public async findDependenciesByItemList(
     workItemIds: string[],
-    filter?: { isActive?: boolean; dependsOnActive?: boolean } //,
-    //client?: PoolClient | Pool
+    filter?: { isActive?: boolean; dependsOnActive?: boolean },
+    client?: PoolClient | Pool
   ): Promise<WorkItemDependencyData[]> {
     if (
       workItemIds.length === 0 ||
@@ -72,7 +75,7 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
       logger.warn(`[WorkItemRepositoryDependencies] findDependenciesByItemList called with empty or invalid list.`);
       return [];
     }
-    const dbClient = this.pool;
+    const dbClient = client || this.pool;
     const placeholders = workItemIds.map((_, i) => `$${i + 1}`).join(',');
 
     let sql = `
@@ -82,21 +85,28 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
     const params: (string | boolean)[] = [...workItemIds];
     let paramIndex = params.length + 1;
 
-    const linkIsActive = filter?.isActive === undefined ? true : filter.isActive;
-    sql += ` AND wid.is_active = $${paramIndex++}`;
-    params.push(linkIsActive);
+    if (filter?.isActive === true) {
+      sql += ` AND wid.is_active = $${paramIndex++}`;
+      params.push(true);
+    } else if (filter?.isActive === false) {
+      sql += ` AND wid.is_active = $${paramIndex++}`;
+      params.push(false);
+    }
 
     if (filter?.dependsOnActive !== undefined) {
       sql += ` AND wi_dep_on.is_active = $${paramIndex++}`;
       params.push(filter.dependsOnActive);
     }
+    sql += ` ORDER BY wid.work_item_id, wid.depends_on_work_item_id;`;
 
     try {
       const result = await dbClient.query(sql, params);
       logger.debug(
-        `[WorkItemRepositoryDependencies] Found ${result.rows.length} dependencies for item list (count: ${
-          workItemIds.length
-        }, link active: ${linkIsActive}, dependsOn active: ${filter?.dependsOnActive ?? 'any'}).`
+        `[WorkItemRepositoryDependencies] findDependenciesByItemList (count: ${workItemIds.length}, link active: ${
+          filter?.isActive === undefined ? 'any' : filter.isActive
+        }, dependsOn active: ${
+          filter?.dependsOnActive === undefined ? 'any' : filter.dependsOnActive
+        }). Found ${result.rows.length} rows.`
       );
       return result.rows.map(this.mapRowToWorkItemDependencyData);
     } catch (error: unknown) {
@@ -105,18 +115,15 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
     }
   }
 
-  /**
-   * Finds items that depend on the given work item (dependents), optionally filtering by active status.
-   */
   public async findDependents(
     dependsOnWorkItemId: string,
-    filter?: { isActive?: boolean; dependentIsActive?: boolean } //,
-    //client?: PoolClient | Pool
+    filter?: { isActive?: boolean; dependentIsActive?: boolean },
+    client?: PoolClient | Pool
   ): Promise<WorkItemDependencyData[]> {
     if (!this.validateUuid(dependsOnWorkItemId, 'findDependents dependsOnWorkItemId')) {
       return [];
     }
-    const dbClient = this.pool;
+    const dbClient = client || this.pool;
 
     let sql = `
             SELECT wid.* FROM work_item_dependencies wid
@@ -125,23 +132,28 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
     const params: (string | boolean)[] = [dependsOnWorkItemId];
     let paramIndex = 2;
 
-    const linkIsActive = filter?.isActive === undefined ? true : filter.isActive;
-    sql += ` AND wid.is_active = $${paramIndex++}`;
-    params.push(linkIsActive);
+    if (filter?.isActive === true) {
+      sql += ` AND wid.is_active = $${paramIndex++}`;
+      params.push(true);
+    } else if (filter?.isActive === false) {
+      sql += ` AND wid.is_active = $${paramIndex++}`;
+      params.push(false);
+    }
 
     if (filter?.dependentIsActive !== undefined) {
       sql += ` AND wi_dependent.is_active = $${paramIndex++}`;
       params.push(filter.dependentIsActive);
     }
+    sql += ` ORDER BY wid.work_item_id;`;
 
     try {
       const result = await dbClient.query(sql, params);
       logger.debug(
-        `[WorkItemRepositoryDependencies] Found ${
-          result.rows.length
-        } dependents for item ${dependsOnWorkItemId} (link active: ${linkIsActive}, dependent active: ${
-          filter?.dependentIsActive ?? 'any'
-        }).`
+        `[WorkItemRepositoryDependencies] findDependents for item ${dependsOnWorkItemId} (link active: ${
+          filter?.isActive === undefined ? 'any' : filter.isActive
+        }, dependent active: ${
+          filter?.dependentIsActive === undefined ? 'any' : filter.dependentIsActive
+        }). Found ${result.rows.length} rows.`
       );
       return result.rows.map(this.mapRowToWorkItemDependencyData);
     } catch (error: unknown) {
@@ -153,13 +165,10 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
     }
   }
 
-  /**
-   * Finds dependency links where the depends_on_work_item_id is in a given list, optionally filtering by active status.
-   */
   public async findDependentsByItemList(
     dependsOnWorkItemIds: string[],
-    filter?: { isActive?: boolean; dependentIsActive?: boolean } //,
-    //client?: PoolClient | Pool
+    filter?: { isActive?: boolean; dependentIsActive?: boolean },
+    client?: PoolClient | Pool
   ): Promise<WorkItemDependencyData[]> {
     if (
       dependsOnWorkItemIds.length === 0 ||
@@ -168,7 +177,7 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
       logger.warn(`[WorkItemRepositoryDependencies] findDependentsByItemList called with empty or invalid list.`);
       return [];
     }
-    const dbClient = this.pool;
+    const dbClient = client || this.pool;
     const placeholders = dependsOnWorkItemIds.map((_, i) => `$${i + 1}`).join(',');
 
     let sql = `
@@ -178,21 +187,28 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
     const params: (string | boolean)[] = [...dependsOnWorkItemIds];
     let paramIndex = params.length + 1;
 
-    const linkIsActive = filter?.isActive === undefined ? true : filter.isActive;
-    sql += ` AND wid.is_active = $${paramIndex++}`;
-    params.push(linkIsActive);
+    if (filter?.isActive === true) {
+      sql += ` AND wid.is_active = $${paramIndex++}`;
+      params.push(true);
+    } else if (filter?.isActive === false) {
+      sql += ` AND wid.is_active = $${paramIndex++}`;
+      params.push(false);
+    }
 
     if (filter?.dependentIsActive !== undefined) {
       sql += ` AND wi_dependent.is_active = $${paramIndex++}`;
       params.push(filter.dependentIsActive);
     }
+    sql += ` ORDER BY wid.depends_on_work_item_id, wid.work_item_id;`;
 
     try {
       const result = await dbClient.query(sql, params);
       logger.debug(
-        `[WorkItemRepositoryDependencies] Found ${result.rows.length} dependents for item list (count: ${
+        `[WorkItemRepositoryDependencies] findDependentsByItemList (count: ${
           dependsOnWorkItemIds.length
-        }, link active: ${linkIsActive}, dependent active: ${filter?.dependentIsActive ?? 'any'}).`
+        }, link active: ${filter?.isActive === undefined ? 'any' : filter.isActive}, dependent active: ${
+          filter?.dependentIsActive === undefined ? 'any' : filter.dependentIsActive
+        }). Found ${result.rows.length} rows.`
       );
       return result.rows.map(this.mapRowToWorkItemDependencyData);
     } catch (error: unknown) {
@@ -201,13 +217,10 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
     }
   }
 
-  /**
-   * Finds dependency links by a list of their composite keys, optionally filtering by active status.
-   */
   public async findDependenciesByCompositeKeys(
     compositeKeys: { work_item_id: string; depends_on_work_item_id: string }[],
-    filter?: { isActive?: boolean } //,
-    //client?: PoolClient | Pool
+    filter?: { isActive?: boolean },
+    client?: PoolClient | Pool
   ): Promise<WorkItemDependencyData[]> {
     if (
       compositeKeys.length === 0 ||
@@ -222,7 +235,7 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
       );
       return [];
     }
-    const dbClient = this.pool;
+    const dbClient = client || this.pool;
     const whereClauses = compositeKeys
       .map((_, i) => `(work_item_id = $${i * 2 + 1} AND depends_on_work_item_id = $${i * 2 + 2})`)
       .join(' OR ');
@@ -234,16 +247,21 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
 
     let sql = ` SELECT * FROM work_item_dependencies WHERE ${whereClauses} `;
 
-    const linkIsActive = filter?.isActive === undefined ? true : filter.isActive;
-    sql += ` AND is_active = $${paramIndex++}`;
-    params.push(linkIsActive);
+    if (filter?.isActive === true) {
+      sql += ` AND is_active = $${paramIndex++}`;
+      params.push(true);
+    } else if (filter?.isActive === false) {
+      sql += ` AND is_active = $${paramIndex++}`;
+      params.push(false);
+    }
+    sql += ` ORDER BY work_item_id, depends_on_work_item_id;`;
 
     try {
       const result = await dbClient.query(sql, params);
       logger.debug(
-        `[WorkItemRepositoryDependencies] Found ${result.rows.length} dependencies by composite keys (count: ${
+        `[WorkItemRepositoryDependencies] findDependenciesByCompositeKeys (count: ${
           compositeKeys.length
-        }, link active: ${linkIsActive}).`
+        }, link active: ${filter?.isActive === undefined ? 'any' : filter.isActive}). Found ${result.rows.length} rows.`
       );
       return result.rows.map(this.mapRowToWorkItemDependencyData);
     } catch (error: unknown) {
@@ -252,10 +270,6 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
     }
   }
 
-  /**
-   * Soft deletes dependency links by setting their is_active to FALSE.
-   * Requires a client for transaction management.
-   */
   public async softDeleteDependenciesByCompositeKeys(
     compositeKeys: { work_item_id: string; depends_on_work_item_id: string }[],
     client: PoolClient
@@ -273,12 +287,13 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
       );
       return 0;
     }
-    const dbClient = this.getClient(client);
+    const dbClient = this.getClient(client); // Ensure client is used
 
     const whereClauses = compositeKeys
       .map((_, i) => `(work_item_id = $${i * 2 + 1} AND depends_on_work_item_id = $${i * 2 + 2})`)
       .join(' OR ');
     const params: string[] = compositeKeys.flatMap((key) => [key.work_item_id, key.depends_on_work_item_id]);
+    // Only deactivate links that are currently active
     const sql = ` UPDATE work_item_dependencies SET is_active = FALSE WHERE (${whereClauses}) AND is_active = TRUE; `;
 
     try {

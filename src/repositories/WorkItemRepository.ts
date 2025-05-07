@@ -1,12 +1,12 @@
 // src/repositories/WorkItemRepository.ts
-import { Pool, PoolClient } from 'pg';
-import { WorkItemRepositoryBase, WorkItemData, WorkItemDependencyData } from './WorkItemRepositoryBase.js';
+import { type Pool, type PoolClient } from 'pg';
+import { WorkItemRepositoryBase, type WorkItemData, type WorkItemDependencyData } from './WorkItemRepositoryBase.js';
 import { WorkItemRepositoryCRUD } from './WorkItemRepositoryCRUD.js';
 import { WorkItemRepositoryHierarchy } from './WorkItemRepositoryHierarchy.js';
 import { WorkItemRepositoryDependencies } from './WorkItemRepositoryDependencies.js';
 import { WorkItemRepositorySearchOrder } from './WorkItemRepositorySearchOrder.js';
 import { WorkItemRepositoryUndoRedo } from './WorkItemRepositoryUndoRedo.js';
-import { ValidationError } from '../utils/errors.js';
+import { ValidationError } from '../utils/errors.js'; // Added import
 
 /**
  * Main repository class for managing work items.
@@ -36,14 +36,25 @@ export class WorkItemRepository extends WorkItemRepositoryBase {
   ): Promise<WorkItemData> {
     return this.crud.create(client, item, dependencies);
   }
-  public findById(workItemId: string, filter?: { isActive?: boolean }): Promise<WorkItemData | undefined> {
-    return this.crud.findById(workItemId, filter);
+  public findById(
+    workItemId: string,
+    filter?: { isActive?: boolean },
+    client?: PoolClient | Pool
+  ): Promise<WorkItemData | undefined> {
+    return this.crud.findById(workItemId, filter, client);
   }
-  public findByIds(workItemIds: string[], filter?: { isActive?: boolean }): Promise<WorkItemData[]> {
-    return this.crud.findByIds(workItemIds, filter);
+  public findByIds(
+    workItemIds: string[],
+    filter?: { isActive?: boolean },
+    client?: PoolClient | Pool
+  ): Promise<WorkItemData[]> {
+    return this.crud.findByIds(workItemIds, filter, client);
   }
-  public findAll(filter?: { isActive?: boolean; status?: WorkItemData['status'] }): Promise<WorkItemData[]> {
-    return this.crud.findAll(filter);
+  public findAll(
+    filter?: { isActive?: boolean; status?: WorkItemData['status'] },
+    client?: PoolClient | Pool
+  ): Promise<WorkItemData[]> {
+    return this.crud.findAll(filter, client);
   }
   /** @deprecated Use granular update methods or updateFields instead */
   public update(
@@ -55,13 +66,10 @@ export class WorkItemRepository extends WorkItemRepositoryBase {
     return this.crud.update(client, workItemId, updatePayload, newDependencies);
   }
 
-  // Corrected signature for updateFields
   public updateFields(
     client: PoolClient,
     workItemId: string,
-    payload: Partial<
-      Omit<WorkItemData, 'work_item_id' | 'parent_work_item_id' | 'created_at' | 'is_active' | 'updated_at'>
-    >
+    payload: Partial<Omit<WorkItemData, 'work_item_id' | 'created_at' | 'is_active' | 'updated_at'>>
   ): Promise<WorkItemData | null> {
     return this.crud.updateFields(client, workItemId, payload);
   }
@@ -78,14 +86,18 @@ export class WorkItemRepository extends WorkItemRepositoryBase {
   }
 
   // Hierarchy Operations
-  public findRoots(filter?: { isActive?: boolean; status?: WorkItemData['status'] }): Promise<WorkItemData[]> {
-    return this.hierarchy.findRoots(filter);
+  public findRoots(
+    filter?: { isActive?: boolean; status?: WorkItemData['status'] },
+    client?: PoolClient | Pool
+  ): Promise<WorkItemData[]> {
+    return this.hierarchy.findRoots(filter, client);
   }
   public findChildren(
     parentWorkItemId: string,
-    filter?: { isActive?: boolean; status?: WorkItemData['status'] }
+    filter?: { isActive?: boolean; status?: WorkItemData['status'] },
+    client?: PoolClient | Pool
   ): Promise<WorkItemData[]> {
-    return this.hierarchy.findChildren(parentWorkItemId, filter);
+    return this.hierarchy.findChildren(parentWorkItemId, filter, client);
   }
   public findDescendantWorkItemIds(workItemId: string, client: PoolClient): Promise<string[]> {
     return this.hierarchy.findDescendantWorkItemIds(workItemId, client);
@@ -93,41 +105,47 @@ export class WorkItemRepository extends WorkItemRepositoryBase {
   public findSiblings(
     workItemId: string,
     parentWorkItemId: string | null,
-    filter?: { isActive?: boolean }
+    filter?: { isActive?: boolean },
+    client?: PoolClient | Pool
   ): Promise<WorkItemData[]> {
-    return this.hierarchy.findSiblings(workItemId, parentWorkItemId, filter);
+    return this.hierarchy.findSiblings(workItemId, parentWorkItemId, filter, client);
   }
 
   // Dependency Operations
   public findDependencies(
     workItemId: string,
-    filter?: { isActive?: boolean; dependsOnActive?: boolean }
+    filter?: { isActive?: boolean; dependsOnActive?: boolean },
+    client?: PoolClient | Pool
   ): Promise<WorkItemDependencyData[]> {
-    return this.dependenciesRepo.findDependencies(workItemId, filter);
+    return this.dependenciesRepo.findDependencies(workItemId, filter, client);
   }
   public findDependenciesByItemList(
     workItemIds: string[],
-    filter?: { isActive?: boolean; dependsOnActive?: boolean }
+    filter?: { isActive?: boolean; dependsOnActive?: boolean },
+    client?: PoolClient | Pool
   ): Promise<WorkItemDependencyData[]> {
-    return this.dependenciesRepo.findDependenciesByItemList(workItemIds, filter);
+    return this.dependenciesRepo.findDependenciesByItemList(workItemIds, filter, client);
   }
   public findDependents(
     dependsOnWorkItemId: string,
-    filter?: { isActive?: boolean; dependentIsActive?: boolean }
+    filter?: { isActive?: boolean; dependentIsActive?: boolean },
+    client?: PoolClient | Pool
   ): Promise<WorkItemDependencyData[]> {
-    return this.dependenciesRepo.findDependents(dependsOnWorkItemId, filter);
+    return this.dependenciesRepo.findDependents(dependsOnWorkItemId, filter, client);
   }
   public findDependentsByItemList(
     dependsOnWorkItemIds: string[],
-    filter?: { isActive?: boolean; dependentIsActive?: boolean }
+    filter?: { isActive?: boolean; dependentIsActive?: boolean },
+    client?: PoolClient | Pool
   ): Promise<WorkItemDependencyData[]> {
-    return this.dependenciesRepo.findDependentsByItemList(dependsOnWorkItemIds, filter);
+    return this.dependenciesRepo.findDependentsByItemList(dependsOnWorkItemIds, filter, client);
   }
   public findDependenciesByCompositeKeys(
     compositeKeys: { work_item_id: string; depends_on_work_item_id: string }[],
-    filter?: { isActive?: boolean }
+    filter?: { isActive?: boolean },
+    client?: PoolClient | Pool
   ): Promise<WorkItemDependencyData[]> {
-    return this.dependenciesRepo.findDependenciesByCompositeKeys(compositeKeys, filter);
+    return this.dependenciesRepo.findDependenciesByCompositeKeys(compositeKeys, filter, client);
   }
   public softDeleteDependenciesByCompositeKeys(
     compositeKeys: { work_item_id: string; depends_on_work_item_id: string }[],
@@ -137,9 +155,14 @@ export class WorkItemRepository extends WorkItemRepositoryBase {
   }
 
   // Search/Order Operations
-  public searchByNameOrDescription(query: string, filter?: { isActive?: boolean }): Promise<WorkItemData[]> {
-    return this.searchOrder.searchByNameOrDescription(query, filter);
+  public searchByNameOrDescription(
+    query: string,
+    filter?: { isActive?: boolean },
+    client?: PoolClient | Pool
+  ): Promise<WorkItemData[]> {
+    return this.searchOrder.searchByNameOrDescription(query, filter, client);
   }
+
   public findSiblingEdgeOrderKey(
     parentId: string | null,
     edge: 'first' | 'last',
@@ -154,6 +177,7 @@ export class WorkItemRepository extends WorkItemRepositoryBase {
     client: PoolClient
   ): Promise<{ before: string | null; after: string | null }> {
     if (relation !== 'before' && relation !== 'after') {
+      // Consider throwing a ValidationError if this is an invalid input that shouldn't occur
       throw new ValidationError("Relation must be 'before' or 'after'");
     }
     return this.searchOrder.findNeighbourOrderKeys(parentId, relativeToId, relation, client);

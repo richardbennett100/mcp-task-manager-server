@@ -1,28 +1,25 @@
 // src/services/WorkItemDependencyUpdateService.ts
 import {
-  WorkItemRepository,
-  ActionHistoryRepository,
-  WorkItemData,
-  WorkItemDependencyData,
-  CreateActionHistoryInput,
-  CreateUndoStepInput,
+  type WorkItemRepository,
+  type ActionHistoryRepository,
+  type WorkItemData,
+  type WorkItemDependencyData,
+  type CreateActionHistoryInput,
+  type CreateUndoStepInput,
 } from '../repositories/index.js';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
-import { FullWorkItemData } from './WorkItemServiceTypes.js';
+import { type FullWorkItemData } from './WorkItemServiceTypes.js';
 import { WorkItemReadingService } from './WorkItemReadingService.js';
 import { WorkItemHistoryService } from './WorkItemHistoryService.js';
-import { PoolClient } from 'pg';
-import { DependencyInput } from '../tools/add_dependencies_params.js';
+import { type PoolClient } from 'pg';
+import { type DependencyInput } from '../tools/add_dependencies_params.js';
 
-/**
- * Service responsible for updating work item dependencies.
- */
 export class WorkItemDependencyUpdateService {
   private workItemRepository: WorkItemRepository;
   private actionHistoryRepository: ActionHistoryRepository;
-  private readingService: WorkItemReadingService; // Needed to return FullWorkItemData
-  private historyService: WorkItemHistoryService; // For history
+  private readingService: WorkItemReadingService;
+  private historyService: WorkItemHistoryService;
 
   constructor(workItemRepository: WorkItemRepository, actionHistoryRepository: ActionHistoryRepository) {
     this.workItemRepository = workItemRepository;
@@ -31,97 +28,133 @@ export class WorkItemDependencyUpdateService {
     this.historyService = new WorkItemHistoryService(workItemRepository, actionHistoryRepository);
   }
 
-  /**
-   * Adds or updates dependency links for a specific work item.
-   */
-  public async addDependencies(workItemId: string, dependenciesToAdd: DependencyInput[]): Promise<FullWorkItemData> {
+  public async addDependencies(
+    workItemId: string,
+    dependenciesToAddInput: DependencyInput[]
+  ): Promise<FullWorkItemData> {
     logger.info(
-      `[WorkItemDependencyUpdateService] Adding/updating ${dependenciesToAdd.length} dependencies for work item ${workItemId}`
+      `[WorkItemDependencyUpdateService] Adding/updating ${dependenciesToAddInput.length} dependencies for work item ${workItemId}`
     );
 
-    let itemBeforeUpdate: WorkItemData | undefined;
-    const depsBeforeUpdateMap: Map<string, WorkItemDependencyData> = new Map();
+    let itemReceivingDependencies: WorkItemData | undefined;
+    const depsOfItemBeforeThisOperationMap: Map<string, WorkItemDependencyData> = new Map();
 
-    if (!dependenciesToAdd || dependenciesToAdd.length === 0) {
+    if (!dependenciesToAddInput || dependenciesToAddInput.length === 0) {
       throw new ValidationError('No dependencies provided to add.');
     }
-    const targetDepIds = dependenciesToAdd.map((dep) => dep.depends_on_work_item_id);
-    if (targetDepIds.includes(workItemId)) {
+    const targetDepItemIds = dependenciesToAddInput.map((dep) => dep.depends_on_work_item_id);
+    if (targetDepItemIds.includes(workItemId)) {
       throw new ValidationError('A work item cannot depend on itself.');
     }
 
+    const existingDepsOfReceivingItem = await this.workItemRepository.findDependencies(workItemId, {
+      isActive: undefined,
+    });
+    existingDepsOfReceivingItem.forEach((dep) =>
+      depsOfItemBeforeThisOperationMap.set(dep.depends_on_work_item_id, dep)
+    );
+
     await this.actionHistoryRepository.withTransaction(async (client: PoolClient) => {
-      itemBeforeUpdate = await this.workItemRepository.findById(workItemId, { isActive: true });
-      if (!itemBeforeUpdate) {
-        throw new NotFoundError(`Work item with ID ${workItemId} not found or is inactive.`);
+      itemReceivingDependencies = await this.workItemRepository.findById(workItemId, { isActive: true }, client);
+      if (!itemReceivingDependencies) {
+        throw new NotFoundError(`Work item with ID ${workItemId} (to add dependencies to) not found or is inactive.`);
       }
 
-      const targetItems = await this.workItemRepository.findByIds(targetDepIds, { isActive: true });
-      const foundTargetIds = new Set(targetItems.map((item) => item.work_item_id));
-      const missingTargetIds = targetDepIds.filter((id) => !foundTargetIds.has(id));
+      const targetWorkItemsData = await this.workItemRepository.findByIds(targetDepItemIds, { isActive: true }, client);
+      const foundTargetIds = new Set(targetWorkItemsData.map((item) => item.work_item_id));
+      const missingTargetIds = targetDepItemIds.filter((id) => !foundTargetIds.has(id));
+
       if (missingTargetIds.length > 0) {
-        const inactiveTargets = await this.workItemRepository.findByIds(missingTargetIds, { isActive: false });
+        const inactiveTargets = await this.workItemRepository.findByIds(missingTargetIds, { isActive: false }, client);
         const trulyMissing = missingTargetIds.filter((id) => !inactiveTargets.some((it) => it.work_item_id === id));
         if (trulyMissing.length > 0) {
           throw new NotFoundError(`Target dependency work items not found: ${trulyMissing.join(', ')}`);
         } else {
-          throw new ValidationError(
-            `Target dependency work items are inactive: ${missingTargetIds.filter((id) => inactiveTargets.some((it) => it.work_item_id === id)).join(', ')}`
+          const inactiveFoundIds = missingTargetIds.filter((id) =>
+            inactiveTargets.some((it) => it.work_item_id === id)
           );
+          throw new ValidationError(`Target dependency work items are inactive: ${inactiveFoundIds.join(', ')}`);
         }
       }
 
-      const existingDeps = await this.workItemRepository.findDependencies(workItemId, { isActive: false });
-      existingDeps.forEach((dep) => depsBeforeUpdateMap.set(dep.depends_on_work_item_id, dep));
-
-      const depsToUpsert: WorkItemDependencyData[] = dependenciesToAdd.map((depInput) => ({
+      const dependenciesToUpsert: WorkItemDependencyData[] = dependenciesToAddInput.map((depInput) => ({
         work_item_id: workItemId,
         depends_on_work_item_id: depInput.depends_on_work_item_id,
         dependency_type: depInput.dependency_type ?? 'finish-to-start',
         is_active: true,
       }));
 
-      await this.workItemRepository.addOrUpdateDependencies(client, workItemId, depsToUpsert);
+      await this.workItemRepository.addOrUpdateDependencies(client, workItemId, dependenciesToUpsert);
 
-      const depsAfterUpdate = await this.workItemRepository.findDependencies(workItemId, { isActive: false });
-      const depsAfterUpdateMap = new Map<string, WorkItemDependencyData>();
-      depsAfterUpdate.forEach((dep) => depsAfterUpdateMap.set(dep.depends_on_work_item_id, dep));
+      const dependenciesAfterUpsert = await this.workItemRepository.findDependencies(
+        workItemId,
+        { isActive: undefined },
+        client
+      );
+      const depsAfterUpsertMap = new Map<string, WorkItemDependencyData>();
+      dependenciesAfterUpsert.forEach((dep) => depsAfterUpsertMap.set(dep.depends_on_work_item_id, dep));
 
       const undoStepsData: CreateUndoStepInput[] = [];
       let stepOrder = 1;
-      let dependenciesEffectivelyChanged = false;
-      for (const depToAdd of depsToUpsert) {
-        const targetId = depToAdd.depends_on_work_item_id;
-        const oldDepState = depsBeforeUpdateMap.get(targetId);
-        const newDepState = depsAfterUpdateMap.get(targetId);
-        const wasAdded = !oldDepState;
-        const wasReactivated = oldDepState && !oldDepState.is_active && newDepState?.is_active;
-        const typeChanged = oldDepState && newDepState && oldDepState.dependency_type !== newDepState.dependency_type;
-        const effectiveChange = wasAdded || wasReactivated || typeChanged;
+      let actualEffectiveChangesCount = 0;
 
-        if (effectiveChange) {
-          dependenciesEffectivelyChanged = true;
-          const oldDataForUndo = oldDepState ?? null;
-          const newDataForUndo = newDepState;
-          if (!newDataForUndo) {
-            logger.warn(
-              `[WorkItemDependencyUpdateService] Dependency ${workItemId}:${targetId} was expected but not found after upsert for history generation.`
-            );
-            continue;
+      for (const intendedChange of dependenciesToUpsert) {
+        const dependsOnId = intendedChange.depends_on_work_item_id;
+        const stateBeforeThisOp = depsOfItemBeforeThisOperationMap.get(dependsOnId);
+        const stateAfterThisOp = depsAfterUpsertMap.get(dependsOnId);
+
+        let effectiveChangeMade = false;
+        if (!stateAfterThisOp) {
+          // This should ideally not happen if addOrUpdateDependencies guarantees an entry
+          logger.warn(
+            `[WorkItemDependencyUpdateService] Dependency ${workItemId} -> ${dependsOnId} was not found after upsert operation. Cannot determine effective change or create undo step accurately.`
+          );
+          continue;
+        }
+
+        if (!stateBeforeThisOp) {
+          // Link was truly new
+          effectiveChangeMade = true;
+        } else {
+          // Link existed before
+          if (!stateBeforeThisOp.is_active && stateAfterThisOp.is_active) {
+            // Was reactivated
+            effectiveChangeMade = true;
           }
+          if (
+            stateBeforeThisOp.is_active &&
+            stateAfterThisOp.is_active &&
+            stateBeforeThisOp.dependency_type !== stateAfterThisOp.dependency_type
+          ) {
+            // Type changed on active link
+            effectiveChangeMade = true;
+          }
+        }
+
+        if (effectiveChangeMade) {
+          actualEffectiveChangesCount++;
+          const oldDataForUndoStep: Partial<WorkItemDependencyData> = stateBeforeThisOp
+            ? { ...stateBeforeThisOp }
+            : {
+                work_item_id: workItemId,
+                depends_on_work_item_id: dependsOnId,
+                dependency_type: intendedChange.dependency_type,
+                is_active: false, // If it was new, undoing makes it inactive/non-existent
+              };
+
           undoStepsData.push({
             step_order: stepOrder++,
             step_type: 'UPDATE',
             table_name: 'work_item_dependencies',
-            record_id: `${workItemId}:${targetId}`,
-            old_data: oldDataForUndo,
-            new_data: newDataForUndo,
+            record_id: `${workItemId}:${dependsOnId}`,
+            old_data: oldDataForUndoStep,
+            new_data: { ...stateAfterThisOp },
           });
         }
       }
 
-      if (dependenciesEffectivelyChanged) {
-        const actionDescription = `Added/updated ${undoStepsData.length} dependencies for work item "${itemBeforeUpdate.name}"`;
+      if (actualEffectiveChangesCount > 0) {
+        const actionDescription = `Added/updated ${actualEffectiveChangesCount} dependencies for work item "${itemReceivingDependencies.name}"`;
         const actionData: CreateActionHistoryInput = {
           action_type: 'ADD_DEPENDENCIES',
           work_item_id: workItemId,
@@ -136,28 +169,23 @@ export class WorkItemDependencyUpdateService {
         }
         await this.historyService.invalidateRedoStack(client, createdAction.action_id);
         logger.info(
-          `[WorkItemDependencyUpdateService] Recorded history for adding dependencies to work item ${workItemId}.`
+          `[WorkItemDependencyUpdateService] Recorded history for ${actualEffectiveChangesCount} dep changes for ${workItemId}.`
         );
       } else {
         logger.info(
-          `[WorkItemDependencyUpdateService] addDependencies called for ${workItemId}, but no effective changes detected. Skipping history.`
+          `[WorkItemDependencyUpdateService] addDependencies for ${workItemId}: No effective changes to dependencies detected for history record.`
         );
       }
     });
 
     const fullUpdatedItem = await this.readingService.getWorkItemById(workItemId, { isActive: undefined });
     if (!fullUpdatedItem) {
-      logger.error(
-        `[WorkItemDependencyUpdateService] Failed to retrieve full details for item ${workItemId} after adding dependencies.`
-      );
-      throw new Error(`Failed to retrieve full details for item ${workItemId} after adding dependencies.`);
+      throw new Error(`Failed to retrieve full details for item ${workItemId} after addDependencies.`);
     }
     return fullUpdatedItem;
   }
 
-  /**
-   * Deletes (deactivates) specified dependency links for a work item.
-   */
+  // deleteDependencies method (ensure findDependenciesByCompositeKeys uses client)
   public async deleteDependencies(workItemId: string, dependsOnIdsToRemove: string[]): Promise<FullWorkItemData> {
     logger.info(
       `[WorkItemDependencyUpdateService] Deleting ${dependsOnIdsToRemove.length} dependencies from work item ${workItemId}`
@@ -170,60 +198,57 @@ export class WorkItemDependencyUpdateService {
     }
 
     await this.actionHistoryRepository.withTransaction(async (client: PoolClient) => {
-      itemBeforeUpdate = await this.workItemRepository.findById(workItemId, { isActive: true });
+      itemBeforeUpdate = await this.workItemRepository.findById(workItemId, { isActive: true }, client);
       if (!itemBeforeUpdate) {
         throw new NotFoundError(`Work item with ID ${workItemId} not found or is inactive.`);
       }
 
-      const existingActiveDeps = await this.workItemRepository.findDependencies(workItemId, { isActive: true });
-      const activeDepsMap = new Map<string, WorkItemDependencyData>();
-      existingActiveDeps.forEach((dep) => activeDepsMap.set(dep.depends_on_work_item_id, dep));
+      const compositeKeysToFind = dependsOnIdsToRemove.map((targetId) => ({
+        work_item_id: workItemId,
+        depends_on_work_item_id: targetId,
+      }));
 
-      const compositeKeysToDelete: { work_item_id: string; depends_on_work_item_id: string }[] = [];
-      const invalidIdsToRemove: string[] = [];
-      const depsToDeleteDetails: WorkItemDependencyData[] = [];
+      const activeDepsToDeleteDetails = await this.workItemRepository.findDependenciesByCompositeKeys(
+        compositeKeysToFind,
+        { isActive: true },
+        client
+      );
 
-      for (const targetId of dependsOnIdsToRemove) {
-        const existingDep = activeDepsMap.get(targetId);
-        if (existingDep) {
-          compositeKeysToDelete.push({ work_item_id: workItemId, depends_on_work_item_id: targetId });
-          depsToDeleteDetails.push(existingDep);
-        } else {
-          invalidIdsToRemove.push(targetId);
-        }
-      }
+      const activeCompositeKeysToDelete = activeDepsToDeleteDetails.map((dep) => ({
+        work_item_id: dep.work_item_id,
+        depends_on_work_item_id: dep.depends_on_work_item_id,
+      }));
 
-      if (invalidIdsToRemove.length > 0) {
-        const inactiveDeps = await this.workItemRepository.findDependenciesByCompositeKeys(
-          invalidIdsToRemove.map((id) => ({ work_item_id: workItemId, depends_on_work_item_id: id })),
-          { isActive: false }
+      if (activeCompositeKeysToDelete.length === 0) {
+        const allMatchingDeps = await this.workItemRepository.findDependenciesByCompositeKeys(
+          compositeKeysToFind,
+          { isActive: undefined },
+          client
         );
-        const trulyMissing = invalidIdsToRemove.filter(
-          (id) => !inactiveDeps.some((d) => d.depends_on_work_item_id === id)
+        const nonExistentIds = dependsOnIdsToRemove.filter(
+          (idToRemove) => !allMatchingDeps.some((dep) => dep.depends_on_work_item_id === idToRemove)
         );
-        if (trulyMissing.length > 0) {
-          throw new ValidationError(`Cannot remove dependencies: Links to ${trulyMissing.join(', ')} do not exist.`);
-        } else {
-          const inactiveFoundIds = invalidIdsToRemove.filter((id) =>
-            inactiveDeps.some((d) => d.depends_on_work_item_id === id)
-          );
-          throw new ValidationError(
-            `Cannot remove dependencies: Links to ${inactiveFoundIds.join(', ')} are already inactive.`
-          );
+        if (nonExistentIds.length > 0) {
+          throw new ValidationError(`Cannot remove dependencies: Links to ${nonExistentIds.join(', ')} do not exist.`);
         }
+        throw new ValidationError(
+          `Cannot remove dependencies: Links to ${dependsOnIdsToRemove.join(', ')} are already inactive or do not exist.`
+        );
       }
 
       const deletedCount = await this.workItemRepository.softDeleteDependenciesByCompositeKeys(
-        compositeKeysToDelete,
+        activeCompositeKeysToDelete,
         client
       );
       logger.debug(`[WorkItemDependencyUpdateService] Repository reported ${deletedCount} dependencies soft deleted.`);
 
       const undoStepsData: CreateUndoStepInput[] = [];
       let stepOrder = 1;
-      for (const depToDelete of depsToDeleteDetails) {
-        const oldDataForUndo = depToDelete;
-        const newDataForUndo: Partial<WorkItemDependencyData> = { is_active: false };
+      for (const depToDelete of activeDepsToDeleteDetails) {
+        const oldDataForUndo: WorkItemDependencyData = { ...depToDelete };
+        const newDataForUndo: Partial<WorkItemDependencyData> = {
+          is_active: false,
+        };
         undoStepsData.push({
           step_order: stepOrder++,
           step_type: 'UPDATE',
@@ -250,15 +275,11 @@ export class WorkItemDependencyUpdateService {
         }
         await this.historyService.invalidateRedoStack(client, createdAction.action_id);
         logger.info(
-          `[WorkItemDependencyUpdateService] Recorded history for removing dependencies from work item ${workItemId}.`
-        );
-      } else if (compositeKeysToDelete.length > 0 && deletedCount === 0) {
-        logger.warn(
-          `[WorkItemDependencyUpdateService] deleteDependencies called for ${workItemId}, found matching active deps but repo reported 0 deleted.`
+          `[WorkItemDependencyUpdateService] Recorded history for removing ${undoStepsData.length} dependencies from work item ${workItemId}.`
         );
       } else {
         logger.info(
-          `[WorkItemDependencyUpdateService] deleteDependencies called for ${workItemId}, but no active matching dependencies found/deleted. Skipping history.`
+          `[WorkItemDependencyUpdateService] deleteDependencies called for ${workItemId}, but no active matching dependencies were deactivated. Skipping history.`
         );
       }
     });

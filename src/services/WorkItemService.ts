@@ -1,15 +1,20 @@
 // src/services/WorkItemService.ts
-import { WorkItemRepository, ActionHistoryRepository, ActionHistoryData, WorkItemData } from '../repositories/index.js';
 import {
-  AddWorkItemInput,
-  UpdateWorkItemInput,
-  ListWorkItemsFilter,
-  FullWorkItemData,
-  WorkItemTreeNode, // New Import
-  GetFullTreeOptions, // New Import
+  WorkItemRepository,
+  ActionHistoryRepository,
+  type ActionHistoryData,
+  type WorkItemData,
+} from '../repositories/index.js';
+import {
+  type AddWorkItemInput,
+  type UpdateWorkItemInput,
+  type ListWorkItemsFilter,
+  type FullWorkItemData,
+  type WorkItemTreeNode,
+  type GetFullTreeOptions,
 } from './WorkItemServiceTypes.js';
-import { AddTaskArgs, WorkItemStatusEnum, WorkItemPriorityEnum } from '../tools/add_task_params.js';
-import { DependencyInput } from '../tools/add_dependencies_params.js';
+import { type AddTaskArgs, WorkItemStatusEnum, WorkItemPriorityEnum } from '../tools/add_task_params.js'; // Ensure AddTaskArgs is imported
+import { type DependencyInput } from '../tools/add_dependencies_params.js';
 import { WorkItemAddingService } from './WorkItemAddingService.js';
 import { WorkItemReadingService } from './WorkItemReadingService.js';
 import { WorkItemUpdateService } from './WorkItemUpdateService.js';
@@ -18,6 +23,7 @@ import { WorkItemDependencyUpdateService } from './WorkItemDependencyUpdateServi
 import { WorkItemPositionUpdateService } from './WorkItemPositionUpdateService.js';
 import { WorkItemDeleteService } from './WorkItemDeleteService.js';
 import { WorkItemHistoryService } from './WorkItemHistoryService.js';
+import { WorkItemPromoteService } from './WorkItemPromoteService.js'; // New Import
 import { z } from 'zod';
 
 type WorkItemStatus = z.infer<typeof WorkItemStatusEnum>;
@@ -39,6 +45,7 @@ export class WorkItemService {
   private positionUpdateService: WorkItemPositionUpdateService;
   private deleteService: WorkItemDeleteService;
   private historyService: WorkItemHistoryService;
+  private promoteService: WorkItemPromoteService; // New Property
 
   constructor(workItemRepository: WorkItemRepository, actionHistoryRepository: ActionHistoryRepository) {
     this.workItemRepository = workItemRepository;
@@ -52,10 +59,13 @@ export class WorkItemService {
     this.positionUpdateService = new WorkItemPositionUpdateService(workItemRepository, actionHistoryRepository);
     this.deleteService = new WorkItemDeleteService(workItemRepository, actionHistoryRepository);
     this.historyService = new WorkItemHistoryService(workItemRepository, actionHistoryRepository);
+    this.promoteService = new WorkItemPromoteService(workItemRepository, actionHistoryRepository); // New Instantiation
   }
 
-  // ... (existing methods) ...
+  // --- Existing methods ---
   public async addWorkItem(input: AddTaskArgs | AddWorkItemInput): Promise<WorkItemData> {
+    // Cast to AddTaskArgs might be too specific if create_project also uses this.
+    // Assuming AddTaskArgs is a superset or compatible for now.
     return this.addingService.addWorkItem(input as AddTaskArgs);
   }
 
@@ -135,11 +145,12 @@ export class WorkItemService {
     return this.positionUpdateService.moveItemBefore(workItemIdToMove, targetSiblingId);
   }
 
-  // --- NEW Method ---
-  /**
-   * Retrieves a work item and its full descendant tree.
-   */
   public async getFullTree(workItemId: string, options?: GetFullTreeOptions): Promise<WorkItemTreeNode | null> {
     return this.readingService.getFullTree(workItemId, options);
+  }
+
+  // --- NEW Method for Promote to Project ---
+  public async promoteToProject(workItemId: string): Promise<FullWorkItemData> {
+    return this.promoteService.promoteToProject(workItemId);
   }
 }
