@@ -9,7 +9,8 @@ import {
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 import { FullWorkItemData } from './WorkItemServiceTypes.js';
-import { WorkItemUtilsService } from './WorkItemUtilsService.js';
+// WorkItemUtilsService no longer needed here after removing calculateShortname
+// import { WorkItemUtilsService } from './WorkItemUtilsService.js';
 import { WorkItemReadingService } from './WorkItemReadingService.js';
 import { WorkItemHistoryService } from './WorkItemHistoryService.js';
 import { PoolClient } from 'pg';
@@ -25,14 +26,14 @@ type WorkItemPriority = z.infer<typeof WorkItemPriorityEnum>;
 export class WorkItemFieldUpdateService {
   private workItemRepository: WorkItemRepository;
   private actionHistoryRepository: ActionHistoryRepository;
-  private utilsService: WorkItemUtilsService;
+  // private utilsService: WorkItemUtilsService; // Removed - no longer needed
   private readingService: WorkItemReadingService;
   private historyService: WorkItemHistoryService;
 
   constructor(workItemRepository: WorkItemRepository, actionHistoryRepository: ActionHistoryRepository) {
     this.workItemRepository = workItemRepository;
     this.actionHistoryRepository = actionHistoryRepository;
-    this.utilsService = new WorkItemUtilsService(workItemRepository);
+    // this.utilsService = new WorkItemUtilsService(); // Removed instantiation
     this.readingService = new WorkItemReadingService(workItemRepository);
     this.historyService = new WorkItemHistoryService(workItemRepository, actionHistoryRepository);
   }
@@ -130,15 +131,16 @@ export class WorkItemFieldUpdateService {
         logger.info(`[WorkItemFieldUpdateService] Name for ${workItemId} is already "${name}". No update needed.`);
         return;
       }
-      const newShortname = await this.utilsService.calculateShortname(
-        name,
-        itemBeforeUpdate.parent_work_item_id,
-        workItemId
-      );
-      if (newShortname === null) {
-        throw new Error(`Failed to generate a unique shortname for the new name: "${name}"`);
-      }
-      const updatePayload: Partial<WorkItemData> = { name: name, shortname: newShortname };
+      // REMOVED shortname calculation
+      // const newShortname = await this.utilsService.calculateShortname(
+      //   name,
+      //   itemBeforeUpdate.parent_work_item_id,
+      //   workItemId
+      // );
+      // if (newShortname === null) {
+      //   throw new Error(`Failed to generate a unique shortname for the new name: "${name}"`);
+      // }
+      const updatePayload: Partial<WorkItemData> = { name: name }; // REMOVED: shortname: newShortname
       itemAfterUpdate = await this.workItemRepository.updateFields(client, workItemId, updatePayload);
       if (itemAfterUpdate === null) {
         logger.error(
@@ -156,18 +158,21 @@ export class WorkItemFieldUpdateService {
           table_name: 'work_items',
           record_id: workItemId,
           old_data: {
+            // Exclude shortname
             name: itemBeforeUpdate.name,
-            shortname: itemBeforeUpdate.shortname,
+            // shortname: itemBeforeUpdate.shortname,
             updated_at: itemBeforeUpdate.updated_at,
           },
           new_data: {
+            // Exclude shortname
             name: itemAfterUpdate.name,
-            shortname: itemAfterUpdate.shortname,
+            // shortname: itemAfterUpdate.shortname,
             updated_at: itemAfterUpdate.updated_at,
           },
         },
       ];
-      const actionDescription = `Set name to "${itemAfterUpdate.name}" (shortname: "${itemAfterUpdate.shortname}") for work item (was: "${itemBeforeUpdate.name}")`;
+      // Adjusted description
+      const actionDescription = `Set name to "${itemAfterUpdate.name}" for work item (was: "${itemBeforeUpdate.name}")`;
       const actionData: CreateActionHistoryInput = {
         action_type: 'SET_NAME',
         work_item_id: workItemId,

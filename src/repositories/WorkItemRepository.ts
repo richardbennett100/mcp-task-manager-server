@@ -4,9 +4,10 @@ import { WorkItemRepositoryBase, type WorkItemData, type WorkItemDependencyData 
 import { WorkItemRepositoryCRUD } from './WorkItemRepositoryCRUD.js';
 import { WorkItemRepositoryHierarchy } from './WorkItemRepositoryHierarchy.js';
 import { WorkItemRepositoryDependencies } from './WorkItemRepositoryDependencies.js';
-import { WorkItemRepositorySearchOrder } from './WorkItemRepositorySearchOrder.js';
+// FIX: Import CandidateTaskFilters type
+import { WorkItemRepositorySearchOrder, type CandidateTaskFilters } from './WorkItemRepositorySearchOrder.js';
 import { WorkItemRepositoryUndoRedo } from './WorkItemRepositoryUndoRedo.js';
-import { ValidationError } from '../utils/errors.js'; // Added import
+import { ValidationError } from '../utils/errors.js';
 
 /**
  * Main repository class for managing work items.
@@ -160,13 +161,13 @@ export class WorkItemRepository extends WorkItemRepositoryBase {
     filter?: { isActive?: boolean },
     client?: PoolClient | Pool
   ): Promise<WorkItemData[]> {
-    return this.searchOrder.searchByNameOrDescription(query, filter, client);
+    return this.searchOrder.searchByNameOrDescription(query, filter?.isActive, client);
   }
 
   public findSiblingEdgeOrderKey(
     parentId: string | null,
     edge: 'first' | 'last',
-    client: PoolClient
+    client: PoolClient // Keeping as PoolClient as it's likely used within transactions
   ): Promise<string | null> {
     return this.searchOrder.findSiblingEdgeOrderKey(parentId, edge, client);
   }
@@ -174,13 +175,20 @@ export class WorkItemRepository extends WorkItemRepositoryBase {
     parentId: string | null,
     relativeToId: string,
     relation: 'before' | 'after',
-    client: PoolClient
+    client: PoolClient // Keeping as PoolClient as it's likely used within transactions
   ): Promise<{ before: string | null; after: string | null }> {
     if (relation !== 'before' && relation !== 'after') {
-      // Consider throwing a ValidationError if this is an invalid input that shouldn't occur
       throw new ValidationError("Relation must be 'before' or 'after'");
     }
     return this.searchOrder.findNeighbourOrderKeys(parentId, relativeToId, relation, client);
+  }
+
+  // FIX: Expose findCandidateTasksForSuggestion from the composed searchOrder helper
+  public findCandidateTasksForSuggestion(
+    filters: CandidateTaskFilters,
+    client?: PoolClient | Pool
+  ): Promise<WorkItemData[]> {
+    return this.searchOrder.findCandidateTasksForSuggestion(filters, client);
   }
 
   // Undo/Redo specific methods

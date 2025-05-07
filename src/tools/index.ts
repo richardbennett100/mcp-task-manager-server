@@ -23,7 +23,8 @@ import { moveItemToEndTool } from './move_item_to_end_tool.js';
 import { moveItemAfterTool } from './move_item_after_tool.js';
 import { moveItemBeforeTool } from './move_item_before_tool.js';
 import { getFullTreeTool } from './get_full_tree_tool.js';
-import { promoteToProjectTool } from './promote_to_project_tool.js'; // New import
+import { promoteToProjectTool } from './promote_to_project_tool.js';
+import { getNextTaskTool } from './get_next_task_tool.js'; // NEW import
 
 /**
  * Register all defined tools with the MCP server instance.
@@ -53,7 +54,8 @@ export function registerTools(server: McpServer): void {
     moveItemAfterTool(server);
     moveItemBeforeTool(server);
     getFullTreeTool(server);
-    promoteToProjectTool(server); // New registration
+    promoteToProjectTool(server);
+    getNextTaskTool(server); // NEW registration
 
     logger.info('All tools registered successfully.');
   } catch (error) {

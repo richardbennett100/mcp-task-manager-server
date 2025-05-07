@@ -51,7 +51,6 @@ CREATE TABLE work_items (
     work_item_id UUID PRIMARY KEY NOT NULL,
     parent_work_item_id UUID NULL REFERENCES work_items(work_item_id) ON DELETE NO ACTION,
     name TEXT NOT NULL,
-    shortname TEXT NULL,
     description TEXT NULL,
     status VARCHAR(20) NOT NULL CHECK(status IN ('todo', 'in-progress', 'review', 'done')),
     priority VARCHAR(10) NOT NULL CHECK(priority IN ('high', 'medium', 'low')),
@@ -59,7 +58,8 @@ CREATE TABLE work_items (
     created_at TIMESTAMPTZ NOT NULL,
     updated_at TIMESTAMPTZ NOT NULL,
     due_date TIMESTAMPTZ NULL,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    tags TEXT[] NULL -- ADDED tags column
 );
 
 -- Table: work_item_dependencies
@@ -107,6 +107,7 @@ CREATE INDEX IF NOT EXISTS idx_work_items_order_key ON work_items(order_key) WHE
 CREATE INDEX IF NOT EXISTS idx_work_items_parent_order ON work_items(parent_work_item_id, order_key);
 CREATE INDEX IF NOT EXISTS idx_work_items_is_active ON work_items(is_active);
 CREATE INDEX IF NOT EXISTS idx_work_items_parent_active_order ON work_items(parent_work_item_id, is_active, order_key);
+CREATE INDEX IF NOT EXISTS idx_work_items_tags_gin ON work_items USING GIN (tags) WHERE tags IS NOT NULL; -- ADDED GIN index for tags
 
 
 -- Indexes on work_item_dependencies table

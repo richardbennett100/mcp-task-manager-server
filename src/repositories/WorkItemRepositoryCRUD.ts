@@ -16,21 +16,20 @@ export class WorkItemRepositoryCRUD extends WorkItemRepositoryBase {
     dependencies?: WorkItemDependencyData[]
   ): Promise<WorkItemData> {
     const dbClient = this.getClient(client);
-    // ... (rest of create method is likely okay as it already uses client)
     logger.debug(`[WorkItemRepositoryCRUD] Creating item ${item.work_item_id} within transaction`);
     try {
       const insertItemSql = `
             INSERT INTO work_items (
-            work_item_id, parent_work_item_id, name, shortname, description,
+            work_item_id, parent_work_item_id, name, description,
             status, priority, order_key, created_at, updated_at, due_date, is_active
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) -- Removed shortname ($4)
             RETURNING *;
         `;
       const itemParams = [
         item.work_item_id,
         item.parent_work_item_id,
         item.name,
-        item.shortname,
+        // item.shortname, // REMOVED shortname
         item.description,
         item.status,
         item.priority,
@@ -171,19 +170,24 @@ export class WorkItemRepositoryCRUD extends WorkItemRepositoryBase {
     }
   }
 
+  /**
+   * @deprecated Use granular update methods or updateFields instead
+   * Updates a work item, potentially replacing all dependencies.
+   */
   public async update(
     client: PoolClient, // Requires client
     workItemId: string,
     updatePayload: Partial<Omit<WorkItemData, 'work_item_id' | 'created_at' | 'updated_at' | 'is_active'>>,
-    newDependenciesInput?: WorkItemDependencyData[]
+    newDependenciesInput?: WorkItemDependencyData[] // If provided, replaces *all* existing dependencies
   ): Promise<WorkItemData> {
-    // ... (rest of update method is likely okay as it already uses client for its own DB ops)
     if (!uuidValidate(workItemId)) {
       throw new Error(`Invalid UUID format for workItemId: ${workItemId}`);
     }
     const dbClient = this.getClient(client);
     logger.debug(
-      `[WorkItemRepositoryCRUD - DEPRECATED] Updating work item ${workItemId} in transaction (full dependency replacement)`
+      `[WorkItemRepositoryCRUD - DEPRECATED] Updating work item ${workItemId} in transaction (dependency replacement: ${
+        newDependenciesInput !== undefined
+      })`
     );
     try {
       const now = new Date().toISOString();
@@ -192,7 +196,8 @@ export class WorkItemRepositoryCRUD extends WorkItemRepositoryBase {
       let paramIndex = 1;
       for (const key in updatePayload) {
         if (Object.prototype.hasOwnProperty.call(updatePayload, key)) {
-          if (key === 'is_active' || key === 'created_at' || key === 'work_item_id') continue;
+          // Ensure shortname is not included in update payload
+          if (key === 'is_active' || key === 'created_at' || key === 'work_item_id' || key === 'shortname') continue;
           const typedKey = key as keyof typeof updatePayload;
           const value = updatePayload[typedKey];
           setClauses.push(`"${typedKey}" = $${paramIndex++}`);
@@ -220,9 +225,32 @@ export class WorkItemRepositoryCRUD extends WorkItemRepositoryBase {
         if (currentDataResult.rowCount === 0) throw new NotFoundError(`Active work item ${workItemId} not found.`);
         updatedItemResult = this.mapRowToWorkItemData(currentDataResult.rows[0]);
       }
+
+      // --- START: Dependency Replacement Logic ---
       if (newDependenciesInput !== undefined) {
-        await this.addOrUpdateDependencies(client, workItemId, newDependenciesInput);
+        // 1. Deactivate *all* existing active dependencies for this item
+        const deactivateSql = `UPDATE work_item_dependencies SET is_active = FALSE WHERE work_item_id = $1 AND is_active = TRUE;`;
+        const deactivateResult = await dbClient.query(deactivateSql, [workItemId]);
+        logger.debug(
+          `[WorkItemRepositoryCRUD - update] Deactivated ${
+            deactivateResult.rowCount ?? 0
+          } existing active dependencies for ${workItemId}.`
+        );
+
+        // 2. Add/Update the new set of dependencies
+        if (newDependenciesInput.length > 0) {
+          logger.debug(
+            `[WorkItemRepositoryCRUD - update] Adding/Updating ${newDependenciesInput.length} dependencies.`
+          );
+          await this.addOrUpdateDependencies(client, workItemId, newDependenciesInput);
+        } else {
+          logger.debug(
+            `[WorkItemRepositoryCRUD - update] No new dependencies provided, all existing were deactivated.`
+          );
+        }
       }
+      // --- END: Dependency Replacement Logic ---
+
       return updatedItemResult;
     } catch (error: unknown) {
       logger.error(`[WorkItemRepositoryCRUD - DEPRECATED] Failed transaction for updating item ${workItemId}:`, error);
@@ -234,7 +262,7 @@ export class WorkItemRepositoryCRUD extends WorkItemRepositoryBase {
     client: PoolClient, // Requires client
     workItemId: string,
     payload: Partial<
-      Omit<WorkItemData, 'work_item_id' | 'created_at' | 'is_active' | 'updated_at'> // parent_work_item_id is allowed here
+      Omit<WorkItemData, 'work_item_id' | 'created_at' | 'is_active' | 'updated_at' | 'shortname'> // Exclude shortname
     >
   ): Promise<WorkItemData | null> {
     // ... (rest of updateFields method is likely okay as it already uses client)
@@ -244,10 +272,9 @@ export class WorkItemRepositoryCRUD extends WorkItemRepositoryBase {
     let paramIndex = 1;
 
     const allowedFields: (keyof WorkItemData)[] = [
-      // Explicitly list allowed fields
+      // Explicitly list allowed fields (shortname REMOVED)
       'parent_work_item_id',
       'name',
-      'shortname',
       'description',
       'status',
       'priority',
@@ -268,7 +295,7 @@ export class WorkItemRepositoryCRUD extends WorkItemRepositoryBase {
           key === 'parent_work_item_id' ||
           key === 'description' ||
           key === 'due_date' ||
-          key === 'shortname' ||
+          // key === 'shortname' || // REMOVED shortname
           key === 'order_key'
         ) {
           // These fields can be explicitly set to null

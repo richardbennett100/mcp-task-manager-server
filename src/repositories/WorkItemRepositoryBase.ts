@@ -7,7 +7,7 @@ export interface WorkItemData {
   work_item_id: string;
   parent_work_item_id: string | null;
   name: string;
-  shortname: string | null; // Will be removed later, keep for now
+  //shortname: string | null; // Will be removed later, keep for now
   description: string | null;
   status: 'todo' | 'in-progress' | 'review' | 'done';
   priority: 'high' | 'medium' | 'low';
@@ -50,7 +50,7 @@ export class WorkItemRepositoryBase {
       work_item_id: row.work_item_id ?? null,
       parent_work_item_id: row.parent_work_item_id ?? null,
       name: row.name ?? '',
-      shortname: row.shortname ?? null,
+      // shortname: row.shortname ?? null,
       description: row.description ?? null,
       status: row.status ?? 'todo',
       priority: row.priority ?? 'medium',

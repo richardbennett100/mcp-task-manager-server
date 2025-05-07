@@ -101,7 +101,7 @@ describe('WorkItemService - Promote to Project Integration Tests', () => {
       expect(addDepsActionForLinkBack).toBeDefined();
     });
 
-    it('should correctly update order_key and shortname upon promotion', async () => {
+    it('should correctly update order_key upon promotion', async () => {
       const itemBefore = await testEnvironment.workItemService.getWorkItemById(taskToPromote.work_item_id);
       expect(itemBefore).not.toBeNull();
 
@@ -110,12 +110,8 @@ describe('WorkItemService - Promote to Project Integration Tests', () => {
       );
 
       expect(promotedItem.order_key).not.toBe(itemBefore!.order_key);
-      // In this specific test setup, the shortname "task-to-be-promoted" IS unique
-      // in the root context, so calculateShortname will return the same value.
-      expect(promotedItem.shortname).toBe(itemBefore!.shortname); // Corrected assertion
-
       expect(typeof promotedItem.order_key).toBe('string');
-      expect(promotedItem.shortname).not.toBeNull();
+      // REMOVED shortname assertions
     });
   });
 
@@ -163,7 +159,7 @@ describe('WorkItemService - Promote to Project Integration Tests', () => {
       expect(taskAfterFirstUndo).toBeDefined();
       expect(taskAfterFirstUndo!.parent_work_item_id).toBe(originalParent.work_item_id);
       expect(taskAfterFirstUndo!.order_key).toBe(originalTaskState!.order_key);
-      expect(taskAfterFirstUndo!.shortname).toBe(originalTaskState!.shortname);
+      // REMOVED shortname assertion
 
       let parentAfterFirstUndo = await testEnvironment.workItemService.getWorkItemById(originalParent.work_item_id);
       let linkBackDepAfterFirstUndo = parentAfterFirstUndo!.dependencies.find(
@@ -210,7 +206,7 @@ describe('WorkItemService - Promote to Project Integration Tests', () => {
       expect(taskAfterSecondRedo).toBeDefined();
       expect(taskAfterSecondRedo!.parent_work_item_id).toBeNull();
       expect(taskAfterSecondRedo!.order_key).not.toBe(originalTaskState!.order_key);
-      expect(taskAfterSecondRedo!.shortname).toBe(originalTaskState!.shortname); // Should be the same if unique in root
+      // REMOVED shortname assertion
     });
   });
 });

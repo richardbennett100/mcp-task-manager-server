@@ -27,7 +27,7 @@ export class WorkItemAddingService {
   constructor(workItemRepository: WorkItemRepository, actionHistoryRepository: ActionHistoryRepository) {
     this.workItemRepository = workItemRepository;
     this.actionHistoryRepository = actionHistoryRepository;
-    this.utilsService = new WorkItemUtilsService(workItemRepository);
+    this.utilsService = new WorkItemUtilsService(); // Instantiate without repo
     this.historyService = new WorkItemHistoryService(workItemRepository, actionHistoryRepository);
   }
 
@@ -118,15 +118,15 @@ export class WorkItemAddingService {
           throw new Error(`Failed to calculate a valid order key for item "${input.name}"`);
         }
 
-        // 4. Calculate Shortname (Logic remains the same)
-        const calculatedShortname = await this.utilsService.calculateShortname(input.name, parentId, workItemId);
+        // 4. Calculate Shortname REMOVED
+        // const calculatedShortname = await this.utilsService.calculateShortname(input.name, parentId, workItemId);
 
-        // 5. Prepare New Item Data (Logic remains the same)
+        // 5. Prepare New Item Data (Logic remains the same, shortname removed)
         const newItemData: WorkItemData = {
           work_item_id: workItemId,
           parent_work_item_id: parentId,
           name: input.name,
-          shortname: calculatedShortname,
+          // shortname: calculatedShortname, // REMOVED
           description: input.description ?? null,
           status: input.status ?? 'todo',
           priority: input.priority ?? 'medium',

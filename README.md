@@ -23,22 +23,23 @@ This server acts as a persistent backend for local MCP clients (like AI agents o
 
 ## Implemented MCP Tools
 
-*(Note: This list reflects the planned and partially implemented toolset. Refer to the corresponding `src/tools/*Params.ts` files for detailed Zod schemas.)*
+*(Note: This list reflects the implemented toolset. Refer to the corresponding `src/tools/*Params.ts` files for detailed Zod schemas.)*
 
 **Creation & Deletion:**
 
 * **`create_project`**: Creates a new top-level work item (project). Can optionally include initial child tasks.
 * **`add_task`**: Adds a single new work item as a child of a specified parent. Can optionally include initial sub-tasks. Requires `parent_work_item_id`.
-* **`add_child_tasks`**: Adds multiple new work items as children under a specified parent.
+* **`add_child_tasks`**: Adds multiple new work items as children under a specified parent. *(Note: Implementation status may need verification)*
 * **`delete_project`**: Soft-deletes a specific project (root work item) and all its descendants.
 * **`delete_task`**: Soft-deletes one or more specified work items (which must not be root projects) and their descendants.
-* **`delete_child_tasks`**: Soft-deletes specified child work items under a specific parent.
+* **`delete_child_tasks`**: Soft-deletes specified child work items under a specific parent. *(Note: Implementation status may need verification)*
 
 **Reading & Querying:**
 
 * **`list_tasks`**: Lists the *direct* children of a parent work item, or lists root projects. Returns a flat list sorted by order.
 * **`get_full_tree`**: Retrieves a work item and its *entire* descendant hierarchy recursively. Returns a structured JSON object with full details for all items, including dependencies. (Agent formats this for display).
 * **`list_history`**: Lists recorded actions, optionally filtered by a date range. Returns timestamps and descriptions.
+* **`get_next_task`**: Intelligently identifies the next actionable task based on dependencies, status, priority, etc.
 
 **Updating Item Properties:**
 
@@ -68,7 +69,6 @@ This server acts as a persistent backend for local MCP clients (like AI agents o
 
 ## Planned/Future Tools
 
-* **`get_next_task`**: Intelligently identifies the next actionable task based on dependencies, status, priority, etc.
 * **`export_project`**: Exports a project structure to a shareable format (e.g., JSON).
 * **`import_project`**: Creates a new project from an exported format.
 
@@ -125,7 +125,6 @@ You can set these directly or use a `.env` file (e.g., `.env.development`, `.env
 * `/dist`: Compiled JavaScript output.
 * `/docs`: Project documentation (PRD, Feature Specs, RFC).
 * `start_local_pg.sh`: Script to run a local PostgreSQL Docker container.
-* `tasks.md`: Manual task tracking file for development.
 * Config files (`package.json`, `tsconfig.json`, `.eslintrc.json`, etc.)
 
 ## Linting and Formatting

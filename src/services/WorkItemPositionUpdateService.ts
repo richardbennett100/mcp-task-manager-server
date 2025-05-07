@@ -27,7 +27,7 @@ export class WorkItemPositionUpdateService {
   constructor(workItemRepository: WorkItemRepository, actionHistoryRepository: ActionHistoryRepository) {
     this.workItemRepository = workItemRepository;
     this.actionHistoryRepository = actionHistoryRepository;
-    this.utilsService = new WorkItemUtilsService(workItemRepository);
+    this.utilsService = new WorkItemUtilsService(); // Corrected: Instantiate without args
     this.readingService = new WorkItemReadingService(workItemRepository);
     this.historyService = new WorkItemHistoryService(workItemRepository, actionHistoryRepository);
   }

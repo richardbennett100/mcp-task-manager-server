@@ -30,7 +30,7 @@ export class WorkItemPromoteService {
   constructor(workItemRepository: WorkItemRepository, actionHistoryRepository: ActionHistoryRepository) {
     this.workItemRepository = workItemRepository;
     this.actionHistoryRepository = actionHistoryRepository;
-    this.utilsService = new WorkItemUtilsService(workItemRepository);
+    this.utilsService = new WorkItemUtilsService(); // Instantiate without repo
     this.readingService = new WorkItemReadingService(workItemRepository);
     this.historyService = new WorkItemHistoryService(workItemRepository, actionHistoryRepository);
     // Initialize dependencyUpdateService as it will be used
@@ -75,22 +75,22 @@ export class WorkItemPromoteService {
         throw new Error(`Failed to calculate a new order key for promoted project ${workItemId}.`);
       }
 
-      // Recalculate shortname as it's now a root item
-      const newShortname = await this.utilsService.calculateShortname(
-        itemBeforePromotion.name,
-        null, // New parent is null
-        workItemId
-      );
-      if (newShortname === null) {
-        throw new Error(
-          `Failed to generate a unique shortname for the promoted project: "${itemBeforePromotion.name}"`
-        );
-      }
+      // REMOVED shortname calculation
+      // const newShortname = await this.utilsService.calculateShortname(
+      //   itemBeforePromotion.name,
+      //   null, // New parent is null
+      //   workItemId
+      // );
+      // if (newShortname === null) {
+      //   throw new Error(
+      //     `Failed to generate a unique shortname for the promoted project: "${itemBeforePromotion.name}"`
+      //   );
+      // }
 
       const updatePayload: Partial<WorkItemData> = {
         parent_work_item_id: null,
         order_key: newOrderKey,
-        shortname: newShortname,
+        // REMOVED shortname: newShortname,
       };
 
       itemAfterPromotion = await this.workItemRepository.updateFields(client, workItemId, updatePayload);
@@ -105,7 +105,7 @@ export class WorkItemPromoteService {
         );
       }
 
-      // Add undo step for the main item update
+      // Add undo step for the main item update (excluding shortname)
       undoStepsData.push({
         step_order: stepOrder++,
         step_type: 'UPDATE',
@@ -114,13 +114,13 @@ export class WorkItemPromoteService {
         old_data: {
           parent_work_item_id: itemBeforePromotion.parent_work_item_id,
           order_key: itemBeforePromotion.order_key,
-          shortname: itemBeforePromotion.shortname,
+          // REMOVED shortname: itemBeforePromotion.shortname,
           updated_at: itemBeforePromotion.updated_at,
         },
         new_data: {
           parent_work_item_id: itemAfterPromotion.parent_work_item_id,
           order_key: itemAfterPromotion.order_key,
-          shortname: itemAfterPromotion.shortname,
+          // REMOVED shortname: itemAfterPromotion.shortname,
           updated_at: itemAfterPromotion.updated_at,
         },
       });
@@ -150,7 +150,7 @@ export class WorkItemPromoteService {
 
           const depsBeforeLinkAdd = await this.workItemRepository.findDependencies(
             originalParentId,
-            { isActive: false } // Get all, to see if it existed but was inactive
+            { isActive: undefined } // Get all, to see if it existed but was inactive
           );
           const linkExistedBefore = depsBeforeLinkAdd.find((d) => d.depends_on_work_item_id === workItemId);
 

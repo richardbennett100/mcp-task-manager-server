@@ -1,14 +1,13 @@
 // src/services/__tests__/unit/WorkItemUtilsService.spec.ts
 import { WorkItemUtilsService } from '../../WorkItemUtilsService.js';
-import { WorkItemRepository } from '../../../repositories/WorkItemRepository.js';
-// Removed logger import - no longer needed after removing jest.mock and dummy log
+// Removed WorkItemRepository import - no longer needed
 
 describe('WorkItemUtilsService Unit Tests', () => {
   let utilsService: WorkItemUtilsService;
 
   beforeAll(() => {
-    // Instantiate with undefined repository - safe as only testing calculateOrderKey
-    utilsService = new WorkItemUtilsService(undefined as any as WorkItemRepository);
+    // Instantiate without repository - constructor now takes no arguments
+    utilsService = new WorkItemUtilsService();
   });
 
   describe('calculateOrderKey', () => {
@@ -105,5 +104,5 @@ describe('WorkItemUtilsService Unit Tests', () => {
     // and the final isFinite check provides safety.
   });
 
-  // describe('calculateShortname', () => { ... });
+  // calculateShortname tests were removed as the method was deleted.
 });
