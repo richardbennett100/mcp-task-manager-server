@@ -1,7 +1,7 @@
-// src/tools/deleteTaskParams.ts
+// src/tools/delete_task_params.ts
 import { z } from 'zod';
 
-export const TOOL_NAME = 'deleteTask'; // Keep familiar name
+export const TOOL_NAME = 'delete_task'; // Renamed
 
 export const TOOL_DESCRIPTION = `
 Marks one or more work items (projects, tasks, etc.) as 'deleted' (soft delete).

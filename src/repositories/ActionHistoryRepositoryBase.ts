@@ -5,7 +5,6 @@ import { logger } from '../utils/logger.js';
 // Define interfaces for the history data based on schema
 export interface ActionHistoryData {
   action_id: string; // UUID
-  user_id: string | null; // TEXT or null
   timestamp: string; // ISO String representation of TIMESTAMPTZ
   action_type: string; // e.g., 'ADD_WORK_ITEM', 'UNDO_ACTION'
   work_item_id: string | null; // UUID or null
@@ -18,14 +17,14 @@ export interface UndoStepData {
   undo_step_id: string; // UUID
   action_id: string; // UUID
   step_order: number; // INTEGER
-  step_type: 'INSERT' | 'UPDATE' | 'DELETE'; // VARCHAR
+  step_type: 'UPDATE'; // VARCHAR - Only 'UPDATE' is now expected based on schema and logic
   table_name: string; // VARCHAR
   record_id: string; // TEXT
   old_data: object | null; // JSONB
   new_data: object | null; // JSONB
 }
 
-// Input types for creating history records
+// Input types for creating history records - Removed user_id
 export interface CreateActionHistoryInput
   extends Omit<ActionHistoryData, 'action_id' | 'timestamp' | 'is_undone' | 'undone_at_action_id'> {}
 
@@ -58,10 +57,10 @@ export class ActionHistoryRepositoryBase {
 
   /** Helper function to map row data to ActionHistoryData */
   protected mapRowToActionHistoryData(row: any): ActionHistoryData {
-    // FIXME: Replace 'any' with a specific type for database rows if possible. (Lines 65, 83, 85)
+    // FIXME: Replace 'any' with a specific type for database rows if possible.
+    // Removed user_id mapping
     return {
       action_id: row.action_id,
-      user_id: row.user_id,
       timestamp: row.timestamp instanceof Date ? row.timestamp.toISOString() : String(row.timestamp), // Ensure string
       action_type: row.action_type,
       work_item_id: row.work_item_id,
@@ -73,9 +72,9 @@ export class ActionHistoryRepositoryBase {
 
   /** Helper to map raw row data to UndoStepData, ensuring JSON parsing */
   protected mapRowToUndoStepData(row: any): UndoStepData {
-    // FIXME: Replace 'any' with a specific type for database rows if possible. (Line 83)
+    // FIXME: Replace 'any' with a specific type for database rows if possible.
     const parseJsonIfNeeded = (data: any): object | null => {
-      // FIXME: Replace 'any' with a specific type for JSONB data if possible. (Line 85)
+      // FIXME: Replace 'any' with a specific type for JSONB data if possible.
       if (data === null || typeof data === 'object') return data;
       if (typeof data === 'string') {
         try {

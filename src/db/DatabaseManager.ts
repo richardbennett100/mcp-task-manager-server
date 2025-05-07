@@ -8,13 +8,13 @@ import { logger } from '../utils/logger.js';
 
 export class DatabaseManager {
   private static instance: DatabaseManager | null = null;
+  private static initializationPromise: Promise<void> | null = null; // Static promise for initialization
   private pool: Pool;
-  private initializationComplete: boolean = false;
-  private initializationPromise: Promise<void> | null = null;
+  private initializationComplete: boolean = false; // Instance-level flag
 
   private constructor() {
     const configManager = ConfigurationManager.getInstance();
-    logger.info('[DatabaseManager] Setting up PostgreSQL connection pool...');
+    logger.info('[DatabaseManager] Constructor: Setting up PostgreSQL connection pool...');
     try {
       this.pool = new pg.Pool({
         host: configManager.getPgHost(),
@@ -22,138 +22,174 @@ export class DatabaseManager {
         user: configManager.getPgUser(),
         password: configManager.getPgPassword(),
         database: configManager.getPgDatabase(),
+        connectionTimeoutMillis: 5000, // Keep timeout
       });
+
       this.pool.on('error', (err) => {
         logger.error('[DatabaseManager] Unexpected error on idle client', { err });
         console.error('[DatabaseManager] Fallback console log: Unexpected error on idle client:', err);
+        // On critical error, reset state to allow re-initialization attempt
+        this.initializationComplete = false;
+        DatabaseManager.instance = null;
+        DatabaseManager.initializationPromise = null;
       });
-      logger.info('[DatabaseManager] PostgreSQL connection pool configured.');
-      // Start initialization immediately
-      this.initializationPromise = this.initializeDatabaseInternal();
+      logger.info('[DatabaseManager] Constructor: PostgreSQL connection pool configured.');
     } catch (configError) {
       logger.error('[DatabaseManager] CRITICAL: Failed to configure PostgreSQL pool:', { error: configError });
       console.error(
         '[DatabaseManager] Fallback console log: CRITICAL: Failed to configure PostgreSQL pool:',
         configError
       );
-      process.exit(1); // Exit if pool config fails
+      throw configError; // Throw error to prevent instantiation
     }
   }
 
+  // Simplified getInstance - handles initialization on first call
   public static async getInstance(): Promise<DatabaseManager> {
-    if (!DatabaseManager.instance) {
-      DatabaseManager.instance = new DatabaseManager();
-      await DatabaseManager.instance.initializationPromise;
-      logger.info('[DatabaseManager] Instance created and database initialized.');
-    } else {
-      await DatabaseManager.instance.initializationPromise;
+    // If instance exists and is initialized, return it directly
+    if (DatabaseManager.instance?.initializationComplete) {
+      logger.debug('[DatabaseManager] getInstance: Returning existing initialized instance.');
+      return DatabaseManager.instance;
     }
+
+    // If initialization is already in progress, await it
+    if (DatabaseManager.initializationPromise) {
+      logger.debug('[DatabaseManager] getInstance: Initialization in progress, awaiting existing promise.');
+      await DatabaseManager.initializationPromise;
+      // Check again if successful after awaiting
+      if (DatabaseManager.instance?.initializationComplete) {
+        return DatabaseManager.instance;
+      } else {
+        logger.error('[DatabaseManager] getInstance: Awaited existing promise, but initialization failed.');
+        throw new Error('DatabaseManager initialization failed after awaiting existing promise.');
+      }
+    }
+
+    // Otherwise, start new initialization
+    logger.debug('[DatabaseManager] getInstance: No instance or ongoing initialization, starting new...');
+    const newInstance = new DatabaseManager();
+    DatabaseManager.initializationPromise = newInstance
+      .initializeDatabaseInternal()
+      .then(() => {
+        logger.info('[DatabaseManager] getInstance: Initialization successful.');
+        DatabaseManager.instance = newInstance; // Set static instance *after* successful init
+      })
+      .catch((initError) => {
+        logger.error('[DatabaseManager] getInstance: Initialization failed.', { initError });
+        DatabaseManager.initializationPromise = null; // Reset promise on failure
+        DatabaseManager.instance = null; // Ensure no broken instance is kept
+        throw initError; // Propagate the error
+      });
+
+    await DatabaseManager.initializationPromise;
+
+    // Final check after awaiting the *new* promise
     if (!DatabaseManager.instance?.initializationComplete) {
-      logger.error('[DatabaseManager] getInstance called but initialization failed or did not complete.');
-      throw new Error('Database initialization failed or did not complete.');
+      logger.error(
+        '[DatabaseManager] getInstance: Exiting, failed to get a fully initialized instance after new attempt.'
+      );
+      throw new Error('DatabaseManager initialization failed or did not complete.');
     }
+
+    logger.debug('[DatabaseManager] getInstance: Returning newly initialized instance.');
     return DatabaseManager.instance;
   }
 
   private async initializeDatabaseInternal(): Promise<void> {
+    // Prevent re-running if already complete on this instance
     if (this.initializationComplete) {
-      logger.info('[DatabaseManager] Initialization already marked complete.');
+      logger.debug('[DatabaseManager] initializeDatabaseInternal: Instance already marked complete.');
       return;
     }
-    if (this.initializationPromise && !this.initializationComplete) {
-      logger.warn('[DatabaseManager] Initialization already in progress, awaiting existing promise.');
-      return this.initializationPromise;
-    }
 
-    logger.info('[DatabaseManager] Starting database schema initialization...');
+    logger.info('[DatabaseManager] initializeDatabaseInternal: Starting schema initialization...');
     let client: PoolClient | null = null;
     try {
-      client = await this.pool.connect();
-      logger.info(`[DatabaseManager] Connected to PostgreSQL for schema check/application.`);
+      // Direct connection attempt
+      logger.debug('[DatabaseManager] initializeDatabaseInternal: Attempting connection...');
+      client = await this.pool.connect(); // Throws if connection fails
+      logger.info(`[DatabaseManager] initializeDatabaseInternal: Connected to PostgreSQL.`);
 
-      // --- FIX: Force schema execution for tests or always ---
-      // Option: Check an environment variable like NODE_ENV === 'test'
-      // For simplicity now, let's *always* try to run the schema script.
-      // The script uses DROP/CREATE which should handle resetting.
-      const forceSchemaRun = true; // Set to true to always run
-      // const requiredTables = ['work_items', 'work_item_dependencies', 'action_history', 'undo_steps'];
-      // let allTablesExist = true;
-      // ... (Keep the check logic if you want conditional run later) ...
-      // logger.debug(`[DatabaseManager] All required tables exist check result: ${allTablesExist}`);
-
-      // if (!allTablesExist || forceSchemaRun) { // Modify condition
+      const forceSchemaRun = true; // Keep forcing schema run for test consistency
       if (forceSchemaRun) {
-        // Simpler: Always run
-        logger.info(
-          '[DatabaseManager] Force schema run enabled or tables missing. Initializing/Re-initializing schema...'
-        );
+        logger.info('[DatabaseManager] initializeDatabaseInternal: Force schema run enabled.');
         const __filename = fileURLToPath(import.meta.url);
         const __dirname = path.dirname(__filename);
-        const schemaPath = path.join(__dirname, 'schema.sql'); // Relative to dist/db
-        logger.info(`[DatabaseManager] Looking for schema file at: ${schemaPath}`);
+        const schemaPath = path.join(__dirname, 'schema.sql');
+        logger.info(`[DatabaseManager] initializeDatabaseInternal: Schema path: ${schemaPath}`);
 
-        // Check if file exists before reading
         try {
           await fs.access(schemaPath);
         } catch (accessError) {
-          logger.error(`[DatabaseManager] Schema file not found at ${schemaPath}`);
+          logger.error(`[DatabaseManager] initializeDatabaseInternal: Schema file not found at ${schemaPath}.`, {
+            accessError,
+          });
           throw new Error(`Schema file not found: ${schemaPath}`);
         }
 
         const schemaSql = await fs.readFile(schemaPath, 'utf8');
-        logger.debug('[DatabaseManager] Schema file read successfully. Executing schema setup...');
-
-        // Execute the full script
+        logger.debug('[DatabaseManager] initializeDatabaseInternal: Executing schema setup...');
         await client.query(schemaSql);
-        logger.info('[DatabaseManager] Full schema script executed.');
+        logger.info('[DatabaseManager] initializeDatabaseInternal: Full schema script executed.');
 
-        // Optional: Verify critical tables exist after execution
+        // Verification
         const finalCheck = await client.query(
           `SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'work_items');`
         );
         if (!finalCheck.rows[0]?.exists) {
-          logger.error('!!! [DatabaseManager] work_items table STILL does not exist after schema execution!');
+          logger.error(
+            '[DatabaseManager] initializeDatabaseInternal: work_items table does not exist after execution!'
+          );
           throw new Error('Schema execution failed to create work_items table.');
         } else {
-          logger.info('[DatabaseManager] Confirmed work_items table exists after schema execution.');
+          logger.info('[DatabaseManager] initializeDatabaseInternal: Confirmed work_items table exists.');
         }
       } else {
-        // This block might not be reached if forceSchemaRun is true
-        logger.info('[DatabaseManager] Database schema already initialized (all required tables exist).');
+        logger.info('[DatabaseManager] initializeDatabaseInternal: Skipped forced schema run.');
       }
-      // --- End FIX ---
 
-      this.initializationComplete = true;
-      logger.info('[DatabaseManager] Initialization marked as complete.');
+      this.initializationComplete = true; // Mark instance as complete *only on success*
+      logger.info('[DatabaseManager] initializeDatabaseInternal: Initialization marked as complete.');
     } catch (error: unknown) {
-      logger.error('[DatabaseManager] FAILED during initializeDatabase execution:', { error });
-      console.error('[DatabaseManager] Fallback console log: FAILED during initializeDatabase execution:', error);
-      this.initializationComplete = false;
-      throw error;
+      logger.error('[DatabaseManager] initializeDatabaseInternal: FAILED during execution:', { error });
+      console.error(
+        '[DatabaseManager] initializeDatabaseInternal: Fallback console log: FAILED during execution:',
+        error
+      );
+      this.initializationComplete = false; // Ensure it's marked as failed
+      throw error; // Propagate error to reject the initializationPromise
     } finally {
       if (client) {
         client.release();
-        logger.info(`[DatabaseManager] Released schema check/application client.`);
+        logger.info(`[DatabaseManager] initializeDatabaseInternal: Released client.`);
       }
     }
   }
 
   public getPool(): Pool {
-    if (!this.initializationComplete) {
-      logger.error('[DatabaseManager] getPool called before initialization was complete or after it failed.');
-      throw new Error('Database manager getPool called before initialization was complete or after it failed.');
+    if (!this.initializationComplete || !DatabaseManager.instance) {
+      logger.error('[DatabaseManager] getPool called before initialization was complete or on a failed instance.');
+      throw new Error('Database manager getPool called before initialization was complete or on a failed instance.');
     }
     return this.pool;
   }
 
   public async closeDb(): Promise<void> {
-    if (this.pool) {
+    const instance = DatabaseManager.instance; // Grab current instance if it exists
+    DatabaseManager.instance = null; // Clear static ref
+    DatabaseManager.initializationPromise = null; // Clear static promise
+
+    if (instance?.pool) {
       logger.info('[DatabaseManager] Closing PostgreSQL connection pool...');
-      this.initializationComplete = false;
-      this.initializationPromise = null;
-      DatabaseManager.instance = null;
-      await this.pool.end();
-      logger.info('[DatabaseManager] PostgreSQL connection pool closed.');
+      instance.initializationComplete = false; // Mark specific instance as not complete
+      try {
+        await instance.pool.end();
+        logger.info('[DatabaseManager] PostgreSQL connection pool closed.');
+      } catch (closeError) {
+        logger.error('[DatabaseManager] Error closing pool:', { closeError });
+      }
+    } else {
+      logger.warn('[DatabaseManager] closeDb called but no pool/instance was available.');
     }
   }
 }

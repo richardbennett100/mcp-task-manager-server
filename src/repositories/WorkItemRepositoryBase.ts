@@ -38,6 +38,11 @@ export class WorkItemRepositoryBase {
     this.pool = pool;
   }
 
+  /** Expose the pool instance if needed by services */
+  public getPool(): Pool {
+    return this.pool;
+  }
+
   /** Safely gets a PoolClient, throwing if called without one in a context requiring it. */
   protected getClient(client?: PoolClient): PoolClient {
     if (!client) {
@@ -47,14 +52,11 @@ export class WorkItemRepositoryBase {
     return client;
   }
 
-  /** Returns the client if provided, otherwise the pool for read operations. */
-  protected getClientOrPool(client?: PoolClient): PoolClient | Pool {
-    return client ?? this.pool;
-  }
+  // getClientOrPool removed as finder methods will now always use this.pool
 
   /** Helper function to map row data to WorkItemData */
   protected mapRowToWorkItemData(row: any): WorkItemData {
-    // FIXME: Replace 'any' with a specific type for database rows if possible. (Lines 56, 77)
+    // FIXME: Replace 'any' with a specific type for database rows if possible.
     return {
       work_item_id: row.work_item_id ?? null, // Should ideally not be null
       parent_work_item_id: row.parent_work_item_id ?? null,
@@ -74,8 +76,8 @@ export class WorkItemRepositoryBase {
   }
 
   /** Helper function to map row data to WorkItemDependencyData */
-  protected mapRowToWorkItemDependencyData(row: any): WorkItemDependencyData {
-    // FIXME: Replace 'any' with a specific type for database rows if possible. (Line 77)
+  public mapRowToWorkItemDependencyData(row: any): WorkItemDependencyData {
+    // FIXME: Replace 'any' with a specific type for database rows if possible.
     return {
       work_item_id: row.work_item_id ?? null,
       depends_on_work_item_id: row.depends_on_work_item_id ?? null,

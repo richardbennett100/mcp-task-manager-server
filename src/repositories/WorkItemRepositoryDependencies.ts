@@ -2,6 +2,7 @@
 import { Pool, PoolClient } from 'pg';
 import { logger } from '../utils/logger.js';
 import { WorkItemRepositoryBase, WorkItemDependencyData } from './WorkItemRepositoryBase.js';
+//import { validate as uuidValidate } from 'uuid';
 
 /**
  * Handles operations related to Work Item dependencies.
@@ -16,18 +17,18 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
    */
   public async findDependencies(
     workItemId: string,
-    filter?: { isActive?: boolean; dependsOnActive?: boolean },
-    client?: PoolClient
+    filter?: { isActive?: boolean; dependsOnActive?: boolean } //,
+    //client?: PoolClient | Pool
   ): Promise<WorkItemDependencyData[]> {
     if (!this.validateUuid(workItemId, 'findDependencies workItemId')) {
       return [];
     }
-    const dbClient = this.getClientOrPool(client);
+    const dbClient = this.pool;
 
     let sql = `
             SELECT wid.* FROM work_item_dependencies wid
             LEFT JOIN work_items wi_dep_on ON wid.depends_on_work_item_id = wi_dep_on.work_item_id
-            WHERE wid.work_item_id = $1 `; // Use LEFT JOIN to include deps even if target item is deleted/inactive
+            WHERE wid.work_item_id = $1 `;
     const params: (string | boolean)[] = [workItemId];
     let paramIndex = 2;
 
@@ -35,7 +36,6 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
     sql += ` AND wid.is_active = $${paramIndex++}`;
     params.push(linkIsActive);
 
-    // Filter on the target item's status *if* the filter is provided
     if (filter?.dependsOnActive !== undefined) {
       sql += ` AND wi_dep_on.is_active = $${paramIndex++}`;
       params.push(filter.dependsOnActive);
@@ -62,8 +62,8 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
    */
   public async findDependenciesByItemList(
     workItemIds: string[],
-    filter?: { isActive?: boolean; dependsOnActive?: boolean },
-    client?: PoolClient
+    filter?: { isActive?: boolean; dependsOnActive?: boolean } //,
+    //client?: PoolClient | Pool
   ): Promise<WorkItemDependencyData[]> {
     if (
       workItemIds.length === 0 ||
@@ -72,7 +72,7 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
       logger.warn(`[WorkItemRepositoryDependencies] findDependenciesByItemList called with empty or invalid list.`);
       return [];
     }
-    const dbClient = this.getClientOrPool(client);
+    const dbClient = this.pool;
     const placeholders = workItemIds.map((_, i) => `$${i + 1}`).join(',');
 
     let sql = `
@@ -110,13 +110,13 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
    */
   public async findDependents(
     dependsOnWorkItemId: string,
-    filter?: { isActive?: boolean; dependentIsActive?: boolean },
-    client?: PoolClient
+    filter?: { isActive?: boolean; dependentIsActive?: boolean } //,
+    //client?: PoolClient | Pool
   ): Promise<WorkItemDependencyData[]> {
     if (!this.validateUuid(dependsOnWorkItemId, 'findDependents dependsOnWorkItemId')) {
       return [];
     }
-    const dbClient = this.getClientOrPool(client);
+    const dbClient = this.pool;
 
     let sql = `
             SELECT wid.* FROM work_item_dependencies wid
@@ -158,8 +158,8 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
    */
   public async findDependentsByItemList(
     dependsOnWorkItemIds: string[],
-    filter?: { isActive?: boolean; dependentIsActive?: boolean },
-    client?: PoolClient
+    filter?: { isActive?: boolean; dependentIsActive?: boolean } //,
+    //client?: PoolClient | Pool
   ): Promise<WorkItemDependencyData[]> {
     if (
       dependsOnWorkItemIds.length === 0 ||
@@ -168,7 +168,7 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
       logger.warn(`[WorkItemRepositoryDependencies] findDependentsByItemList called with empty or invalid list.`);
       return [];
     }
-    const dbClient = this.getClientOrPool(client);
+    const dbClient = this.pool;
     const placeholders = dependsOnWorkItemIds.map((_, i) => `$${i + 1}`).join(',');
 
     let sql = `
@@ -206,8 +206,8 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
    */
   public async findDependenciesByCompositeKeys(
     compositeKeys: { work_item_id: string; depends_on_work_item_id: string }[],
-    filter?: { isActive?: boolean },
-    client?: PoolClient
+    filter?: { isActive?: boolean } //,
+    //client?: PoolClient | Pool
   ): Promise<WorkItemDependencyData[]> {
     if (
       compositeKeys.length === 0 ||
@@ -222,8 +222,7 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
       );
       return [];
     }
-    const dbClient = this.getClientOrPool(client);
-
+    const dbClient = this.pool;
     const whereClauses = compositeKeys
       .map((_, i) => `(work_item_id = $${i * 2 + 1} AND depends_on_work_item_id = $${i * 2 + 2})`)
       .join(' OR ');
@@ -280,7 +279,6 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
       .map((_, i) => `(work_item_id = $${i * 2 + 1} AND depends_on_work_item_id = $${i * 2 + 2})`)
       .join(' OR ');
     const params: string[] = compositeKeys.flatMap((key) => [key.work_item_id, key.depends_on_work_item_id]);
-    // Update only links that are currently active
     const sql = ` UPDATE work_item_dependencies SET is_active = FALSE WHERE (${whereClauses}) AND is_active = TRUE; `;
 
     try {

@@ -13,9 +13,12 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "prepare": "husky install || true",
     "test": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
+    "test:bail": "npm test -- --bail", 
+    "build:test:sync": "npm run lint:fix && npm run build && npm run test:bail && ./sync_files.sh",
+    "ci:test": "npm run lint:fix && npm run build && npm run test:bail", 
     "test:integration": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand src/services/WorkItemService.integration.spec.ts",
     "test:watch": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch --runInBand"
-  },
+  }, 
   "keywords": [
     "mcp",
     "model-context-protocol"

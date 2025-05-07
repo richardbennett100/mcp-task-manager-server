@@ -1,4 +1,0 @@
-
-> mcp-task-manager-server@0.1.0 test
-> dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand
-

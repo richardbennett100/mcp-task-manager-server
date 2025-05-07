@@ -19,7 +19,7 @@ export class ActionHistoryRepository extends ActionHistoryRepositoryBase {
   private steps: ActionHistoryRepositorySteps;
 
   constructor(pool: Pool) {
-    super(pool); // Pass pool to base
+    super(pool);
     this.actions = new ActionHistoryRepositoryActions(pool);
     this.steps = new ActionHistoryRepositorySteps(pool);
   }
@@ -31,7 +31,6 @@ export class ActionHistoryRepository extends ActionHistoryRepositoryBase {
     actionData: CreateActionHistoryInput,
     undoStepsData: CreateUndoStepInput[]
   ): Promise<ActionHistoryData> {
-    // Note: createActionWithSteps is slightly different as it orchestrates both helpers
     return this.withTransaction(async (client) => {
       const createdAction = await this.actions.createActionInClient(actionData, client);
       if (undoStepsData.length > 0) {
@@ -39,7 +38,7 @@ export class ActionHistoryRepository extends ActionHistoryRepositoryBase {
           await this.steps.createUndoStepInClient({ ...step, action_id: createdAction.action_id }, client);
         }
       }
-      return createdAction; // Return the action data
+      return createdAction;
     });
   }
 
@@ -79,12 +78,21 @@ export class ActionHistoryRepository extends ActionHistoryRepositoryBase {
     return this.actions.markActionAsNotUndone(actionId, client);
   }
 
-  public findOriginalActionIdForUndo(undoActionId: string): Promise<string | undefined> {
-    return this.actions.findOriginalActionIdForUndo(undoActionId);
+  public findActionLinkedByUndo(undoActionId: string): Promise<ActionHistoryData | undefined> {
+    return this.actions.findActionLinkedByUndo(undoActionId);
   }
 
   public listRecentActions(filter?: { work_item_id?: string | null; limit?: number }): Promise<ActionHistoryData[]> {
     return this.actions.listRecentActions(filter);
+  }
+
+  // NEW: Delegate list history by date range
+  public listHistoryByDateRange(filter?: {
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+  }): Promise<ActionHistoryData[]> {
+    return this.actions.listHistoryByDateRange(filter);
   }
 
   // Step Operations
@@ -98,6 +106,4 @@ export class ActionHistoryRepository extends ActionHistoryRepositoryBase {
   public findUndoStepsByActionId(actionId: string): Promise<UndoStepData[]> {
     return this.steps.findUndoStepsByActionId(actionId);
   }
-
-  // withTransaction remains available via inheritance from ActionHistoryRepositoryBase
 }

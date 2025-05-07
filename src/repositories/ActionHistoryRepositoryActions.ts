@@ -8,7 +8,7 @@ import {
   CreateActionHistoryInput,
   CreateUndoStepInput,
 } from './ActionHistoryRepositoryBase.js';
-import { ActionHistoryRepositorySteps } from './ActionHistoryRepositorySteps.js'; // Need Steps helper
+import { ActionHistoryRepositorySteps } from './ActionHistoryRepositorySteps.js';
 
 /**
  * Handles operations related to the action_history table.
@@ -18,7 +18,6 @@ export class ActionHistoryRepositoryActions extends ActionHistoryRepositoryBase 
 
   constructor(pool: Pool) {
     super(pool);
-    // Instantiate the steps helper internally or receive it
     this.stepsHelper = new ActionHistoryRepositorySteps(pool);
   }
 
@@ -31,7 +30,6 @@ export class ActionHistoryRepositoryActions extends ActionHistoryRepositoryBase 
       const createdAction = await this.createActionInClient(actionData, client);
       if (undoStepsData.length > 0) {
         for (const step of undoStepsData) {
-          // Use the steps helper method
           await this.stepsHelper.createUndoStepInClient({ ...step, action_id: createdAction.action_id }, client);
         }
       }
@@ -51,10 +49,9 @@ export class ActionHistoryRepositoryActions extends ActionHistoryRepositoryBase 
   ): Promise<ActionHistoryData> {
     const now = new Date().toISOString();
     const actionId = uuidv4();
-    const insertActionSql = ` INSERT INTO action_history (action_id, user_id, timestamp, action_type, work_item_id, description, is_undone, undone_at_action_id) VALUES ($1, $2, $3, $4, $5, $6, FALSE, NULL) RETURNING *; `;
+    const insertActionSql = ` INSERT INTO action_history (action_id, timestamp, action_type, work_item_id, description, is_undone, undone_at_action_id) VALUES ($1, $2, $3, $4, $5, FALSE, NULL) RETURNING *; `;
     const actionParams = [
       actionId,
-      actionData.user_id ?? null,
       now,
       actionData.action_type,
       actionData.work_item_id ?? null,
@@ -192,29 +189,31 @@ export class ActionHistoryRepositoryActions extends ActionHistoryRepositoryBase 
     }
   }
 
-  /** Finds the original action ID that was undone by a specific UNDO_ACTION. */
-  public async findOriginalActionIdForUndo(undoActionId: string): Promise<string | undefined> {
-    // Find the action that has its 'undone_at_action_id' set to the ID of the UNDO action
-    const sql = ` SELECT action_id FROM action_history WHERE undone_at_action_id = $1 AND is_undone = TRUE LIMIT 1; `;
+  /** Finds the original action record that was marked as undone by a specific UNDO_ACTION ID. */
+  public async findActionLinkedByUndo(undoActionId: string): Promise<ActionHistoryData | undefined> {
+    // The original action will have its `undone_at_action_id` pointing to the `undoActionId`
+    // Note: We select the action where undone_at_action_id matches the UNDO action ID,
+    // and critically, the action itself should be marked as is_undone = TRUE.
+    const sql = ` SELECT * FROM action_history WHERE undone_at_action_id = $1 AND is_undone = TRUE LIMIT 1; `;
     try {
       const result = await this.pool.query(sql, [undoActionId]);
       if (result.rows.length === 0) {
         logger.warn(
-          `[ActionHistoryRepositoryActions] Could not find original action undone by UNDO_ACTION ${undoActionId}. Link might be missing or incorrect.`
+          `[ActionHistoryRepositoryActions] Could not find original action undone by UNDO_ACTION ${undoActionId}.`
         );
         return undefined;
       }
-      return result.rows[0].action_id;
+      return this.mapRowToActionHistoryData(result.rows[0]);
     } catch (error: unknown) {
       logger.error(
-        `[ActionHistoryRepositoryActions] Failed to find original action ID for undo action ${undoActionId}:`,
+        `[ActionHistoryRepositoryActions] Failed to find original action linked by undo action ${undoActionId}:`,
         error
       );
       throw error;
     }
   }
 
-  /** Lists recent action history records, optionally filtered. */
+  /** Lists recent action history records, optionally filtered by work item ID. */
   public async listRecentActions(filter?: {
     work_item_id?: string | null;
     limit?: number;
@@ -241,6 +240,51 @@ export class ActionHistoryRepositoryActions extends ActionHistoryRepositoryBase 
       return result.rows.map(this.mapRowToActionHistoryData);
     } catch (error: unknown) {
       logger.error('[ActionHistoryRepositoryActions] Failed to list recent actions:', error);
+      throw error;
+    }
+  }
+
+  /** NEW: Lists action history records, optionally filtered by date range. */
+  public async listHistoryByDateRange(filter?: {
+    startDate?: string; // ISO8601 format
+    endDate?: string; // ISO8601 format
+    limit?: number;
+  }): Promise<ActionHistoryData[]> {
+    let sql = ` SELECT * FROM action_history `; // Select all columns initially
+    const params: (string | number)[] = [];
+    const whereClauses: string[] = [];
+    let paramIndex = 1;
+
+    if (filter?.startDate) {
+      // Ensure timestamp is correctly handled as TIMESTAMPTZ
+      whereClauses.push(`timestamp >= $${paramIndex++}::TIMESTAMPTZ`);
+      params.push(filter.startDate);
+    }
+    if (filter?.endDate) {
+      whereClauses.push(`timestamp <= $${paramIndex++}::TIMESTAMPTZ`);
+      params.push(filter.endDate);
+    }
+
+    if (whereClauses.length > 0) {
+      sql += ' WHERE ' + whereClauses.join(' AND ');
+    }
+
+    sql += ' ORDER BY timestamp DESC '; // Order most recent first
+
+    const limit = filter?.limit ?? 100; // Default limit
+    sql += ` LIMIT $${paramIndex++}`;
+    params.push(limit);
+
+    logger.debug(
+      `[ActionHistoryRepositoryActions] Executing listHistoryByDateRange SQL: ${sql} PARAMS: ${JSON.stringify(params)}`
+    );
+
+    try {
+      const result = await this.pool.query(sql, params);
+      logger.info(`[ActionHistoryRepositoryActions] Found ${result.rows.length} history records matching date filter.`);
+      return result.rows.map(this.mapRowToActionHistoryData);
+    } catch (error: unknown) {
+      logger.error(`[ActionHistoryRepositoryActions] Failed to list history by date range:`, error);
       throw error;
     }
   }

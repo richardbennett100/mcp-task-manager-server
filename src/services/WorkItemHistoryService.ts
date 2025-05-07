@@ -1,19 +1,22 @@
 // src/services/WorkItemHistoryService.ts
 import { PoolClient } from 'pg';
 import {
-  WorkItemRepository, // Import main repo class
-  ActionHistoryRepository, // Import main repo class
+  WorkItemRepository,
+  ActionHistoryRepository,
   ActionHistoryData,
   UndoStepData,
   CreateActionHistoryInput,
-} from '../repositories/index.js'; // USE BARREL FILE
+  WorkItemData, // Need this for type casting old/new data
+  WorkItemDependencyData, // Need this for type casting old/new data
+} from '../repositories/index.js';
 import { logger } from '../utils/logger.js';
+import { validate as uuidValidate } from 'uuid';
 
 /**
  * Service responsible for managing history, undo, and redo operations
  */
 export class WorkItemHistoryService {
-  private workItemRepository: WorkItemRepository;
+  private workItemRepository: WorkItemRepository; // Keep for potential future use if needed
   private actionHistoryRepository: ActionHistoryRepository;
 
   constructor(workItemRepository: WorkItemRepository, actionHistoryRepository: ActionHistoryRepository) {
@@ -21,6 +24,7 @@ export class WorkItemHistoryService {
     this.actionHistoryRepository = actionHistoryRepository;
   }
 
+  // --- undoLastAction and redoLastUndo remain the same ---
   /**
    * Undoes the last action.
    */
@@ -39,48 +43,59 @@ export class WorkItemHistoryService {
     const undoSteps = await this.actionHistoryRepository.findUndoStepsByActionId(originalActionToUndo.action_id);
 
     if (undoSteps.length === 0) {
+      // This case should ideally not happen if step generation is correct, but handle defensively.
       logger.warn(
-        `[WorkItemHistoryService] Action ${originalActionToUndo.action_id} has no undo steps. Marking as undone.`
+        `[WorkItemHistoryService] Action ${originalActionToUndo.action_id} has no undo steps despite being an original action. Cannot perform undo. Marking as undone.`
       );
-      await this.actionHistoryRepository.withTransaction(async (client) => {
-        const undoActionData: CreateActionHistoryInput = {
-          user_id: null, // User ID removed
-          action_type: 'UNDO_ACTION',
-          work_item_id: originalActionToUndo.work_item_id,
-          description: `Could not undo action (no steps): "${originalActionToUndo.description}"`,
-        };
-        const createdUndoAction = await this.actionHistoryRepository.createActionInClient(undoActionData, client);
-        await this.actionHistoryRepository.markActionAsUndone(
-          originalActionToUndo.action_id,
-          createdUndoAction.action_id,
-          client
+      let markedAction: ActionHistoryData | undefined;
+      try {
+        await this.actionHistoryRepository.withTransaction(async (client) => {
+          const undoActionData: CreateActionHistoryInput = {
+            action_type: 'UNDO_ACTION',
+            work_item_id: originalActionToUndo.work_item_id,
+            description: `Could not undo action (no steps generated): "${originalActionToUndo.description}"`,
+          };
+          const createdUndoAction = await this.actionHistoryRepository.createActionInClient(undoActionData, client);
+          // Still mark original as undone to prevent repeated attempts
+          await this.actionHistoryRepository.markActionAsUndone(
+            originalActionToUndo.action_id,
+            createdUndoAction.action_id,
+            client
+          );
+          markedAction = await this.actionHistoryRepository.findActionById(originalActionToUndo.action_id);
+        });
+        return markedAction ?? null; // Return the marked action, but functionally nothing changed in data
+      } catch (transactionError) {
+        logger.error(
+          `[WorkItemHistoryService] Transaction failed while marking action ${originalActionToUndo.action_id} as undone (no steps):`,
+          transactionError
         );
-      });
-      // Return the original action marked as undone
-      return { ...originalActionToUndo, is_undone: true };
+        throw transactionError;
+      }
     }
 
-    // Execute undo steps within a transaction
     let executedSuccessfully = false;
     try {
       await this.actionHistoryRepository.withTransaction(async (client) => {
         logger.debug(
           `[WorkItemHistoryService] Executing ${undoSteps.length} undo steps for action ${originalActionToUndo.action_id} in reverse order`
         );
+        // Steps should be executed in reverse order for UNDO
         const stepsInReverse = [...undoSteps].sort((a, b) => b.step_order - a.step_order);
 
         for (const step of stepsInReverse) {
           await this.executeUndoStep(client, step, originalActionToUndo.action_id);
         }
 
+        // Record the UNDO action itself
         const undoActionData: CreateActionHistoryInput = {
-          user_id: null, // User ID removed
           action_type: 'UNDO_ACTION',
           work_item_id: originalActionToUndo.work_item_id,
           description: `Undid action: "${originalActionToUndo.description}"`,
         };
         const createdUndoAction = await this.actionHistoryRepository.createActionInClient(undoActionData, client);
 
+        // Mark the original action as undone, linking it to this UNDO action
         await this.actionHistoryRepository.markActionAsUndone(
           originalActionToUndo.action_id,
           createdUndoAction.action_id,
@@ -95,14 +110,16 @@ export class WorkItemHistoryService {
         `[WorkItemHistoryService] Transaction failed during undo for action ${originalActionToUndo.action_id}:`,
         transactionError
       );
-      throw transactionError; // Re-throw the original error
+      throw transactionError; // Let the caller handle the transaction error
     }
 
+    // Return the original action's final state (now marked as undone) if successful
     if (executedSuccessfully) {
       const finalState = await this.actionHistoryRepository.findActionById(originalActionToUndo.action_id);
       return finalState ?? null;
     } else {
-      return null; // Transaction failed
+      // Should not be reachable if transaction error is thrown, but included for completeness
+      return null;
     }
   }
 
@@ -119,73 +136,88 @@ export class WorkItemHistoryService {
     }
     logger.debug(`[WorkItemHistoryService] Found UNDO action to redo: ${undoActionToRedo.action_id}`);
 
-    const originalActionId = await this.actionHistoryRepository.findOriginalActionIdForUndo(undoActionToRedo.action_id);
-
-    if (!originalActionId) {
-      logger.error(
-        `[WorkItemHistoryService] Cannot redo UNDO_ACTION ${undoActionToRedo.action_id} because the link is missing or broken.`
-      );
-      return null;
-    }
-
-    logger.debug(
-      `[WorkItemHistoryService] Found original action ${originalActionId} linked to UNDO action ${undoActionToRedo.action_id}.`
-    );
-    const originalAction = await this.actionHistoryRepository.findActionById(originalActionId);
+    // Find the original action that this UNDO action undid
+    const originalAction = await this.actionHistoryRepository.findActionLinkedByUndo(undoActionToRedo.action_id);
 
     if (!originalAction) {
+      // This might happen if history is corrupted or the UNDO action was invalidated
       logger.error(
-        `[WorkItemHistoryService] UNDO_ACTION ${undoActionToRedo.action_id} refers to missing original action ${originalActionId}. Cannot redo.`
+        `[WorkItemHistoryService] Cannot redo UNDO_ACTION ${undoActionToRedo.action_id}. Could not find the original action it undid. Marking UNDO as redone/invalidated.`
       );
+      // Mark the UNDO action as 'undone' (invalidated) to prevent further attempts
+      await this.actionHistoryRepository.withTransaction(async (client) => {
+        await this.actionHistoryRepository.markUndoActionAsRedone(undoActionToRedo.action_id, null, client);
+      });
       return null;
     }
+    logger.debug(
+      `[WorkItemHistoryService] Found original action ${originalAction.action_id} linked to UNDO action ${undoActionToRedo.action_id}.`
+    );
 
+    // Get the undo steps associated with the *original* action
     const originalUndoSteps = await this.actionHistoryRepository.findUndoStepsByActionId(originalAction.action_id);
 
     if (originalUndoSteps.length === 0) {
+      // If the original action had no steps, we can't reliably redo it.
       logger.warn(
         `[WorkItemHistoryService] Original action ${originalAction.action_id} has no undo steps. Cannot redo reliably. Marking UNDO as redone.`
       );
-      await this.actionHistoryRepository.withTransaction(async (client) => {
-        const redoActionData: CreateActionHistoryInput = {
-          user_id: null, // User ID removed
-          action_type: 'REDO_ACTION',
-          work_item_id: originalAction.work_item_id,
-          description: `Could not redo action (original had no steps): "${originalAction.description}"`,
-        };
-        const createdRedoAction = await this.actionHistoryRepository.createActionInClient(redoActionData, client);
-        await this.actionHistoryRepository.markActionAsNotUndone(originalAction.action_id, client);
-        await this.actionHistoryRepository.markUndoActionAsRedone(
-          undoActionToRedo.action_id,
-          createdRedoAction.action_id,
-          client
+      let finalState: ActionHistoryData | undefined;
+      try {
+        await this.actionHistoryRepository.withTransaction(async (client) => {
+          // Create a REDO action record indicating the issue
+          const redoActionData: CreateActionHistoryInput = {
+            action_type: 'REDO_ACTION',
+            work_item_id: originalAction.work_item_id,
+            description: `Could not redo action (original had no steps): "${originalAction.description}"`,
+          };
+          const createdRedoAction = await this.actionHistoryRepository.createActionInClient(redoActionData, client);
+          // Mark the original action as *not* undone anymore
+          await this.actionHistoryRepository.markActionAsNotUndone(originalAction.action_id, client);
+          // Mark the UNDO action as redone/invalidated, linking it to the REDO action
+          await this.actionHistoryRepository.markUndoActionAsRedone(
+            undoActionToRedo.action_id,
+            createdRedoAction.action_id,
+            client
+          );
+          finalState = await this.actionHistoryRepository.findActionById(originalAction.action_id);
+        });
+        // Return the original action's state (now marked as not undone)
+        return finalState ?? null;
+      } catch (transactionError) {
+        logger.error(
+          `[WorkItemHistoryService] Transaction failed while marking UNDO ${undoActionToRedo.action_id} as redone (original had no steps):`,
+          transactionError
         );
-      });
-      const finalState = await this.actionHistoryRepository.findActionById(originalAction.action_id);
-      return finalState ?? null;
+        throw transactionError;
+      }
     }
 
+    // Proceed with redoing the steps
     let executedSuccessfully = false;
     try {
       await this.actionHistoryRepository.withTransaction(async (client) => {
         logger.debug(
           `[WorkItemHistoryService] Re-executing ${originalUndoSteps.length} original steps (redo) for action ${originalAction.action_id}`
         );
+        // Steps should be executed in their original order for REDO
         const stepsInOrder = [...originalUndoSteps].sort((a, b) => a.step_order - b.step_order);
 
         for (const step of stepsInOrder) {
           await this.executeRedoStep(client, step, originalAction.action_id);
         }
 
+        // Record the REDO action
         const redoActionData: CreateActionHistoryInput = {
-          user_id: null, // User ID removed
           action_type: 'REDO_ACTION',
           work_item_id: originalAction.work_item_id,
           description: `Redid action: "${originalAction.description}"`,
         };
         const createdRedoAction = await this.actionHistoryRepository.createActionInClient(redoActionData, client);
 
+        // Mark the original action as NOT undone anymore
         await this.actionHistoryRepository.markActionAsNotUndone(originalAction.action_id, client);
+        // Mark the UNDO action as redone, linking it to this REDO action
         await this.actionHistoryRepository.markUndoActionAsRedone(
           undoActionToRedo.action_id,
           createdRedoAction.action_id,
@@ -200,50 +232,135 @@ export class WorkItemHistoryService {
         `[WorkItemHistoryService] Transaction failed during redo for action ${originalAction.action_id}:`,
         transactionError
       );
-      throw transactionError; // Re-throw the original error
+      throw transactionError;
     }
 
+    // Return the original action's final state (now marked as not undone) if successful
     if (executedSuccessfully) {
       const finalStateOriginalAction = await this.actionHistoryRepository.findActionById(originalAction.action_id);
       return finalStateOriginalAction ?? null;
     } else {
-      return null; // Transaction failed
+      return null;
     }
   }
 
-  // Helper to execute a single undo step
+  /**
+   * Builds the SQL SET clauses and parameters for an UPDATE statement based on the provided data object.
+   * @param dataObject The object containing the data to apply (either old_data for undo or new_data for redo).
+   * @param tableName The name of the table being updated.
+   * @returns An object containing the SET clause strings and the corresponding parameter array.
+   */
+  private buildUpdateQueryParts(
+    dataObject: Partial<WorkItemData> | Partial<WorkItemDependencyData> | null,
+    tableName: string
+  ): { setClauses: string[]; params: unknown[] } {
+    const setClauses: string[] = [];
+    const params: unknown[] = [];
+    let paramIndex = 1; // Start parameter index at 1
+
+    if (!dataObject) {
+      logger.warn(`[WorkItemHistoryService] buildUpdateQueryParts called with null dataObject for table ${tableName}`);
+      return { setClauses: [], params: [] };
+    }
+
+    // Add updated_at for work_items table if it's not explicitly in the dataObject
+    // This ensures updated_at is always set on undo/redo for work_items
+    if (tableName === 'work_items' && !Object.prototype.hasOwnProperty.call(dataObject, 'updated_at')) {
+      // Using CURRENT_TIMESTAMP ensures atomicity within the transaction
+      setClauses.push(`"updated_at" = CURRENT_TIMESTAMP`);
+    }
+
+    for (const key in dataObject) {
+      if (Object.prototype.hasOwnProperty.call(dataObject, key)) {
+        // Skip primary key columns, they define the WHERE clause, not SET clause
+        if (
+          (tableName === 'work_items' && key === 'work_item_id') ||
+          (tableName === 'work_item_dependencies' && (key === 'work_item_id' || key === 'depends_on_work_item_id'))
+        ) {
+          continue;
+        }
+        // Skip created_at for work_items as it should not change
+        if (tableName === 'work_items' && key === 'created_at') {
+          continue;
+        }
+        // Skip updated_at if we already added CURRENT_TIMESTAMP
+        if (
+          tableName === 'work_items' &&
+          key === 'updated_at' &&
+          setClauses.includes(`"updated_at" = CURRENT_TIMESTAMP`)
+        ) {
+          continue;
+        }
+
+        // Use type assertion to access properties safely
+        const value = (dataObject as Record<string, unknown>)[key];
+        setClauses.push(`"${key}" = $${paramIndex++}`);
+        // Handle potential undefined values, converting them to null for DB
+        params.push(value === undefined ? null : value);
+      }
+    }
+
+    return { setClauses, params };
+  }
+
+  /**
+   * Executes a single undo step, applying the 'old_data' state.
+   */
   private async executeUndoStep(client: PoolClient, step: UndoStepData, originalActionId: string): Promise<void> {
     logger.debug(
       `[WorkItemHistoryService] Executing undo step ${step.step_order} (${step.step_type}) on ${step.table_name} record ${step.record_id} for action ${originalActionId}`
     );
     try {
-      if (step.step_type === 'UPDATE') {
-        // Undo action by applying the 'old_data' state (state before original action)
-        if (step.old_data === null) throw new Error(`Undo step ${step.undo_step_id} (UPDATE) is missing old_data.`);
-        await this.workItemRepository.updateRowState(client, step.table_name, step.old_data);
-      } else {
-        // With the soft-delete-only history model and UPDATE step types,
-        // these cases should ideally not be reached for core operations.
-        logger.warn(
-          `[WorkItemHistoryService] Encountered unexpected undo step type "${step.step_type}" for action ${originalActionId}. ` +
-            `This step type should ideally not be generated for core work item/dependency actions under the soft-delete history model.`
+      // For UNDO, we apply the state defined in `old_data`
+      if (step.step_type !== 'UPDATE' || !step.old_data) {
+        throw new Error(
+          `Unsupported undo step type or missing old_data for step ${step.undo_step_id} in action ${originalActionId}`
         );
+      }
 
-        // Keeping the code for DELETE/INSERT step types as a fallback or for
-        // potential other (non-core) actions, but logging a warning.
-        if (step.step_type === 'DELETE') {
-          // This case was previously used for undoing ADD.
-          if (!step.record_id) throw new Error(`Undo step ${step.undo_step_id} (DELETE) is missing record_id.`);
-          // If hard deletes are strictly disallowed in application logic, the call below should be removed.
-          await this.workItemRepository.deleteRow(client, step.table_name, step.record_id);
-        } else if (step.step_type === 'INSERT') {
-          // This case was previously used for undoing DELETE.
-          if (step.old_data === null) throw new Error(`Undo step ${step.undo_step_id} (INSERT) is missing old_data.`);
-          // If hard inserts are strictly disallowed in application logic, the call below should be removed.
-          await this.workItemRepository.insertRow(client, step.table_name, step.old_data);
+      // Build the update query based on the old_data
+      const { setClauses, params: updateParams } = this.buildUpdateQueryParts(step.old_data, step.table_name);
+
+      if (setClauses.length === 0) {
+        logger.warn(`[WorkItemHistoryService] Undo step ${step.undo_step_id} had no fields to apply in old_data.`);
+        return; // Nothing to do for this step
+      }
+
+      let sql = `UPDATE "${step.table_name}" SET ${setClauses.join(', ')} WHERE `;
+      const whereParams: unknown[] = [];
+      let pkParamStartIndex = updateParams.length + 1;
+
+      // Construct WHERE clause based on table PK
+      if (step.table_name === 'work_items' && uuidValidate(step.record_id)) {
+        sql += `"work_item_id" = $${pkParamStartIndex++}`;
+        whereParams.push(step.record_id);
+      } else if (
+        step.table_name === 'work_item_dependencies' &&
+        typeof step.record_id === 'string' &&
+        step.record_id.includes(':')
+      ) {
+        const [workItemId, dependsOnId] = step.record_id.split(':');
+        if (uuidValidate(workItemId) && uuidValidate(dependsOnId)) {
+          sql += `"work_item_id" = $${pkParamStartIndex++} AND "depends_on_work_item_id" = $${pkParamStartIndex++}`;
+          whereParams.push(workItemId, dependsOnId);
         } else {
-          throw new Error(`Unknown or unexpected undo step type: ${step.step_type}`);
+          throw new Error(`Invalid composite key in undo step record_id: ${step.record_id}`);
         }
+      } else {
+        throw new Error(`Unsupported table or invalid record_id for undo step: ${step.table_name} / ${step.record_id}`);
+      }
+
+      // Combine parameters
+      const allParams = [...updateParams, ...whereParams];
+
+      logger.debug(`[WorkItemHistoryService DEBUG] Undo SQL: ${sql} Params: ${JSON.stringify(allParams)}`);
+      const result = await client.query(sql, allParams);
+      logger.debug(
+        `[WorkItemHistoryService DEBUG] Undo step execution result rowCount: ${result.rowCount} for ${step.table_name} ${step.record_id}`
+      );
+      // Warn if no rows were updated (record might have been deleted/changed outside history)
+      if (result.rowCount === 0) {
+        logger.warn(`[WorkItemHistoryService] Undo step for ${step.table_name} ${step.record_id} affected 0 rows.`);
       }
     } catch (stepError: unknown) {
       logger.error(
@@ -254,72 +371,87 @@ export class WorkItemHistoryService {
     }
   }
 
-  // Helper to execute the logic for redoing a single original step
+  /**
+   * Executes a single redo step, applying the 'new_data' state.
+   */
   private async executeRedoStep(client: PoolClient, step: UndoStepData, originalActionId: string): Promise<void> {
     logger.debug(
-      `[WorkItemHistoryService] Re-executing ${step.step_order} (${step.step_type}) on ${step.table_name} record ${step.record_id} from original action ${originalActionId}`
+      `[WorkItemHistoryService] Re-executing redo step ${step.step_order} (${step.step_type}) on ${step.table_name} record ${step.record_id} from original action ${originalActionId}`
     );
     try {
-      if (step.step_type === 'UPDATE') {
-        // Redo action by applying the 'new_data' state (state after original action)
-        if (step.new_data === null)
-          throw new Error(`Redo step ${step.undo_step_id} (UPDATE) is missing new_data for redo.`);
-        await this.workItemRepository.updateRowState(client, step.table_name, step.new_data);
-      } else {
-        // With the soft-delete-only history model and UPDATE step types,
-        // these cases should ideally not be reached for core operations.
-        logger.warn(
-          `[WorkItemHistoryService] Encountered unexpected redo step type "${step.step_type}" for action ${originalActionId}. ` +
-            `This step type should ideally not be generated for core work item/dependency actions under the soft-delete history model.`
+      // For REDO, we apply the state defined in `new_data`
+      if (step.step_type !== 'UPDATE' || !step.new_data) {
+        throw new Error(
+          `Unsupported redo step type or missing new_data for step ${step.undo_step_id} in action ${originalActionId}`
         );
+      }
 
-        // Keeping the code for DELETE/INSERT step types as a fallback, but logging a warning.
-        if (step.step_type === 'DELETE') {
-          // This case was previously used for redoing ADD.
-          if (step.new_data === null)
-            throw new Error(`Redo step ${step.undo_step_id} (DELETE reversal - INSERT) is missing new_data.`);
-          // If hard inserts are strictly disallowed in application logic, the call below should be removed.
-          await this.workItemRepository.insertRow(client, step.table_name, step.new_data);
-        } else if (step.step_type === 'INSERT') {
-          // This case was previously used for redoing DELETE.
-          if (step.new_data === null) {
-            throw new Error(
-              `Redo step ${step.undo_step_id} (INSERT reversal - expecting new_data for soft delete) is missing new_data.`
-            );
-          }
-          // If hard deletes are strictly disallowed in application logic, the call below should be removed.
-          // The logic to apply new_data via updateRowState is now in the 'UPDATE' branch
-          // and should be used instead of any delete/insert here.
-          logger.warn(
-            `[WorkItemHistoryService] executeRedoStep: Encountered INSERT step type. This case should now be handled by the UPDATE logic for soft deletes.`
-          );
-          // If this branch is ever reached, it indicates a history generation issue.
-          // Depending on requirements, could throw error or attempt updateRowState here.
+      // Build the update query based on the new_data
+      const { setClauses, params: updateParams } = this.buildUpdateQueryParts(step.new_data, step.table_name);
+
+      if (setClauses.length === 0) {
+        logger.warn(`[WorkItemHistoryService] Redo step ${step.undo_step_id} had no fields to apply in new_data.`);
+        return; // Nothing to do for this step
+      }
+
+      let sql = `UPDATE "${step.table_name}" SET ${setClauses.join(', ')} WHERE `;
+      const whereParams: unknown[] = [];
+      let pkParamStartIndex = updateParams.length + 1;
+
+      // Construct WHERE clause based on table PK
+      if (step.table_name === 'work_items' && uuidValidate(step.record_id)) {
+        sql += `"work_item_id" = $${pkParamStartIndex++}`;
+        whereParams.push(step.record_id);
+      } else if (
+        step.table_name === 'work_item_dependencies' &&
+        typeof step.record_id === 'string' &&
+        step.record_id.includes(':')
+      ) {
+        const [workItemId, dependsOnId] = step.record_id.split(':');
+        if (uuidValidate(workItemId) && uuidValidate(dependsOnId)) {
+          sql += `"work_item_id" = $${pkParamStartIndex++} AND "depends_on_work_item_id" = $${pkParamStartIndex++}`;
+          whereParams.push(workItemId, dependsOnId);
         } else {
-          throw new Error(`Unknown or unexpected redo step type: ${step.step_type}`);
+          throw new Error(`Invalid composite key in redo step record_id: ${step.record_id}`);
         }
+      } else {
+        throw new Error(`Unsupported table or invalid record_id for redo step: ${step.table_name} / ${step.record_id}`);
+      }
+
+      // Combine parameters
+      const allParams = [...updateParams, ...whereParams];
+
+      logger.debug(`[WorkItemHistoryService DEBUG] Redo SQL: ${sql} Params: ${JSON.stringify(allParams)}`);
+      const result = await client.query(sql, allParams);
+      logger.debug(
+        `[WorkItemHistoryService DEBUG] Redo step execution result rowCount: ${result.rowCount} for ${step.table_name} ${step.record_id}`
+      );
+      // Warn if no rows were updated
+      if (result.rowCount === 0) {
+        logger.warn(`[WorkItemHistoryService] Redo step for ${step.table_name} ${step.record_id} affected 0 rows.`);
       }
     } catch (stepError: unknown) {
       logger.error(
         `[WorkItemHistoryService] Error executing redo logic for undo_step ${step.undo_step_id} (original action ${originalActionId}):`,
         stepError
       );
-      throw stepError; // Propagate error to rollback transaction
+      throw stepError;
     }
   }
 
   /**
-   * Marks any remaining active UNDO actions as undone (invalidated) by a new action.
-   * IMPORTANT: This should only be called after a *new original action* (ADD, UPDATE, DELETE)
-   * is successfully committed, not after UNDO or REDO itself.
+   * Marks any pending UNDO actions (that haven't been redone/invalidated) as undone
+   * by the new action ID, effectively clearing the redo stack.
    */
   public async invalidateRedoStack(client: PoolClient, newActionId: string): Promise<void> {
-    // Find UNDO actions that are currently active (is_undone = FALSE)
+    // Find UNDO actions that are currently NOT undone (meaning they are available for redo)
     const recentUndoActions = await this.actionHistoryRepository.findRecentUndoActionsInClient(client);
-
     let invalidationCount = 0;
     for (const undoAction of recentUndoActions) {
-      if (undoAction.action_id !== newActionId) {
+      // Check if the action is an UNDO action and is NOT already undone (i.e., it's eligible for redo)
+      // Also ensure we don't invalidate the action we just created
+      if (undoAction.action_id !== newActionId && !undoAction.is_undone) {
+        // Mark this UNDO action as "undone" (invalidated) by the new action
         await this.actionHistoryRepository.markUndoActionAsRedone(undoAction.action_id, newActionId, client);
         invalidationCount++;
       }

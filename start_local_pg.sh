@@ -62,3 +62,9 @@ exit 0
 
 # export PGPASSWORD='mysecretpassword' && export LOG_LEVEL='debug' && npm test -- dist/services/__tests__/workItemDeleteIntegration.test.js > delete_test_output.txt 2>&1
 
+# npm run ci:test > test_output.txt 2>&1
+
+# npm run build:test:sync > build_and_test_output.log 2>&1
+
+
+# npm run ci:test > build_and_test_output.log 2>&1 && ./sync_files.sh

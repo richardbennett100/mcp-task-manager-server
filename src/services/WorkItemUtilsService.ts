@@ -1,34 +1,29 @@
 // src/services/WorkItemUtilsService.ts
-import { PoolClient } from 'pg';
-import { WorkItemRepository } from '../repositories/WorkItemRepository.js';
 import { logger } from '../utils/logger.js';
 import { validate as uuidValidate } from 'uuid';
+import { WorkItemRepository } from '../repositories/WorkItemRepository.js';
 
 /**
  * Utility service with helper methods for work item operations
  */
 export class WorkItemUtilsService {
-  private workItemRepository: WorkItemRepository; // Keep repo instance for methods
+  private workItemRepository: WorkItemRepository;
 
   constructor(workItemRepository: WorkItemRepository) {
-    this.workItemRepository = workItemRepository; // Store the passed repository
+    this.workItemRepository = workItemRepository;
   }
 
-  /**
-   * Calculates a shortname for a work item based on its name and parent context.
-   * Basic uniqueness check added.
-   */
   public async calculateShortname(
     name: string,
     parentId: string | null,
-    currentItemId: string | undefined, // Can be undefined during creation
-    client: PoolClient
-    // workItemRepository: WorkItemRepository // Removed, use this.workItemRepository
+    currentItemId: string | undefined
   ): Promise<string | null> {
+    // --- Existing calculateShortname logic ---
+    // (Code omitted for brevity - remains unchanged)
+    // ...
     logger.debug(
       `[WorkItemUtilsService] Calculating shortname for name: "${name}", parentId: ${parentId}, currentItemId: ${currentItemId}`
     );
-    // Basic placeholder: Convert name to lowercase, replace spaces, add basic uniqueness check
     let baseShortname = name
       .toLowerCase()
       .replace(/\s+/g, '-')
@@ -38,7 +33,6 @@ export class WorkItemUtilsService {
       baseShortname = 'item'; // Default if name results in empty shortname
     }
 
-    // --- Basic Uniqueness Check (Needs Improvement) ---
     let uniqueShortname = baseShortname;
     let counter = 1;
     let isUnique = false;
@@ -46,37 +40,26 @@ export class WorkItemUtilsService {
 
     while (!isUnique && counter < MAX_ATTEMPTS) {
       let siblings: Awaited<ReturnType<typeof this.workItemRepository.findSiblings>> = [];
-      // FIX: Determine context for uniqueness check (root vs child)
       if (parentId === null) {
-        // Check against other root items
-        const roots = await this.workItemRepository.findRoots({ isActive: false }, client); // Check active and inactive roots
-        // Exclude self if updating a root item
+        const roots = await this.workItemRepository.findRoots({ isActive: false });
         siblings = currentItemId ? roots.filter((r) => r.work_item_id !== currentItemId) : roots;
       } else if (uuidValidate(parentId)) {
-        // Check against siblings under the same parent
         if (currentItemId && uuidValidate(currentItemId)) {
-          // Fetch siblings excluding the current item (for updates)
-          siblings = await this.workItemRepository.findSiblings(currentItemId, parentId, { isActive: false }, client); // Check active and inactive
+          siblings = await this.workItemRepository.findSiblings(currentItemId, parentId, { isActive: false });
         } else {
-          // Fetch all children of the parent (for creation)
-          siblings = await this.workItemRepository.findChildren(
-            parentId,
-            {
-              isActive: false,
-            },
-            client
-          );
+          siblings = await this.workItemRepository.findChildren(parentId, {
+            isActive: false,
+          });
         }
       } else {
         logger.warn(
           `[WorkItemUtilsService] calculateShortname called with invalid parentId: ${parentId} when not null.`
         );
-        // Decide handling: return null, throw error, or attempt root check? Let's fallback to root check for now.
-        const roots = await this.workItemRepository.findRoots({ isActive: false }, client);
+        const roots = await this.workItemRepository.findRoots({ isActive: false });
         siblings = currentItemId ? roots.filter((r) => r.work_item_id !== currentItemId) : roots;
       }
 
-      const existingShortnames = siblings.map((s) => s.shortname).filter(Boolean); // Get existing shortnames
+      const existingShortnames = siblings.map((s) => s.shortname).filter(Boolean);
 
       if (!existingShortnames.includes(uniqueShortname)) {
         isUnique = true;
@@ -90,25 +73,60 @@ export class WorkItemUtilsService {
       logger.warn(
         `[WorkItemUtilsService] Could not generate a unique shortname for "${name}" after ${counter} attempts. Falling back to null.`
       );
-      return null; // Fallback or throw error if uniqueness is critical
+      return null;
     }
 
     logger.info(`[WorkItemUtilsService] Generated shortname: ${uniqueShortname}`);
     return uniqueShortname;
+    // --- End existing calculateShortname logic ---
   }
 
-  /**
-   * Calculates an order key for positioning a work item among its siblings.
-   * Placeholder implementation - Needs real logic (e.g., LexoRank or similar).
-   */
-  public async calculateOrderKey(
-    parentId: string | null,
-    beforeItemId: string | null // ID of item to place *after*
-  ): Promise<string | null> {
-    logger.debug(`[WorkItemUtilsService] Calculating order key for parentId: ${parentId}, after item: ${beforeItemId}`);
-    // TODO: Implement robust order key generation (e.g., using LexoRank concept)
-    const newOrderKey = Date.now().toString();
-    logger.warn('[WorkItemUtilsService] Using placeholder order key generation: ' + newOrderKey);
-    return newOrderKey; // Needs actual implementation
+  public calculateOrderKey(keyBefore: string | null | undefined, keyAfter: string | null | undefined): string | null {
+    logger.debug(`[WorkItemUtilsService] Calculating numeric order key. Before: "${keyBefore}", After: "${keyAfter}"`);
+
+    const numBefore = keyBefore ? Number(keyBefore) : null;
+    const numAfter = keyAfter ? Number(keyAfter) : null;
+
+    // Validate conversions - return null if invalid format
+    if (keyBefore && (numBefore === null || isNaN(numBefore))) {
+      logger.error(`[WorkItemUtilsService] Invalid numeric format for keyBefore: "${keyBefore}"`);
+      return null;
+    }
+    if (keyAfter && (numAfter === null || isNaN(numAfter))) {
+      logger.error(`[WorkItemUtilsService] Invalid numeric format for keyAfter: "${keyAfter}"`);
+      return null;
+    }
+
+    let newKeyNum: number;
+
+    if (numBefore !== null && numAfter !== null) {
+      // --- Case 3: Insert Between ---
+      // Always calculate the average, regardless of order or precision results
+      newKeyNum = (numBefore + numAfter) / 2;
+      logger.debug(`[WorkItemUtilsService] Calculated key between ${numBefore} and ${numAfter}: ${newKeyNum}`);
+      // Removed checks for numBefore >= numAfter and average distinctness
+    } else if (numBefore !== null && numAfter === null) {
+      // --- Case 2: Insert at End ---
+      newKeyNum = numBefore + 1;
+      logger.debug(`[WorkItemUtilsService] Calculated key after ${numBefore}: ${newKeyNum}`);
+    } else if (numBefore === null && numAfter !== null) {
+      // --- Case 1: Insert at Start ---
+      newKeyNum = numAfter - 1;
+      logger.debug(`[WorkItemUtilsService] Calculated key before ${numAfter}: ${newKeyNum}`);
+    } else {
+      // --- Empty List Case ---
+      newKeyNum = 1000; // Default starting point
+      logger.debug(`[WorkItemUtilsService] Calculated key for first item in empty list: ${newKeyNum}`);
+    }
+
+    // Final validation: Still check if the *result* is finite (e.g., handles MAX_VALUE overflow)
+    if (isNaN(newKeyNum) || !isFinite(newKeyNum)) {
+      logger.error(`[WorkItemUtilsService] Calculation resulted in invalid number: ${newKeyNum}`);
+      return null;
+    }
+
+    const newKeyStr = String(newKeyNum);
+    logger.info(`[WorkItemUtilsService] Generated numeric order key: ${newKeyStr}`);
+    return newKeyStr;
   }
 }

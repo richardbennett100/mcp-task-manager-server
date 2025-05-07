@@ -1,7 +1,7 @@
-// src/tools/listTasksParams.ts
+// src/tools/list_tasks_params.ts
 import { z } from 'zod';
 
-export const TOOL_NAME = 'listTasks'; // Keep familiar name
+export const TOOL_NAME = 'list_tasks'; // Renamed
 
 export const TOOL_DESCRIPTION = `
 Retrieves a list of work items (tasks, projects, etc.).

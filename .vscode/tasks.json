@@ -1,0 +1,29 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Save All Files",
+            "command": "workbench.action.files.saveAll",
+            "type": "process",
+            "problemMatcher": [
+                //none
+            ]
+        },
+        {
+            "label": "Run Build Script (build.sh)",
+            "type": "shell",
+            "command": "bash ./build.sh", // Or simply ./build.sh if it's executable
+            "problemMatcher": [
+                // Add any problem matchers relevant to your build.sh output
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true // Makes this runnable with Ctrl+Shift+B or Cmd+Shift+B
+            },
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Save All Files" // This ensures "Save All Files" runs first
+            ]
+        }
+    ]
+}
