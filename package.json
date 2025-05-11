@@ -14,9 +14,13 @@
     "prepare": "husky install || true",
     "test": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
     "test:bail": "npm test -- --bail",
+    
+    "test:unit": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand --bail --clearCache \"src/services/__tests__/unit/.*\\.spec\\.ts$\"",
+    "test:integration": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand --bail --clearCache \"src/services/__tests__/.*\\.test\\.ts$\"",
+    "test:e2e": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand --bail --clearCache \"src/__tests__/e2e/.*\\.test\\.ts$\"",
+
     "build:test:sync": "npm run lint:fix && npm run build && npm run test:bail && ./sync_files.sh",
     "ci:test": "npm run lint:fix && npm run build && npm run test:bail",
-    "test:integration": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand src/services/WorkItemService.integration.spec.ts",
     "test:watch": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch --runInBand"
   },
   "keywords": [
@@ -25,6 +29,7 @@
   ],
   "license": "ISC",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@modelcontextprotocol/sdk": "^1.9.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/inquirer": "^9.0.7",
@@ -42,7 +47,8 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/node": "^20.14.2",
+    "@types/cross-spawn": "^6.0.6",
+    "@types/node": "^20.17.44",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "copyfiles": "^2.4.1",
@@ -67,24 +73,25 @@
     ]
   },
   "jest": {
-    "preset": "ts-jest/presets/default-esm",
-    "testEnvironment": "node",
-    "roots": [
-      "<rootDir>/dist"
-    ],
-    "testMatch": [
-      "**/__tests__/**/*.spec.js",
-      "**/?(*.)+(spec|test).js"
-    ],
-    "moduleNameMapper": {
-      "^(\\.{1,2}/.*)\\.js$": "$1"
-    },
-    "globals": {
-      "ts-jest": {
-        "useESM": true,
-        "tsconfig": "tsconfig.json"
-      }
-    },
-    "clearMocks": true
+  "preset": "ts-jest/presets/default-esm",
+  "testEnvironment": "node",
+  "roots": [
+    "<rootDir>/dist"
+  ],
+  "testMatch": [
+    "**/__tests__/**/*.spec.js",
+    "__tests__/e2e/*.test.js",
+    "**/?(*.)+(spec|test).js"
+  ],
+  "moduleNameMapper": {
+    "^(\\.{1,2}/.*)\\.js$": "$1"
+  },
+  "globals": {
+    "ts-jest": {
+      "useESM": true,
+      "tsconfig": "tsconfig.json"
+    }
+  },
+  "clearMocks": true
   }
 }

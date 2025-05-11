@@ -67,6 +67,16 @@ else
   echo "Source src directory not found, skipping copy."
 fi
 
+# 3b. Copy the logs directory recursively (preserving timestamps)
+echo "Step 3b: Copying logs directory recursively (preserving timestamps)..."
+if [ -d "$SOURCE_DIR/logs" ]; then
+  # -a implies -p (preserve) and -R (recursive)
+  cp -a "$SOURCE_DIR/logs" "$UPLOAD_DIR/"
+  echo "logs directory copied."
+else
+  echo "Source logs directory not found, skipping copy."
+fi
+
 # Step 4 (Renaming) is no longer needed
 
 echo "File synchronization process completed successfully."

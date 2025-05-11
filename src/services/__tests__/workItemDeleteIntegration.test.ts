@@ -14,49 +14,44 @@ const logDatabaseState = async (
   dependencyToCheck?: { itemId: string; dependsOnId: string },
   context?: string
 ) => {
-  try {
-    // Use console.log directly
-    console.log(`\n--- DB State Check${context ? `: ${context}` : ''} ---`);
-    // Check work items
-    const itemsResult = await poolOrClient.query(
-      `SELECT work_item_id, name, shortname, is_active, status, parent_work_item_id, order_key, created_at, updated_at
+  // Use console.log directly
+  console.log(`\n--- DB State Check${context ? `: ${context}` : ''} ---`);
+  // Check work items
+  const itemsResult = await poolOrClient.query(
+    `SELECT work_item_id, name, is_active, status, parent_work_item_id, order_key, created_at, updated_at
        FROM work_items
        WHERE work_item_id = ANY($1::uuid[])
        ORDER BY created_at`,
-      [itemIds]
-    );
-    console.log(`Work Items Found (${itemsResult.rowCount}):\n${JSON.stringify(itemsResult.rows, null, 2)}`);
+    [itemIds]
+  );
+  console.log(`Work Items Found (${itemsResult.rowCount}):\n${JSON.stringify(itemsResult.rows, null, 2)}`);
 
-    // Check specific dependency
-    if (dependencyToCheck) {
-      const depResult = await poolOrClient.query(
-        `SELECT work_item_id, depends_on_work_item_id, is_active, dependency_type
+  // Check specific dependency
+  if (dependencyToCheck) {
+    const depResult = await poolOrClient.query(
+      `SELECT work_item_id, depends_on_work_item_id, is_active, dependency_type
          FROM work_item_dependencies
          WHERE work_item_id = $1 AND depends_on_work_item_id = $2`,
-        [dependencyToCheck.itemId, dependencyToCheck.dependsOnId]
-      );
-      console.log(
-        `Dependency Link ${dependencyToCheck.itemId} -> ${dependencyToCheck.dependsOnId} Found (${depResult.rowCount}):\n${JSON.stringify(
-          depResult.rows,
-          null,
-          2
-        )}`
-      );
-    }
-    // Log all dependencies involving the items for better context
-    const allDepsResult = await poolOrClient.query(
-      `SELECT work_item_id, depends_on_work_item_id, is_active, dependency_type
+      [dependencyToCheck.itemId, dependencyToCheck.dependsOnId]
+    );
+    console.log(
+      `Dependency Link ${dependencyToCheck.itemId} -> ${dependencyToCheck.dependsOnId} Found (${depResult.rowCount}):\n${JSON.stringify(
+        depResult.rows,
+        null,
+        2
+      )}`
+    );
+  }
+  // Log all dependencies involving the items for better context
+  const allDepsResult = await poolOrClient.query(
+    `SELECT work_item_id, depends_on_work_item_id, is_active, dependency_type
         FROM work_item_dependencies
         WHERE work_item_id = ANY($1::uuid[]) OR depends_on_work_item_id = ANY($1::uuid[])`,
-      [itemIds]
-    );
-    console.log(`All Dependencies Found (${allDepsResult.rowCount}):\n${JSON.stringify(allDepsResult.rows, null, 2)}`);
+    [itemIds]
+  );
+  console.log(`All Dependencies Found (${allDepsResult.rowCount}):\n${JSON.stringify(allDepsResult.rows, null, 2)}`);
 
-    console.log(`--- End DB State Check${context ? `: ${context}` : ''} ---\n`);
-  } catch (error) {
-    // Use console.error for errors
-    console.error(`Error during DB State Check${context ? `: ${context}` : ''}:`, error);
-  }
+  console.log(`--- End DB State Check${context ? `: ${context}` : ''} ---\n`);
 };
 
 describe('WorkItemService - Delete Work Item Integration Tests', () => {

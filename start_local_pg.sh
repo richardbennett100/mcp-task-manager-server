@@ -68,3 +68,6 @@ exit 0
 
 
 # npm run ci:test > build_and_test_output.log 2>&1 && ./sync_files.sh
+
+
+# npx tsc --noEmit __tests__/e2e/agentInteraction.e2e.test.ts

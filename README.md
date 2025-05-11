@@ -23,16 +23,14 @@ This server acts as a persistent backend for local MCP clients (like AI agents o
 
 ## Implemented MCP Tools
 
-*(Note: This list reflects the implemented toolset. Refer to the corresponding `src/tools/*Params.ts` files for detailed Zod schemas.)*
+*(Note: Refer to the corresponding `src/tools/*Params.ts` files for detailed Zod schemas.)*
 
 **Creation & Deletion:**
 
 * **`create_project`**: Creates a new top-level work item (project). Can optionally include initial child tasks.
 * **`add_task`**: Adds a single new work item as a child of a specified parent. Can optionally include initial sub-tasks. Requires `parent_work_item_id`.
-* **`add_child_tasks`**: Adds multiple new work items as children under a specified parent. *(Note: Implementation status may need verification)*
 * **`delete_project`**: Soft-deletes a specific project (root work item) and all its descendants.
 * **`delete_task`**: Soft-deletes one or more specified work items (which must not be root projects) and their descendants.
-* **`delete_child_tasks`**: Soft-deletes specified child work items under a specific parent. *(Note: Implementation status may need verification)*
 
 **Reading & Querying:**
 
@@ -69,6 +67,8 @@ This server acts as a persistent backend for local MCP clients (like AI agents o
 
 ## Planned/Future Tools
 
+* **`add_child_tasks`**: Adds multiple new work items as children under a specified parent.
+* **`delete_child_tasks`**: Soft-deletes specified child work items under a specific parent.
 * **`export_project`**: Exports a project structure to a shareable format (e.g., JSON).
 * **`import_project`**: Creates a new project from an exported format.
 
