@@ -1,13 +1,10 @@
-﻿import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { logger } from '../utils/index.js';
-
-// Import tool registration functions
-import { addTaskTool } from './add_task_tool.js';
-import { listTasksTool } from './list_tasks_tool.js';
-import { updateTaskTool } from './update_task_tool.js';
-import { deleteTaskTool } from './delete_task_tool.js';
+﻿// src/tools/index.ts
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { createProjectTool } from './create_project_tool.js';
+import { addTaskTool } from './add_task_tool.js';
+import { updateTaskTool } from './update_task_tool.js';
 import { deleteProjectTool } from './delete_project_tool.js';
+import { deleteTaskTool } from './delete_task_tool.js';
 import { undoLastActionTool } from './undo_last_action_tool.js';
 import { redoLastActionTool } from './redo_last_action_tool.js';
 import { listHistoryTool } from './list_history_tool.js';
@@ -24,43 +21,41 @@ import { moveItemAfterTool } from './move_item_after_tool.js';
 import { moveItemBeforeTool } from './move_item_before_tool.js';
 import { getFullTreeTool } from './get_full_tree_tool.js';
 import { promoteToProjectTool } from './promote_to_project_tool.js';
-import { getNextTaskTool } from './get_next_task_tool.js'; // NEW import
+import { getNextTaskTool } from './get_next_task_tool.js';
+import { addChildTasksTool } from './add_child_tasks_tool.js';
+import { deleteChildTasksTool } from './delete_child_tasks_tool.js';
+import { importProjectTool } from './import_project_tool.js';
+import { exportProjectTool } from './export_project_tool.js';
+import { getDetailsTool } from './get_details_tool.js';
+import { listWorkItemsTool } from './list_work_items_tool.js'; // ADDED: New list_work_items tool
 
-/**
- * Register all defined tools with the MCP server instance.
- */
-export function registerTools(server: McpServer): void {
-  logger.info('Registering tools...');
-
-  try {
-    createProjectTool(server);
-    addTaskTool(server);
-    listTasksTool(server);
-    updateTaskTool(server); // To be deprecated
-    deleteProjectTool(server);
-    deleteTaskTool(server);
-    undoLastActionTool(server);
-    redoLastActionTool(server);
-    listHistoryTool(server);
-    addDependenciesTool(server);
-    deleteDependenciesTool(server);
-    setStatusTool(server);
-    setNameTool(server);
-    setDescriptionTool(server);
-    setPriorityTool(server);
-    setDueDateTool(server);
-    moveItemToStartTool(server);
-    moveItemToEndTool(server);
-    moveItemAfterTool(server);
-    moveItemBeforeTool(server);
-    getFullTreeTool(server);
-    promoteToProjectTool(server);
-    getNextTaskTool(server); // NEW registration
-
-    logger.info('All tools registered successfully.');
-  } catch (error) {
-    logger.error('Failed during synchronous tool registration:', error);
-    console.error('Fallback console log: Failed during synchronous tool registration:', error);
-    throw new Error(`Failed to register tools: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
+export const registerTools = (server: McpServer): void => {
+  createProjectTool(server);
+  addTaskTool(server);
+  updateTaskTool(server);
+  deleteProjectTool(server);
+  deleteTaskTool(server);
+  undoLastActionTool(server);
+  redoLastActionTool(server);
+  listHistoryTool(server);
+  addDependenciesTool(server);
+  deleteDependenciesTool(server);
+  setStatusTool(server);
+  setNameTool(server);
+  setDescriptionTool(server);
+  setPriorityTool(server);
+  setDueDateTool(server);
+  moveItemToStartTool(server);
+  moveItemToEndTool(server);
+  moveItemAfterTool(server);
+  moveItemBeforeTool(server);
+  getFullTreeTool(server);
+  promoteToProjectTool(server);
+  getNextTaskTool(server);
+  addChildTasksTool(server);
+  deleteChildTasksTool(server);
+  importProjectTool(server);
+  exportProjectTool(server);
+  getDetailsTool(server);
+  listWorkItemsTool(server); // ADDED: Register the new list_work_items tool
+};

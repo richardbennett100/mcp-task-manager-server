@@ -1,4 +1,4 @@
-// src/services/WorkItemPromoteService.ts
+// File: src/services/WorkItemPromoteService.ts
 import { PoolClient } from 'pg';
 import {
   WorkItemRepository,
@@ -14,7 +14,7 @@ import { type FullWorkItemData } from './WorkItemServiceTypes.js';
 import { WorkItemUtilsService } from './WorkItemUtilsService.js';
 import { WorkItemReadingService } from './WorkItemReadingService.js';
 import { WorkItemHistoryService } from './WorkItemHistoryService.js';
-import { WorkItemDependencyUpdateService } from './WorkItemDependencyUpdateService.js'; // For adding dependency
+import { WorkItemDependencyUpdateService } from './WorkItemDependencyUpdateService.js';
 
 /**
  * Service responsible for promoting a task to a project.
@@ -22,7 +22,7 @@ import { WorkItemDependencyUpdateService } from './WorkItemDependencyUpdateServi
 export class WorkItemPromoteService {
   private workItemRepository: WorkItemRepository;
   private actionHistoryRepository: ActionHistoryRepository;
-  private utilsService: WorkItemUtilsService;
+  // Removed utilsService instance variable
   private readingService: WorkItemReadingService;
   private historyService: WorkItemHistoryService;
   private dependencyUpdateService: WorkItemDependencyUpdateService;
@@ -30,10 +30,9 @@ export class WorkItemPromoteService {
   constructor(workItemRepository: WorkItemRepository, actionHistoryRepository: ActionHistoryRepository) {
     this.workItemRepository = workItemRepository;
     this.actionHistoryRepository = actionHistoryRepository;
-    this.utilsService = new WorkItemUtilsService(); // Instantiate without repo
+    // Removed instantiation of WorkItemUtilsService
     this.readingService = new WorkItemReadingService(workItemRepository);
     this.historyService = new WorkItemHistoryService(workItemRepository, actionHistoryRepository);
-    // Initialize dependencyUpdateService as it will be used
     this.dependencyUpdateService = new WorkItemDependencyUpdateService(workItemRepository, actionHistoryRepository);
   }
 
@@ -67,30 +66,18 @@ export class WorkItemPromoteService {
       originalParentId = itemBeforePromotion.parent_work_item_id;
 
       // 1. Update parent_work_item_id to null and recalculate order_key
-      const newOrderKey = this.utilsService.calculateOrderKey(
-        await this.workItemRepository.findSiblingEdgeOrderKey(null, 'last', client), // New parent is root
+      // MODIFIED: Call calculateOrderKey statically
+      const newOrderKey = WorkItemUtilsService.calculateOrderKey(
+        await this.workItemRepository.findSiblingEdgeOrderKey(null, 'last', client),
         null
       );
       if (newOrderKey === null) {
         throw new Error(`Failed to calculate a new order key for promoted project ${workItemId}.`);
       }
 
-      // REMOVED shortname calculation
-      // const newShortname = await this.utilsService.calculateShortname(
-      //   itemBeforePromotion.name,
-      //   null, // New parent is null
-      //   workItemId
-      // );
-      // if (newShortname === null) {
-      //   throw new Error(
-      //     `Failed to generate a unique shortname for the promoted project: "${itemBeforePromotion.name}"`
-      //   );
-      // }
-
       const updatePayload: Partial<WorkItemData> = {
         parent_work_item_id: null,
         order_key: newOrderKey,
-        // REMOVED shortname: newShortname,
       };
 
       itemAfterPromotion = await this.workItemRepository.updateFields(client, workItemId, updatePayload);
@@ -105,7 +92,6 @@ export class WorkItemPromoteService {
         );
       }
 
-      // Add undo step for the main item update (excluding shortname)
       undoStepsData.push({
         step_order: stepOrder++,
         step_type: 'UPDATE',
@@ -114,46 +100,35 @@ export class WorkItemPromoteService {
         old_data: {
           parent_work_item_id: itemBeforePromotion.parent_work_item_id,
           order_key: itemBeforePromotion.order_key,
-          // REMOVED shortname: itemBeforePromotion.shortname,
           updated_at: itemBeforePromotion.updated_at,
         },
         new_data: {
           parent_work_item_id: itemAfterPromotion.parent_work_item_id,
           order_key: itemAfterPromotion.order_key,
-          // REMOVED shortname: itemAfterPromotion.shortname,
           updated_at: itemAfterPromotion.updated_at,
         },
       });
 
-      // 2. Add 'linked' dependency from original parent to the new project
       if (originalParentId) {
-        const originalParentItem = await this.workItemRepository.findById(originalParentId, { isActive: true });
+        const originalParentItem = await this.workItemRepository.findById(originalParentId, { isActive: true }, client);
         if (!originalParentItem) {
-          // This is unlikely if the task had this parent, but handle defensively
           logger.warn(
             `[WorkItemPromoteService] Original parent ${originalParentId} not found or inactive while creating link.`
           );
         } else {
-          // Temporarily use the dependencyUpdateService's method.
-          // This creates its own transaction and history entry which is not ideal within this larger transaction.
-          // For a more robust solution, the core logic of addDependencies would be refactored
-          // to accept a client and not create its own history entry when called internally.
-          // For now, we accept this nested transaction for simplicity.
-          // The history entry for this will be separate.
           logger.info(
             `[WorkItemPromoteService] Adding 'linked' dependency from original parent ${originalParentId} to new project ${workItemId}.`
           );
 
-          // We need to capture the state *before* this specific dependency addition for its own undo.
-          // The dependencyUpdateService.addDependencies already handles its own history.
-          // However, for the *overall* "promote" action's undo, we need to know if this link was newly created.
-
           const depsBeforeLinkAdd = await this.workItemRepository.findDependencies(
             originalParentId,
-            { isActive: undefined } // Get all, to see if it existed but was inactive
+            { isActive: undefined }, // Get all to check existence
+            client
           );
           const linkExistedBefore = depsBeforeLinkAdd.find((d) => d.depends_on_work_item_id === workItemId);
 
+          // This call to addDependencies will create its own history entry.
+          // For the "PROMOTE_TO_PROJECT" action's undo, we record the before/after state of this specific link.
           await this.dependencyUpdateService.addDependencies(originalParentId, [
             {
               depends_on_work_item_id: workItemId,
@@ -161,10 +136,6 @@ export class WorkItemPromoteService {
             },
           ]);
 
-          // For the "promote" undo: if the link was newly created by this step, its undo is to remove it.
-          // If it was reactivated, its undo is to deactivate it.
-          // The addDependencies service handles its own granular undo.
-          // This specific step focuses on the "promote" action's perspective.
           const newLinkData: WorkItemDependencyData = {
             work_item_id: originalParentId,
             depends_on_work_item_id: workItemId,
@@ -173,30 +144,27 @@ export class WorkItemPromoteService {
           };
 
           if (linkExistedBefore) {
-            // Link was reactivated or type changed
             undoStepsData.push({
               step_order: stepOrder++,
               step_type: 'UPDATE',
               table_name: 'work_item_dependencies',
               record_id: `${originalParentId}:${workItemId}`,
-              old_data: linkExistedBefore, // Original state (potentially inactive or different type)
-              new_data: newLinkData, // State after addDependencies made it active and 'linked'
+              old_data: linkExistedBefore,
+              new_data: newLinkData,
             });
           } else {
-            // Link was newly created
             undoStepsData.push({
               step_order: stepOrder++,
-              step_type: 'UPDATE', // Treat as update for undo (is_active: true -> false)
+              step_type: 'UPDATE',
               table_name: 'work_item_dependencies',
               record_id: `${originalParentId}:${workItemId}`,
-              old_data: { ...newLinkData, is_active: false }, // Old state was non-existent, so undo makes it inactive
-              new_data: newLinkData, // New state is active
+              old_data: { ...newLinkData, is_active: false },
+              new_data: newLinkData,
             });
           }
         }
       }
 
-      // 3. Record Action History for the promotion
       const actionDescription = `Promoted task "${itemAfterPromotion.name}" to a project.`;
       const actionData: CreateActionHistoryInput = {
         action_type: 'PROMOTE_TO_PROJECT',
@@ -223,7 +191,7 @@ export class WorkItemPromoteService {
     }
 
     const fullPromotedItem = await this.readingService.getWorkItemById(finalItemState.work_item_id, {
-      isActive: finalItemState.is_active,
+      isActive: finalItemState.is_active, // Use actual final active state
     });
     if (!fullPromotedItem) {
       logger.error(`[WorkItemPromoteService] Failed to retrieve full details for item ${workItemId} after promotion.`);

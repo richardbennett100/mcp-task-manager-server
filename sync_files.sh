@@ -88,7 +88,7 @@ echo "File synchronization process completed successfully."
 
 exit 0
 
-# docker exec -i local-postgres-tasks psql -U taskmanager_user -d taskmanager_db -c "SELECT * FROM change_logs"
+# docker exec -i local-postgres-tasks psql -U taskmanager_user -d taskmanager_db -c "SELECT * FROM work_items"
 
 # sudo docker exec -i local-postgres-tasks psql -U taskmanager_user -d taskmanager_db -c "DELETE FROM change_logs"
 

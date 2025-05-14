@@ -1,4 +1,5 @@
-﻿/**
+﻿// File: src/utils/errors.ts
+/**
  * Custom error types for the Task Management Server.
  * These can be caught in the service layer and mapped to specific
  * McpError codes in the tool layer.
@@ -8,7 +9,7 @@
 export class ServiceError extends Error {
   constructor(
     message: string,
-    public details?: any // FIXME: Replace 'any' with a more specific type if possible, or 'unknown'
+    public details?: any
   ) {
     super(message);
     this.name = 'ServiceError';
@@ -17,10 +18,7 @@ export class ServiceError extends Error {
 
 // Example: Validation specific error
 export class ValidationError extends ServiceError {
-  constructor(
-    message: string,
-    details?: any // FIXME: Replace 'any' with a more specific type if possible, or 'unknown'
-  ) {
+  constructor(message: string, details?: any) {
     super(message, details);
     this.name = 'ValidationError';
   }
@@ -28,10 +26,7 @@ export class ValidationError extends ServiceError {
 
 // Example: Not found specific error
 export class NotFoundError extends ServiceError {
-  constructor(
-    message: string = 'Resource not found',
-    details?: any // FIXME: Replace 'any' with a more specific type if possible, or 'unknown'
-  ) {
+  constructor(message: string = 'Resource not found', details?: any) {
     super(message, details);
     this.name = 'NotFoundError';
   }
@@ -39,12 +34,20 @@ export class NotFoundError extends ServiceError {
 
 // Example: Conflict specific error (e.g., trying to create something that exists)
 export class ConflictError extends ServiceError {
-  constructor(
-    message: string = 'Resource conflict',
-    details?: any // FIXME: Replace 'any' with a more specific type if possible, or 'unknown'
-  ) {
+  constructor(message: string = 'Resource conflict', details?: any) {
     super(message, details);
     this.name = 'ConflictError';
+  }
+}
+
+// ADDED: DatabaseError
+export class DatabaseError extends ServiceError {
+  constructor(
+    message: string = 'A database error occurred',
+    public details?: any
+  ) {
+    super(message, details);
+    this.name = 'DatabaseError';
   }
 }
 

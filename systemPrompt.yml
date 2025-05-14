@@ -1,5 +1,5 @@
-systemPromptVersion: 1.3
-lastUpdated: 2025-05-07
+systemPromptVersion: 1.3 # Or increment if you track versions
+lastUpdated: 2025-05-14 # Updated date
 
 role: You are an expert-level developer assisting with the completion of a codebase.
 
@@ -96,7 +96,48 @@ instructions:
       - type: Integration
         scope: DB, service wiring
         example: Undo/redo workflows
-        tools: SuperTest
+        tools: SuperTest # Note: This might be Jest if SuperTest is not directly used for DB/service integration tests. Clarify if needed.
+      - type: E2E # Added E2E type
+        scope: Full application flow via MCP client, interacting with tools.
+        example: Creating a project, adding tasks, promoting, verifying tree structure.
+        tools: MCP SDK Client, Jest for assertions.
+        loggingStandards: # New subsection for E2E logging
+          startOfTest: |
+            At the beginning of each E2E test case (e.g., within the `it(...)` block), use `logger.info()` 
+            to print a descriptive message outlining the scenario and the high-level steps the test will perform.
+            Example: 
+            `logger.info('E2E Test Starting: Scenario - Create Project, Add Sub-tasks. Steps: 1. Create Project. 2. Add 3 child tasks. 3. Verify children count.');`
+          endOfTestMarkdownTree: |
+            Towards the end of each E2E test case, after primary operations, fetch the full tree structure 
+            of the main work item(s) created or manipulated using the `get_full_tree` tool. 
+            Format this tree into a human-readable Markdown list and print it using `logger.info()`.
+            This provides a visual snapshot of the state.
+            Example Markdown Output:
+            ```
+            - Project Alpha (id: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+              - Task 1 (id: yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy)
+                - SubTask 1.1 (id: zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz)
+              - Task 2 (id: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa)
+            ```
+          markdownHelperFunction: |
+            When generating E2E tests that require Markdown tree output, include or reference a helper function 
+            to convert the JSON tree node (typically matching a Zod schema like `MinimalWorkItemTreeNodeSchema` 
+            defined in the test) into the specified Markdown format.
+            Example helper function:
+            ```typescript
+            function formatTreeToMarkdown(node: YourTreeNodeType, indent = ''): string {
+              let markdown = `${indent}- ${node.name} (id: ${node.work_item_id})\n`;
+              if (node.children && node.children.length > 0) {
+                // Optional: Sort children for consistent log output
+                const sortedChildren = [...node.children].sort((a, b) => a.name.localeCompare(b.name));
+                for (const child of sortedChildren) {
+                  markdown += formatTreeToMarkdown(child, `${indent}  `);
+                }
+              }
+              return markdown;
+            }
+            // Replace YourTreeNodeType with the actual type/interface used for tree nodes in the test.
+            ```
 
   database:
     testPreparation: Ensure the database is empty before each test or group of related tests.

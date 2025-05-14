@@ -1,4 +1,4 @@
-// src/__tests__/e2e/agentInteraction.test.ts
+// src/__tests__/e2e/1_agentInteraction.test.ts
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { z } from 'zod';
@@ -14,14 +14,12 @@ const ToolInputSchemaDefinitionSchema = z.object({
 const ToolDefinitionSchema = z.object({
   name: z.string(),
   description: z.string().optional().nullable(),
-  inputSchema: ToolInputSchemaDefinitionSchema, // Matches the structure in MCP.ts ToolSchema
+  inputSchema: ToolInputSchemaDefinitionSchema,
 });
 
 // Correct schema for the *payload* of the "tools/list" result, which client.request expects
 const ListToolsClientResponsePayloadSchema = z.object({
-  // This is what client.request's second arg should validate
   tools: z.array(ToolDefinitionSchema),
-  // nextCursor: z.string().optional(), // Include if you expect/test pagination
 });
 
 const clientInfo = {
@@ -106,7 +104,8 @@ describe('Agent Interaction E2E Test', () => {
 
       expect(toolNames).toContain('create_project');
       expect(toolNames).toContain('add_task');
-      expect(toolNames).toContain('list_tasks');
+      // MODIFIED: Expect 'get_details' instead of 'list_tasks'
+      expect(toolNames).toContain('get_details');
       expect(toolNames).toContain('undo_last_action');
 
       const createProject = tools.find((t: { name: string }) => t.name === 'create_project');
@@ -115,6 +114,16 @@ describe('Agent Interaction E2E Test', () => {
         expect(createProject.description).toBeDefined();
         expect(createProject.inputSchema).toBeDefined();
         expect(createProject.inputSchema.type).toBe('object');
+      }
+
+      // ADDED: Check for the new 'get_details' tool structure (optional, but good practice)
+      const getDetailsToolInfo = tools.find((t: { name: string }) => t.name === 'get_details');
+      expect(getDetailsToolInfo).toBeDefined();
+      if (getDetailsToolInfo) {
+        expect(getDetailsToolInfo.description).toBeDefined();
+        expect(getDetailsToolInfo.inputSchema).toBeDefined();
+        expect(getDetailsToolInfo.inputSchema.type).toBe('object');
+        expect(getDetailsToolInfo.inputSchema.properties).toHaveProperty('work_item_id');
       }
     },
     15000 + POST_CONNECT_WAIT

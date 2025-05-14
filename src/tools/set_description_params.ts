@@ -13,7 +13,6 @@ export const SetDescriptionParamsSchema = z.object({
   description: z
     .string()
     .max(1024, 'Description cannot exceed 1024 characters.')
-    .nullable() // Allows clearing the description by passing null
     .describe('Required. The new description for the work item (max 1024 characters), or null to clear it.'),
 });
 

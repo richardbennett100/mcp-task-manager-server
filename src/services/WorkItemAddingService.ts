@@ -1,201 +1,242 @@
-// src/services/WorkItemAddingService.ts
-import { v4 as uuidv4 } from 'uuid';
+// File: src/services/WorkItemAddingService.ts
+import { PoolClient } from 'pg';
+import { validate as uuidValidate, v4 as uuidv4 } from 'uuid';
 import {
   WorkItemRepository,
   ActionHistoryRepository,
   WorkItemData,
   WorkItemDependencyData,
-  CreateActionHistoryInput,
   CreateUndoStepInput,
+  ActionHistoryData, // For createdAction type
 } from '../repositories/index.js';
-import { logger } from '../utils/logger.js';
-import { ValidationError, NotFoundError } from '../utils/errors.js';
-import { AddTaskArgs } from '../tools/add_task_params.js'; // Corrected import path name
-import { WorkItemUtilsService } from './WorkItemUtilsService.js';
+import { AddWorkItemInput, PositionEnum as PositionEnumConst } from './WorkItemServiceTypes.js';
+import { z } from 'zod';
 import { WorkItemHistoryService } from './WorkItemHistoryService.js';
-import { PoolClient } from 'pg';
+import { WorkItemUtilsService } from './WorkItemUtilsService.js';
+import { NotFoundError, ValidationError, DatabaseError } from '../utils/errors.js';
+import { logger } from '../utils/logger.js';
 
-/**
- * Service responsible for adding work items
- */
 export class WorkItemAddingService {
   private workItemRepository: WorkItemRepository;
   private actionHistoryRepository: ActionHistoryRepository;
-  private utilsService: WorkItemUtilsService;
   private historyService: WorkItemHistoryService;
 
-  constructor(workItemRepository: WorkItemRepository, actionHistoryRepository: ActionHistoryRepository) {
+  constructor(
+    workItemRepository: WorkItemRepository,
+    actionHistoryRepository: ActionHistoryRepository,
+    historyService: WorkItemHistoryService
+  ) {
     this.workItemRepository = workItemRepository;
     this.actionHistoryRepository = actionHistoryRepository;
-    this.utilsService = new WorkItemUtilsService(); // Instantiate without repo
-    this.historyService = new WorkItemHistoryService(workItemRepository, actionHistoryRepository);
+    this.historyService = historyService;
   }
 
-  /**
-   * Creates a new work item with optional dependencies and positioning.
-   * Handles fetching neighbour keys and calculating the final order key.
-   * Expects AddTaskArgs which now REQUIRES parent_work_item_id for add_task tool.
-   * The create_project tool ensures parent_work_item_id is null before calling this service's underlying logic if shared.
-   * For now, assume separate calls or addWorkItem handles both cases via input type.
-   * Let's adjust logic assuming addWorkItem is called correctly based on tool.
-   */
-  public async addWorkItem(input: AddTaskArgs): Promise<WorkItemData> {
-    const workItemId = uuidv4();
-    const now = new Date().toISOString();
-    // parentId is now guaranteed by AddTaskArgs for the add_task tool case
-    // If this method were also used by create_project, it would need adjustment or a separate method.
-    // Assuming called correctly by the respective tools for now.
-    const parentId = input.parent_work_item_id; // No longer needs '?? null'
+  private async determineOrderKeys(
+    client: PoolClient,
+    parentId: string | null,
+    insertAt?: z.infer<typeof PositionEnumConst>,
+    insertAfterId?: string,
+    insertBeforeId?: string
+  ): Promise<{ keyBefore: string | null; keyAfter: string | null }> {
+    let keyBefore: string | null = null;
+    let keyAfter: string | null = null;
 
-    const dependenciesToCreate: WorkItemDependencyData[] =
-      input.dependencies?.map(
-        (dep: { depends_on_work_item_id: string; dependency_type?: 'finish-to-start' | 'linked' }) => ({
-          work_item_id: workItemId,
-          depends_on_work_item_id: dep.depends_on_work_item_id,
-          dependency_type: dep.dependency_type ?? 'finish-to-start',
-          is_active: true,
-        })
-      ) ?? [];
-
-    logger.debug(`[WorkItemAddingService] Starting transaction to add work item ${workItemId}`);
-
-    try {
-      const createdItem = await this.actionHistoryRepository.withTransaction(async (client: PoolClient) => {
-        // 1. Validate Parent (Always validate now since it's required for add_task)
-        // If parentId was null (from create_project), this check is skipped
-        if (parentId) {
-          const parentExists = await this.workItemRepository.findById(parentId, { isActive: true });
-          if (!parentExists) {
-            throw new ValidationError(`Parent work item with ID ${parentId} not found or is inactive.`);
-          }
-        } else {
-          // This case should ideally only be hit if called from create_project logic
-          logger.debug(`[WorkItemAddingService] No parent ID provided, creating root item.`);
-        }
-
-        // 2. Determine Neighbour Keys for Order Key Calculation (Logic remains the same)
-        let keyBefore: string | null = null;
-        let keyAfter: string | null = null;
-
-        if (input.insertAfter_work_item_id) {
-          logger.debug(`[WorkItemAddingService] Finding neighbours to insert AFTER ${input.insertAfter_work_item_id}`);
-          const neighbours = await this.workItemRepository.findNeighbourOrderKeys(
-            parentId, // Use parentId (which could be null for root)
-            input.insertAfter_work_item_id,
-            'after',
-            client
-          );
-          keyBefore = neighbours.before;
-          keyAfter = neighbours.after;
-        } else if (input.insertBefore_work_item_id) {
-          logger.debug(
-            `[WorkItemAddingService] Finding neighbours to insert BEFORE ${input.insertBefore_work_item_id}`
-          );
-          const neighbours = await this.workItemRepository.findNeighbourOrderKeys(
-            parentId, // Use parentId (which could be null for root)
-            input.insertBefore_work_item_id,
-            'before',
-            client
-          );
-          keyBefore = neighbours.before;
-          keyAfter = neighbours.after;
-        } else if (input.insertAt === 'start') {
-          logger.debug(`[WorkItemAddingService] Finding edge key to insert at START for parent ${parentId ?? 'root'}`);
-          keyAfter = await this.workItemRepository.findSiblingEdgeOrderKey(parentId, 'first', client);
-          keyBefore = null;
-        } else {
-          logger.debug(`[WorkItemAddingService] Finding edge key to insert at END for parent ${parentId ?? 'root'}`);
-          keyBefore = await this.workItemRepository.findSiblingEdgeOrderKey(parentId, 'last', client);
-          keyAfter = null;
-        }
-
-        // 3. Calculate Order Key (Logic remains the same)
-        const calculatedOrderKey = this.utilsService.calculateOrderKey(keyBefore, keyAfter);
-        if (calculatedOrderKey === null) {
-          logger.error(
-            `[WorkItemAddingService] Failed to calculate order key. Input: ${JSON.stringify(input)}, ParentId: ${parentId}, Neighbour Keys: Before=${keyBefore}, After=${keyAfter}`
-          );
-          throw new Error(`Failed to calculate a valid order key for item "${input.name}"`);
-        }
-
-        // 4. Calculate Shortname REMOVED
-        // const calculatedShortname = await this.utilsService.calculateShortname(input.name, parentId, workItemId);
-
-        // 5. Prepare New Item Data (Logic remains the same, shortname removed)
-        const newItemData: WorkItemData = {
-          work_item_id: workItemId,
-          parent_work_item_id: parentId,
-          name: input.name,
-          // shortname: calculatedShortname, // REMOVED
-          description: input.description ?? null,
-          status: input.status ?? 'todo',
-          priority: input.priority ?? 'medium',
-          order_key: calculatedOrderKey,
-          created_at: now,
-          updated_at: now,
-          due_date: input.due_date ?? null,
-          is_active: true,
-        };
-
-        // 6. Create Item and Dependencies in DB (Logic remains the same)
-        const item = await this.workItemRepository.create(client, newItemData, dependenciesToCreate);
-
-        // 7. Record Action History (Logic remains the same)
-        const actionDescription = `Added work item "${item.name}"`;
-        const actionData: CreateActionHistoryInput = {
-          action_type: 'ADD_WORK_ITEM',
-          work_item_id: item.work_item_id,
-          description: actionDescription,
-        };
-
-        const undoStepsData: CreateUndoStepInput[] = [];
-        const itemStateAfterUndo: WorkItemData = { ...item, is_active: false };
-        undoStepsData.push({
-          step_order: 1,
-          step_type: 'UPDATE',
-          table_name: 'work_items',
-          record_id: item.work_item_id,
-          old_data: itemStateAfterUndo,
-          new_data: item,
-        });
-
-        dependenciesToCreate.forEach((dep, index) => {
-          const depStateAfterUndo: WorkItemDependencyData = { ...dep, is_active: false };
-          undoStepsData.push({
-            step_order: 2 + index,
-            step_type: 'UPDATE',
-            table_name: 'work_item_dependencies',
-            record_id: `${dep.work_item_id}:${dep.depends_on_work_item_id}`,
-            old_data: depStateAfterUndo,
-            new_data: dep,
-          });
-        });
-
-        const createdAction = await this.actionHistoryRepository.createActionInClient(actionData, client);
-        for (const step of undoStepsData) {
-          await this.actionHistoryRepository.createUndoStepInClient(
-            { ...step, action_id: createdAction.action_id },
-            client
-          );
-        }
-        await this.historyService.invalidateRedoStack(client, createdAction.action_id);
-
-        logger.info(
-          `[WorkItemAddingService] Added work item ${workItemId} with order_key ${calculatedOrderKey} and recorded history`
+    if (insertAfterId) {
+      const afterItem = await this.workItemRepository.findById(insertAfterId, { isActive: true }, client);
+      if (!afterItem) {
+        throw new NotFoundError(`Work item with ID ${insertAfterId} (for insertAfter) not found or is inactive.`);
+      }
+      if (afterItem.parent_work_item_id !== parentId) {
+        throw new ValidationError(`Item ${insertAfterId} (for insertAfter) is not a sibling under parent ${parentId}.`);
+      }
+      keyBefore = afterItem.order_key;
+      const neighbours = await this.workItemRepository.findNeighbourOrderKeys(parentId, insertAfterId, 'after', client);
+      keyAfter = neighbours.after;
+    } else if (insertBeforeId) {
+      const beforeItem = await this.workItemRepository.findById(insertBeforeId, { isActive: true }, client);
+      if (!beforeItem) {
+        throw new NotFoundError(`Work item with ID ${insertBeforeId} (for insertBefore) not found or is inactive.`);
+      }
+      if (beforeItem.parent_work_item_id !== parentId) {
+        throw new ValidationError(
+          `Item ${insertBeforeId} (for insertBefore) is not a sibling under parent ${parentId}.`
         );
-        return item;
+      }
+      keyAfter = beforeItem.order_key;
+      const neighbours = await this.workItemRepository.findNeighbourOrderKeys(
+        parentId,
+        insertBeforeId,
+        'before',
+        client
+      );
+      keyBefore = neighbours.before;
+    } else if (insertAt === 'start') {
+      keyBefore = null;
+      keyAfter = await this.workItemRepository.findSiblingEdgeOrderKey(parentId, 'first', client);
+    } else {
+      keyBefore = await this.workItemRepository.findSiblingEdgeOrderKey(parentId, 'last', client);
+      keyAfter = null;
+    }
+    return { keyBefore, keyAfter };
+  }
+
+  private async performActualAdd(input: AddWorkItemInput, client: PoolClient): Promise<WorkItemData> {
+    logger.debug('[WorkItemAddingService-performActualAdd] Input:', input);
+    const parentId = input.parent_work_item_id || null;
+
+    if (parentId) {
+      if (!uuidValidate(parentId)) {
+        throw new ValidationError(`Invalid parent_work_item_id format: ${parentId}`);
+      }
+
+      const parentItem = await this.workItemRepository.findById(parentId, undefined, client);
+      if (!parentItem) {
+        // This message will be "Parent work item with ID ... not found."
+        // The test expects /not found or is inactive/ for the inactive parent case.
+        // So if a parent is NOT found, this message is fine.
+        throw new NotFoundError(`Parent work item with ID ${parentId} not found.`);
+      }
+      if (!parentItem.is_active) {
+        // MODIFIED: Error message for inactive parent to match test regex
+        throw new ValidationError(`Parent work item with ID ${parentId} not found or is inactive.`);
+      }
+    }
+
+    if (input.dependencies) {
+      for (const dep of input.dependencies) {
+        if (!uuidValidate(dep.depends_on_work_item_id)) {
+          throw new ValidationError(
+            `Invalid depends_on_work_item_id format in dependencies: ${dep.depends_on_work_item_id}`
+          );
+        }
+      }
+    }
+
+    const { keyBefore, keyAfter } = await this.determineOrderKeys(
+      client,
+      parentId,
+      input.insertAt,
+      input.insertAfter_work_item_id,
+      input.insertBefore_work_item_id
+    );
+
+    const order_key = WorkItemUtilsService.calculateOrderKey(keyBefore, keyAfter);
+    if (order_key === null) {
+      throw new Error('Failed to calculate a valid order key for the new work item.');
+    }
+
+    const now = new Date().toISOString();
+    const newWorkItemData: WorkItemData = {
+      work_item_id: uuidv4(),
+      name: input.name,
+      description: input.description || null,
+      parent_work_item_id: parentId,
+      status: input.status || 'todo',
+      priority: input.priority || 'medium',
+      due_date: input.due_date || null,
+      order_key: order_key,
+      is_active: true,
+      created_at: now,
+      updated_at: now,
+    };
+
+    let mappedDependenciesForRepoCreate:
+      | (Omit<WorkItemDependencyData, 'work_item_id'> & { work_item_id?: string })[]
+      | undefined = undefined;
+    if (input.dependencies && input.dependencies.length > 0) {
+      mappedDependenciesForRepoCreate = input.dependencies.map((dep) => ({
+        depends_on_work_item_id: dep.depends_on_work_item_id,
+        dependency_type: dep.dependency_type || 'finish-to-start',
+        is_active: true,
+      }));
+    }
+
+    const createdItem = await this.workItemRepository.create(
+      client,
+      newWorkItemData,
+      mappedDependenciesForRepoCreate as WorkItemDependencyData[] | undefined
+    );
+
+    if (!createdItem) {
+      throw new DatabaseError('Failed to create work item in repository, repository returned null.');
+    }
+    logger.info(`[WorkItemAddingService] Created work item ${createdItem.work_item_id} with order_key ${order_key}`);
+    return createdItem;
+  }
+
+  public async addWorkItem(input: AddWorkItemInput): Promise<WorkItemData> {
+    logger.info('[WorkItemAddingService] addWorkItem (public) called with input:', input);
+
+    const newWorkItem = await this.actionHistoryRepository.withTransaction(async (txClient) => {
+      const createdItem = await this.performActualAdd(input, txClient);
+
+      const undoSteps: CreateUndoStepInput[] = [];
+
+      undoSteps.push({
+        step_order: 1,
+        step_type: 'UPDATE',
+        table_name: 'work_items',
+        record_id: createdItem.work_item_id,
+        old_data: {
+          is_active: false,
+        },
+        new_data: { ...createdItem },
       });
 
-      return createdItem;
-    } catch (error: unknown) {
-      if (error instanceof ValidationError || error instanceof NotFoundError) {
-        logger.warn(
-          `[WorkItemAddingService] Validation/Not Found error adding work item "${input.name}": ${error.message}`
+      if (input.dependencies && input.dependencies.length > 0) {
+        const actualCreatedDependencies = await this.workItemRepository.findDependencies(
+          createdItem.work_item_id,
+          { isActive: true },
+          txClient
         );
-      } else {
-        logger.error(`[WorkItemAddingService] Error adding work item "${input.name}":`, error);
+
+        actualCreatedDependencies.forEach((depLink, index) => {
+          const wasInInput = input.dependencies?.some(
+            (inpDep) =>
+              inpDep.depends_on_work_item_id === depLink.depends_on_work_item_id &&
+              (inpDep.dependency_type || 'finish-to-start') === depLink.dependency_type
+          );
+
+          if (wasInInput) {
+            undoSteps.push({
+              step_order: 2 + index,
+              step_type: 'UPDATE',
+              table_name: 'work_item_dependencies',
+              record_id: `${depLink.work_item_id}:${depLink.depends_on_work_item_id}`,
+              old_data: {
+                dependency_type: depLink.dependency_type,
+                is_active: false,
+              },
+              new_data: { ...depLink },
+            });
+          }
+        });
       }
-      throw error;
-    }
+
+      const createdAction: ActionHistoryData = await this.actionHistoryRepository.createActionInClient(
+        {
+          action_type: 'ADD_WORK_ITEM',
+          work_item_id: createdItem.work_item_id,
+          description: `Added work item "${createdItem.name}"`,
+        },
+        txClient
+      );
+
+      for (const step of undoSteps) {
+        await this.actionHistoryRepository.createUndoStepInClient(
+          { ...step, action_id: createdAction.action_id },
+          txClient
+        );
+      }
+
+      await this.historyService.invalidateRedoStack(txClient, createdAction.action_id);
+
+      logger.info(
+        `[WorkItemAddingService] Added work item ${createdItem.work_item_id} and recorded history with undo steps.`
+      );
+      return createdItem;
+    });
+
+    return newWorkItem;
   }
 }

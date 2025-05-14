@@ -1,10 +1,9 @@
-// src/services/WorkItemService.ts
+// File: src/services/WorkItemService.ts
 import {
   WorkItemRepository,
   ActionHistoryRepository,
   type ActionHistoryData,
   type WorkItemData,
-  // Removed: WorkItemDependencyData, // Not directly used in this service file
 } from '../repositories/index.js';
 import {
   type AddWorkItemInput,
@@ -13,10 +12,11 @@ import {
   type FullWorkItemData,
   type WorkItemTreeNode,
   type GetFullTreeOptions,
+  WorkItemStatusEnum,
+  WorkItemPriorityEnum,
 } from './WorkItemServiceTypes.js';
-import { type AddTaskArgs, WorkItemStatusEnum, WorkItemPriorityEnum } from '../tools/add_task_params.js'; // Ensure AddTaskArgs is imported
 import { type DependencyInput } from '../tools/add_dependencies_params.js';
-import { type GetNextTaskParams } from '../tools/get_next_task_params.js'; // Import GetNextTaskParams
+import { type GetNextTaskParams } from '../tools/get_next_task_params.js';
 import { WorkItemAddingService } from './WorkItemAddingService.js';
 import { WorkItemReadingService } from './WorkItemReadingService.js';
 import { WorkItemUpdateService } from './WorkItemUpdateService.js';
@@ -26,17 +26,12 @@ import { WorkItemPositionUpdateService } from './WorkItemPositionUpdateService.j
 import { WorkItemDeleteService } from './WorkItemDeleteService.js';
 import { WorkItemHistoryService } from './WorkItemHistoryService.js';
 import { WorkItemPromoteService } from './WorkItemPromoteService.js';
-import { logger } from '../utils/logger.js'; // Import logger
-// Removed: import { NotFoundError } from '../utils/errors.js'; // Not directly used in this service file
+import { logger } from '../utils/logger.js';
 import { z } from 'zod';
 
 type WorkItemStatus = z.infer<typeof WorkItemStatusEnum>;
 type WorkItemPriority = z.infer<typeof WorkItemPriorityEnum>;
 
-/**
- * Main service for managing work items. This class delegates specific operations
- * to specialized service classes to keep code maintainable.
- */
 export class WorkItemService {
   private workItemRepository: WorkItemRepository;
   private actionHistoryRepository: ActionHistoryRepository;
@@ -55,22 +50,23 @@ export class WorkItemService {
     this.workItemRepository = workItemRepository;
     this.actionHistoryRepository = actionHistoryRepository;
 
-    this.addingService = new WorkItemAddingService(workItemRepository, actionHistoryRepository);
+    this.historyService = new WorkItemHistoryService(workItemRepository, actionHistoryRepository);
+    this.addingService = new WorkItemAddingService(workItemRepository, actionHistoryRepository, this.historyService);
     this.readingService = new WorkItemReadingService(workItemRepository);
+
+    // MODIFIED: Reverted constructor calls for these services to 2 arguments
+    // Assuming their current constructors only expect workItemRepository and actionHistoryRepository.
+    // If they later need historyService for invalidateRedoStack, their constructors will need updating.
     this.updateService = new WorkItemUpdateService(workItemRepository, actionHistoryRepository);
     this.fieldUpdateService = new WorkItemFieldUpdateService(workItemRepository, actionHistoryRepository);
     this.dependencyUpdateService = new WorkItemDependencyUpdateService(workItemRepository, actionHistoryRepository);
     this.positionUpdateService = new WorkItemPositionUpdateService(workItemRepository, actionHistoryRepository);
     this.deleteService = new WorkItemDeleteService(workItemRepository, actionHistoryRepository);
-    this.historyService = new WorkItemHistoryService(workItemRepository, actionHistoryRepository);
     this.promoteService = new WorkItemPromoteService(workItemRepository, actionHistoryRepository);
   }
 
-  // --- Existing methods ---
-  public async addWorkItem(input: AddTaskArgs | AddWorkItemInput): Promise<WorkItemData> {
-    // Cast to AddTaskArgs might be too specific if create_project also uses this.
-    // Assuming AddTaskArgs is a superset or compatible for now.
-    return this.addingService.addWorkItem(input as AddTaskArgs);
+  public async addWorkItem(input: AddWorkItemInput): Promise<WorkItemData> {
+    return this.addingService.addWorkItem(input);
   }
 
   public async getWorkItemById(id: string, filter?: { isActive?: boolean }): Promise<FullWorkItemData | null> {
@@ -81,7 +77,6 @@ export class WorkItemService {
     return this.readingService.listWorkItems(filter);
   }
 
-  /** @deprecated Use granular update tools/methods instead */
   public async updateWorkItem(
     id: string,
     updates: UpdateWorkItemInput,
@@ -103,6 +98,10 @@ export class WorkItemService {
 
   public async redoLastUndo(): Promise<ActionHistoryData | null> {
     return this.historyService.redoLastUndo();
+  }
+
+  public async listHistory(filter?: { work_item_id?: string | null; limit?: number }): Promise<ActionHistoryData[]> {
+    return this.actionHistoryRepository.listRecentActions(filter);
   }
 
   public async addDependencies(workItemId: string, dependenciesToAdd: DependencyInput[]): Promise<FullWorkItemData> {
@@ -157,11 +156,8 @@ export class WorkItemService {
     return this.promoteService.promoteToProject(workItemId);
   }
 
-  // --- Get Next Task Method ---
   public async getNextTask(params: GetNextTaskParams): Promise<WorkItemData | null> {
     logger.info(`[WorkItemService] getNextTask called with params:`, params);
-
-    // 1. Fetch candidate tasks using the repository method
     const candidateFilters = {
       scopeItemId: params.scope_item_id,
       includeTags: params.include_tags,
@@ -174,50 +170,34 @@ export class WorkItemService {
       logger.info('[WorkItemService] No candidate tasks found matching filters.');
       return null;
     }
-
-    // 2. Iterate through candidates and check dependencies
-    // The repository already sorts them by due_date, priority, order_key, created_at
     for (const candidate of candidates) {
       logger.debug(`[WorkItemService] Checking candidate: ${candidate.work_item_id} (${candidate.name})`);
-      // Fetch its *active* dependencies
       const dependencies = await this.workItemRepository.findDependencies(candidate.work_item_id, { isActive: true });
-
       if (dependencies.length === 0) {
         logger.info(`[WorkItemService] Found next task (no active dependencies): ${candidate.work_item_id}`);
-        return candidate; // First candidate with no active dependencies is our suggestion
+        return candidate;
       }
-
-      // Check if all *active* dependencies are 'done'
       let allDependenciesMet = true;
       const dependencyIds = dependencies.map((dep) => dep.depends_on_work_item_id);
-
       if (dependencyIds.length > 0) {
-        // Only fetch if there are dependency IDs
-        const dependencyItems = await this.workItemRepository.findByIds(dependencyIds, { isActive: true }); // Only check active dependency items
-
-        // Create a map for quick lookup
+        const dependencyItems = await this.workItemRepository.findByIds(dependencyIds, { isActive: true });
         const dependencyStatusMap = new Map(dependencyItems.map((item) => [item.work_item_id, item.status]));
-
         for (const depLink of dependencies) {
           const depStatus = dependencyStatusMap.get(depLink.depends_on_work_item_id);
-          // If the dependency item wasn't found (e.g., became inactive between queries) or is not 'done', it's blocked
           if (depStatus !== 'done') {
             allDependenciesMet = false;
             logger.debug(
               `[WorkItemService] Candidate ${candidate.work_item_id} blocked by dependency ${depLink.depends_on_work_item_id} (status: ${depStatus ?? 'not found/inactive'})`
             );
-            break; // No need to check other dependencies for this candidate
+            break;
           }
         }
-      } // else: if dependencyIds is empty, allDependenciesMet remains true
-
+      }
       if (allDependenciesMet) {
         logger.info(`[WorkItemService] Found next task (all active dependencies met): ${candidate.work_item_id}`);
-        return candidate; // This is the first candidate whose dependencies are met
+        return candidate;
       }
     }
-
-    // If we went through all candidates and none had their dependencies met
     logger.info('[WorkItemService] No suitable task found after checking dependencies for all candidates.');
     return null;
   }

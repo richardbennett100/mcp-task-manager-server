@@ -13,7 +13,6 @@ export const SetDueDateParamsSchema = z.object({
   due_date: z
     .string()
     .datetime({ message: 'Due date must be a valid ISO 8601 timestamp string if provided.' })
-    .nullable() // Allows clearing the due date by passing null
     .describe('Required. The new due date (ISO 8601 format, e.g., "2025-12-31T23:59:59Z"), or null to clear it.'),
 });
 

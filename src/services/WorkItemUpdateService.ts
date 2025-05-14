@@ -1,4 +1,4 @@
-// src/services/WorkItemUpdateService.ts
+// File: src/services/WorkItemUpdateService.ts
 import {
   WorkItemRepository,
   ActionHistoryRepository,
@@ -14,7 +14,6 @@ import { WorkItemUtilsService } from './WorkItemUtilsService.js';
 import { WorkItemReadingService } from './WorkItemReadingService.js';
 import { WorkItemHistoryService } from './WorkItemHistoryService.js';
 import { PoolClient } from 'pg';
-// Removed unused imports for DependencyInput, WorkItemStatusEnum, WorkItemPriorityEnum, and z
 
 /**
  * Service responsible for the (now deprecated) general update logic for work items.
@@ -23,14 +22,14 @@ import { PoolClient } from 'pg';
 export class WorkItemUpdateService {
   private workItemRepository: WorkItemRepository;
   private actionHistoryRepository: ActionHistoryRepository;
-  private utilsService: WorkItemUtilsService;
+  // Removed utilsService instance variable
   private readingService: WorkItemReadingService;
   private historyService: WorkItemHistoryService;
 
   constructor(workItemRepository: WorkItemRepository, actionHistoryRepository: ActionHistoryRepository) {
     this.workItemRepository = workItemRepository;
     this.actionHistoryRepository = actionHistoryRepository;
-    this.utilsService = new WorkItemUtilsService(); // Corrected: Instantiate without args
+    // Removed instantiation of WorkItemUtilsService
     this.readingService = new WorkItemReadingService(workItemRepository);
     this.historyService = new WorkItemHistoryService(workItemRepository, actionHistoryRepository);
   }
@@ -69,15 +68,14 @@ export class WorkItemUpdateService {
     }
 
     await this.actionHistoryRepository.withTransaction(async (client: PoolClient) => {
-      itemBeforeUpdate = await this.workItemRepository.findById(id, { isActive: true });
+      itemBeforeUpdate = await this.workItemRepository.findById(id, { isActive: true }, client);
       if (!itemBeforeUpdate) throw new NotFoundError(`Active work item with ID ${id} not found.`);
 
-      const existingDependenciesAll = await this.workItemRepository.findDependencies(id, { isActive: false });
+      const existingDependenciesAll = await this.workItemRepository.findDependencies(id, { isActive: false }, client);
       existingDependenciesAll.forEach((dep) => depsBeforeUpdateMap.set(`${id}:${dep.depends_on_work_item_id}`, dep));
 
       const updatePayload: Partial<WorkItemData> = { ...coreUpdates };
-      delete (updatePayload as any).order_key; // Prevent accidental direct setting
-      // REMOVED: delete (updatePayload as any).shortname;
+      delete (updatePayload as any).order_key;
 
       const originalParentId = itemBeforeUpdate.parent_work_item_id;
       const targetParentId =
@@ -85,7 +83,7 @@ export class WorkItemUpdateService {
       const parentChanged = targetParentId !== originalParentId;
 
       if (parentChanged && targetParentId !== null) {
-        const newParentExists = await this.workItemRepository.findById(targetParentId, { isActive: true });
+        const newParentExists = await this.workItemRepository.findById(targetParentId, { isActive: true }, client);
         if (!newParentExists)
           throw new ValidationError(`New parent work item with ID ${targetParentId} not found or is inactive.`);
       }
@@ -126,65 +124,43 @@ export class WorkItemUpdateService {
           keyBefore = await this.workItemRepository.findSiblingEdgeOrderKey(targetParentId, 'last', client);
           keyAfter = null;
         }
-        calculatedOrderKey = this.utilsService.calculateOrderKey(keyBefore, keyAfter);
+        // MODIFIED: Call calculateOrderKey statically
+        calculatedOrderKey = WorkItemUtilsService.calculateOrderKey(keyBefore, keyAfter);
         if (calculatedOrderKey === null) {
           throw new Error(`Failed to calculate a valid order key for moving item "${id}"`);
         }
         updatePayload.order_key = calculatedOrderKey;
       }
 
-      // REMOVED shortname recalculation logic
-      // if (updatePayload.name && updatePayload.name !== itemBeforeUpdate.name) {
-      //   const newShortname = await this.utilsService.calculateShortname(updatePayload.name, targetParentId, id);
-      //   if (newShortname === null) {
-      //     throw new Error(`Failed to generate unique shortname for new name: "${updatePayload.name}"`);
-      //   }
-      //   updatePayload.shortname = newShortname;
-      // } else if (parentChanged) {
-      //   // Recalculate shortname even if name didn't change, because context (parent) did
-      //   const currentName = updatePayload.name ?? itemBeforeUpdate.name;
-      //   const newShortname = await this.utilsService.calculateShortname(currentName, targetParentId, id);
-      //   if (newShortname === null) {
-      //     throw new Error(`Failed to generate unique shortname in new parent context: "${currentName}"`);
-      //   }
-      //   updatePayload.shortname = newShortname;
-      // }
-
       const newDependenciesDesiredState: WorkItemDependencyData[] | undefined =
         dependenciesInput?.map((dep) => ({
-          work_item_id: id,
+          work_item_id: id, // This is correct as WorkItemRepository.update expects full WorkItemDependencyData
           depends_on_work_item_id: dep.depends_on_work_item_id,
           dependency_type: dep.dependency_type ?? 'finish-to-start',
           is_active: true,
         })) ?? undefined;
 
-      const hasCoreUpdates = Object.keys(coreUpdates).length > 0;
-      const hasOrderKeyUpdate = calculatedOrderKey !== undefined;
-      // REMOVED: const hasShortnameUpdate = updatePayload.shortname !== undefined && updatePayload.shortname !== itemBeforeUpdate.shortname;
+      const hasCoreUpdates = Object.keys(coreUpdates).some((key) => (coreUpdates as any)[key] !== undefined);
+      const hasOrderKeyUpdate = calculatedOrderKey !== undefined && calculatedOrderKey !== itemBeforeUpdate.order_key;
 
-      // Check if any actual change occurred
       if (!hasCoreUpdates && !hasOrderKeyUpdate && newDependenciesDesiredState === undefined) {
         logger.info(
           `[WorkItemUpdateService - DEPRECATED] No effective changes for item ${id}. Skipping update and history.`
         );
-        itemAfterUpdate = itemBeforeUpdate; // Set after state to before state if no changes
+        itemAfterUpdate = itemBeforeUpdate;
       } else {
-        // Call the repository update method (which now correctly handles dependency replacement)
         itemAfterUpdate = await this.workItemRepository.update(client, id, updatePayload, newDependenciesDesiredState);
 
-        // Fetch dependencies *after* the update to create accurate undo steps
-        const depsAfterUpdate = await this.workItemRepository.findDependencies(id, { isActive: false });
+        const depsAfterUpdate = await this.workItemRepository.findDependencies(id, { isActive: false }, client);
         const depsAfterUpdateMap = new Map(depsAfterUpdate.map((d) => [`${id}:${d.depends_on_work_item_id}`, d]));
         const undoStepsData: CreateUndoStepInput[] = [];
         let stepOrder = 1;
         let itemEffectivelyChanged = false;
 
-        // --- Check if item core data effectively changed ---
         if (itemBeforeUpdate && itemAfterUpdate) {
           const comparableKeys: (keyof WorkItemData)[] = [
             'parent_work_item_id',
             'name',
-            // 'shortname', // Removed
             'description',
             'status',
             'priority',
@@ -199,81 +175,62 @@ export class WorkItemUpdateService {
             }
           }
         }
-        // --- ---
 
-        // Create undo step for item update if changed
-        if (itemEffectivelyChanged) {
-          // Filter payload to only include changed fields for undo step
+        if (itemEffectivelyChanged && itemBeforeUpdate && itemAfterUpdate) {
           const oldItemDataForUndo: Partial<WorkItemData> = {};
           const newItemDataForUndo: Partial<WorkItemData> = {};
-          if (itemBeforeUpdate && itemAfterUpdate) {
-            for (const key of Object.keys(updatePayload) as (keyof typeof updatePayload)[]) {
-              if (
-                key !== 'updated_at' &&
-                JSON.stringify(itemBeforeUpdate[key]) !== JSON.stringify(itemAfterUpdate[key])
-              ) {
-                (oldItemDataForUndo as any)[key] = itemBeforeUpdate[key];
-                (newItemDataForUndo as any)[key] = itemAfterUpdate[key];
-              }
-            }
-            // Always include updated_at for undo
-            oldItemDataForUndo.updated_at = itemBeforeUpdate.updated_at;
-            newItemDataForUndo.updated_at = itemAfterUpdate.updated_at;
-          }
 
-          undoStepsData.push({
-            step_order: stepOrder++,
-            step_type: 'UPDATE',
-            table_name: 'work_items',
-            record_id: id,
-            old_data: oldItemDataForUndo,
-            new_data: newItemDataForUndo,
+          (Object.keys(itemBeforeUpdate) as (keyof WorkItemData)[]).forEach((key) => {
+            if (JSON.stringify(itemBeforeUpdate![key]) !== JSON.stringify(itemAfterUpdate![key])) {
+              (oldItemDataForUndo as any)[key] = itemBeforeUpdate![key];
+              (newItemDataForUndo as any)[key] = itemAfterUpdate![key];
+            }
           });
+          // Ensure updated_at is always included if there are changes
+          oldItemDataForUndo.updated_at = itemBeforeUpdate.updated_at;
+          newItemDataForUndo.updated_at = itemAfterUpdate.updated_at;
+
+          if (Object.keys(oldItemDataForUndo).length > 1 || Object.keys(newItemDataForUndo).length > 1) {
+            // more than just updated_at
+            undoStepsData.push({
+              step_order: stepOrder++,
+              step_type: 'UPDATE',
+              table_name: 'work_items',
+              record_id: id,
+              old_data: oldItemDataForUndo,
+              new_data: newItemDataForUndo,
+            });
+          } else {
+            itemEffectivelyChanged = false; // No actual field changes beyond updated_at
+          }
         }
 
-        // --- Create undo steps for dependency changes ---
         let dependenciesEffectivelyChanged = false;
         if (newDependenciesDesiredState !== undefined) {
           const allDepKeys = new Set([...depsBeforeUpdateMap.keys(), ...depsAfterUpdateMap.keys()]);
           for (const key of allDepKeys) {
             const oldDep = depsBeforeUpdateMap.get(key);
             const newDep = depsAfterUpdateMap.get(key);
-            const oldDepExists = oldDep !== undefined;
-            const newDepExists = newDep !== undefined;
-            let stepGenerated = false;
-            if (
-              (oldDepExists && !newDepExists) || // Deletion
-              (!oldDepExists && newDepExists) || // Creation
-              (oldDepExists &&
-                newDepExists && // Modification (active state or type)
-                (oldDep.is_active !== newDep.is_active || oldDep.dependency_type !== newDep.dependency_type))
-            ) {
+
+            if (JSON.stringify(oldDep) !== JSON.stringify(newDep)) {
               dependenciesEffectivelyChanged = true;
-              stepGenerated = true;
-            }
-            if (stepGenerated && stepOrder <= 100) {
-              // Limit steps for safety
-              const stepType = 'UPDATE'; // Always treat as update for undo
               const recordId = key;
-              // If it didn't exist before, the 'old' state for undo is inactive
               const oldDataForUndo = oldDep ?? { ...newDep!, is_active: false };
-              // If it doesn't exist after, the 'new' state for undo is inactive
               const newDataForUndo = newDep ?? { ...oldDep!, is_active: false };
 
               undoStepsData.push({
                 step_order: stepOrder++,
-                step_type: stepType,
+                step_type: 'UPDATE',
                 table_name: 'work_item_dependencies',
                 record_id: recordId,
                 old_data: oldDataForUndo,
                 new_data: newDataForUndo,
               });
             }
+            if (stepOrder > 100) break; // Safety break
           }
         }
-        // --- ---
 
-        // Record history only if there were effective changes
         if (itemEffectivelyChanged || dependenciesEffectivelyChanged) {
           const actionDescription = `Updated work item "${itemAfterUpdate!.name}" (via deprecated method)`;
           const actionData: CreateActionHistoryInput = {
@@ -294,10 +251,10 @@ export class WorkItemUpdateService {
           logger.info(
             `[WorkItemUpdateService - DEPRECATED] Update processed for ${id}, but no effective changes detected. Skipping history.`
           );
-          itemAfterUpdate = itemBeforeUpdate; // Ensure state reflects no change
+          itemAfterUpdate = itemBeforeUpdate;
         }
       }
-    }); // End Transaction
+    });
 
     const finalItemState = itemAfterUpdate ?? itemBeforeUpdate;
     if (!finalItemState) {

@@ -29,7 +29,6 @@ export const UPDATE_TASK_BASE_SCHEMA = z.object({
   parent_work_item_id: z
     .string()
     .uuid('parent_work_item_id must be a valid UUID if provided.')
-    .nullable()
     .optional()
     .describe(
       'Optional. The new parent work item ID. Set to null to make it a top-level project. Requires recalculating order.'
@@ -45,7 +44,6 @@ export const UPDATE_TASK_BASE_SCHEMA = z.object({
   description: z
     .string()
     .max(1024, 'Description cannot exceed 1024 characters.')
-    .nullable()
     .optional()
     .describe('Optional. The new textual description for the work item (max 1024 characters).'),
 
@@ -59,7 +57,6 @@ export const UPDATE_TASK_BASE_SCHEMA = z.object({
   due_date: z
     .string()
     .datetime({ message: 'Due date must be a valid ISO 8601 timestamp string if provided.' })
-    .nullable()
     .optional()
     .describe('Optional. The new due date (ISO 8601 format) or null to remove it.'),
 

@@ -34,7 +34,6 @@ export const AddTaskBaseSchema = z.object({
     .string()
     .max(1024, 'Description cannot exceed 1024 characters.')
     .optional()
-    .nullable()
     .describe('Optional. A detailed description for the work item (max 1024 characters).'),
 
   dependencies: z
@@ -64,7 +63,6 @@ export const AddTaskBaseSchema = z.object({
       message: 'Due date must be a valid ISO 8601 timestamp string.',
     })
     .optional()
-    .nullable()
     .describe('Optional due date for the work item in ISO 8601 format (e.g., "2025-12-31T23:59:59Z").'),
 
   insertAt: InsertPositionEnum.optional().describe("Optional. Insert at the 'start' or 'end' of the sibling list."),

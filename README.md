@@ -27,16 +27,19 @@ This server acts as a persistent backend for local MCP clients (like AI agents o
 
 **Creation & Deletion:**
 
-* **`create_project`**: Creates a new top-level work item (project). Can optionally include initial child tasks.
-* **`add_task`**: Adds a single new work item as a child of a specified parent. Can optionally include initial sub-tasks. Requires `parent_work_item_id`.
+* **`create_project`**: Creates a new top-level work item (project).
+* **`add_task`**: Adds a single new work item as a child of a specified parent. Requires `parent_work_item_id`.
+* **`add_child_tasks`**: Adds multiple new work items as children under a specified parent.
 * **`delete_project`**: Soft-deletes a specific project (root work item) and all its descendants.
 * **`delete_task`**: Soft-deletes one or more specified work items (which must not be root projects) and their descendants.
+* **`delete_child_tasks`**: Soft-deletes specified child work items under a specific parent.
 
 **Reading & Querying:**
 
-* **`list_tasks`**: Lists the *direct* children of a parent work item, or lists root projects. Returns a flat list sorted by order.
-* **`get_full_tree`**: Retrieves a work item and its *entire* descendant hierarchy recursively. Returns a structured JSON object with full details for all items, including dependencies. (Agent formats this for display).
-* **`list_history`**: Lists recorded actions, optionally filtered by a date range. Returns timestamps and descriptions.
+* **`get_details`**: Retrieves the full details for a specific work item (project or task) by its UUID, including dependencies, dependents, and direct children.
+* **`list_work_items`**: Lists work items based on specified filters (e.g., parent, status, active state, roots only).
+* **`get_full_tree`**: Retrieves a work item and its *entire* descendant hierarchy recursively. Returns a structured JSON object. Linked items (promoted tasks) and their children are suffixed with "(L)" in their names when viewed under their original parent.
+* **`list_history`**: Lists recorded actions, optionally filtered by a date range.
 * **`get_next_task`**: Intelligently identifies the next actionable task based on dependencies, status, priority, etc.
 
 **Updating Item Properties:**
@@ -46,6 +49,7 @@ This server acts as a persistent backend for local MCP clients (like AI agents o
 * **`set_status`**: Updates the status ('todo', 'in-progress', 'review', 'done') of a work item.
 * **`set_priority`**: Updates the priority ('high', 'medium', 'low') of a work item.
 * **`set_due_date`**: Sets or removes (by passing null) the due date of a work item.
+* **`update_task`**: General-purpose update for multiple fields of a task (deprecated in favor of specific setters but still available).
 
 **Dependencies & Hierarchy:**
 
@@ -65,12 +69,10 @@ This server acts as a persistent backend for local MCP clients (like AI agents o
 * **`undo_last_action`**: Reverts the last performed action.
 * **`redo_last_action`**: Re-applies the last undone action.
 
-## Planned/Future Tools
-
-* **`add_child_tasks`**: Adds multiple new work items as children under a specified parent.
-* **`delete_child_tasks`**: Soft-deletes specified child work items under a specific parent.
+**Import/Export:**
 * **`export_project`**: Exports a project structure to a shareable format (e.g., JSON).
 * **`import_project`**: Creates a new project from an exported format.
+
 
 ## Getting Started
 
@@ -120,6 +122,8 @@ You can set these directly or use a `.env` file (e.g., `.env.development`, `.env
     * `/services`: Core business logic.
     * `/tools`: MCP tool definitions (*Params.ts) and implementation (*Tool.ts).
     * `/utils`: Logging, custom errors, etc.
+    * `/__tests__`: Test files.
+        * `/e2e`: End-to-end tests.
     * `createServer.ts`: Server instance creation.
     * `server.ts`: Main application entry point.
 * `/dist`: Compiled JavaScript output.
@@ -133,3 +137,59 @@ You can set these directly or use a `.env` file (e.g., `.env.development`, `.env
 * **Format:** `npm run format`
 
 (Code is automatically linted/formatted on commit via Husky/lint-staged).
+
+## Testing
+
+This project uses Jest for unit and integration tests, and a custom E2E testing setup using the MCP SDK.
+
+### E2E Test Logging Standards
+
+To improve the utility of E2E test logs for debugging and understanding test flow, the following logging practices should be adopted:
+
+1.  **Start of Test Log:**
+    At the beginning of each E2E test case (within the `it(...)` block), use `logger.info()` to print a descriptive message outlining the scenario and the high-level steps the test will perform.
+    *Example:*
+    ```typescript
+    logger.info(
+      'E2E Test Starting: Scenario - Advanced Promotion and Tree Verification. Steps: ' +
+      '1. Create MainProject. 2. Add L1 sub-tasks (Sub1, Sub2, Sub3). ' +
+      '3. Add L2 sub-tasks (SubSub1, SubSub2, SubSub3) to Sub1. 4. Promote Sub1. ' +
+      '5. Get MainProject tree. 6. Verify MainProject tree structure. ' +
+      '7. List root projects. 8. Verify root projects list.'
+    );
+    ```
+
+2.  **End of Test Log (Markdown Tree Output):**
+    Towards the end of each E2E test case, after the primary operations have been performed and before final assertions (or as part of verification), fetch the full tree structure of the main work item(s) created or manipulated during the test using the `get_full_tree` tool. Format this tree into a human-readable Markdown list and print it using `logger.info()`. This provides a visual snapshot of the state.
+
+    *Example Markdown Output:*
+    ```markdown
+    - MainProject Alpha (id: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+      - Sub1 (L) (id: yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy)
+        - SubSub1 (L) (id: zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz)
+        - SubSub2 (L) (id: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa)
+        - SubSub3 (L) (id: bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb)
+      - Sub2 (id: cccccccc-cccc-cccc-cccc-cccccccccccc)
+      - Sub3 (id: dddddddd-dddd-dddd-dddd-dddddddddddd)
+    ```
+
+    *Helper Function for Markdown Tree (Example for E2E tests):*
+    A helper function should be used within the E2E tests to generate this Markdown. It can be defined in a shared test utility file or directly within the test files if simple.
+    ```typescript
+    // Example helper (assuming 'MinimalWorkItemTreeNode' type is defined in the test)
+    function formatTreeToMarkdown(node: MinimalWorkItemTreeNode, indent = ''): string {
+      let markdown = `${indent}- ${node.name} (id: ${node.work_item_id})\n`;
+      if (node.children && node.children.length > 0) {
+        // Ensure children are sorted for consistent output if order matters for visual inspection
+        const sortedChildren = [...node.children].sort((a, b) => {
+            // Basic sort by name, adapt if order_key or other properties are more relevant
+            return a.name.localeCompare(b.name);
+        });
+        for (const child of sortedChildren) {
+          markdown += formatTreeToMarkdown(child, `${indent}  `);
+        }
+      }
+      return markdown;
+    }
+    ```
+    The `MinimalWorkItemTreeNode` type would be the Zod schema type used for parsing the `get_full_tree` response within the E2E test. Ensure the helper function is adapted to the actual structure of your tree nodes.

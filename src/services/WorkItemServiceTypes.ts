@@ -2,11 +2,11 @@
 import { WorkItemData, WorkItemDependencyData } from '../repositories/index.js';
 import { z } from 'zod';
 
-// Define enums consistently
-const WorkItemStatusEnum = z.enum(['todo', 'in-progress', 'review', 'done']);
-const WorkItemPriorityEnum = z.enum(['high', 'medium', 'low']);
-const DependencyTypeEnum = z.enum(['finish-to-start', 'linked']);
-const PositionEnum = z.enum(['start', 'end']); // Used for insertAt/moveTo
+// Define and EXPORT Zod enums
+export const WorkItemStatusEnum = z.enum(['todo', 'in-progress', 'review', 'done']);
+export const WorkItemPriorityEnum = z.enum(['high', 'medium', 'low']);
+export const DependencyTypeEnum = z.enum(['finish-to-start', 'linked']);
+export const PositionEnum = z.enum(['start', 'end']);
 
 // --- AddWorkItemInput ---
 export interface AddWorkItemInput {
@@ -20,52 +20,44 @@ export interface AddWorkItemInput {
     depends_on_work_item_id: string;
     dependency_type?: z.infer<typeof DependencyTypeEnum>;
   }[];
-  // Positioning Parameters
   insertAt?: z.infer<typeof PositionEnum>;
   insertAfter_work_item_id?: string;
   insertBefore_work_item_id?: string;
 }
 
-// --- UpdateWorkItemInput - Add move parameters ---
+// --- UpdateWorkItemInput ---
 export interface UpdateWorkItemInput {
-  // Fields that can be updated
-  parent_work_item_id?: string | null; // Changing parent implies reordering
+  parent_work_item_id?: string | null;
   name?: string;
   description?: string | null;
   priority?: z.infer<typeof WorkItemPriorityEnum>;
   status?: z.infer<typeof WorkItemStatusEnum>;
   due_date?: string | null;
-
-  // Positioning Parameters (Mutually exclusive with each other)
   moveTo?: z.infer<typeof PositionEnum>;
   moveAfter_work_item_id?: string;
   moveBefore_work_item_id?: string;
-
-  // order_key and shortname are handled internally by the service now
 }
 
 // --- Other types ---
 export interface ListWorkItemsFilter {
   parent_work_item_id?: string | null;
   rootsOnly?: boolean;
-  status?: WorkItemData['status'];
-  isActive?: boolean; // Can be true, false, or undefined (to fetch both)
+  status?: z.infer<typeof WorkItemStatusEnum>;
+  isActive?: boolean;
 }
 
 export interface FullWorkItemData extends WorkItemData {
   dependencies: WorkItemDependencyData[];
   dependents: WorkItemDependencyData[];
-  children: WorkItemData[]; // Direct children only
+  children: WorkItemData[];
 }
 
-// --- NEW Recursive Tree Node Type ---
 export interface WorkItemTreeNode extends WorkItemData {
   dependencies: WorkItemDependencyData[];
   dependents: WorkItemDependencyData[];
-  children?: WorkItemTreeNode[]; // Recursive definition for children
+  children?: WorkItemTreeNode[];
 }
 
-// --- GetFullTree Options Type (matches params but used internally) ---
 export interface GetFullTreeOptions {
   include_inactive_items?: boolean;
   include_inactive_dependencies?: boolean;

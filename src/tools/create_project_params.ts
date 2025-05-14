@@ -22,13 +22,8 @@ export const CreateProjectParamsSchema = z.object({
   description: z
     .string()
     .max(1024, 'Description cannot exceed 1024 characters.')
-    .optional()
-    .nullable() // Allow null description
+    .optional() // Now only optional, not nullable
     .describe('Optional. A detailed description for the project (max 1024 characters).'),
-
-  // Note: No parent_id, positioning, status, priority, or dependencies here initially.
-  // Status/Priority will use defaults in the service.
-  // Nested structure for child tasks will be added later.
 });
 
 // Define the expected type for arguments based on the Zod schema

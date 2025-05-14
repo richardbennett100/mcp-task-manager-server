@@ -1,4 +1,4 @@
-// src/services/WorkItemPositionUpdateService.ts
+// File: src/services/WorkItemPositionUpdateService.ts
 import {
   WorkItemRepository,
   ActionHistoryRepository,
@@ -20,20 +20,19 @@ import { PoolClient } from 'pg';
 export class WorkItemPositionUpdateService {
   private workItemRepository: WorkItemRepository;
   private actionHistoryRepository: ActionHistoryRepository;
-  private utilsService: WorkItemUtilsService;
+  // Removed utilsService instance variable
   private readingService: WorkItemReadingService;
   private historyService: WorkItemHistoryService;
 
   constructor(workItemRepository: WorkItemRepository, actionHistoryRepository: ActionHistoryRepository) {
     this.workItemRepository = workItemRepository;
     this.actionHistoryRepository = actionHistoryRepository;
-    this.utilsService = new WorkItemUtilsService(); // Corrected: Instantiate without args
+    // Removed instantiation of WorkItemUtilsService as its methods are static
     this.readingService = new WorkItemReadingService(workItemRepository);
     this.historyService = new WorkItemHistoryService(workItemRepository, actionHistoryRepository);
   }
 
   public async moveItemToStart(workItemId: string): Promise<FullWorkItemData> {
-    // ... (moveItemToStart method - full content as previously provided) ...
     logger.info(`[WorkItemPositionUpdateService] Moving work item ${workItemId} to start.`);
     let itemBeforeUpdate: WorkItemData | undefined;
     let itemAfterUpdate: WorkItemData | null = null;
@@ -52,9 +51,11 @@ export class WorkItemPositionUpdateService {
       const keyAfter = await this.workItemRepository.findSiblingEdgeOrderKey(parentId, 'first', client);
       if (keyAfter === itemBeforeUpdate.order_key) {
         logger.info(`[WorkItemPositionUpdateService] Item ${workItemId} is already at the start. No update needed.`);
+        itemAfterUpdate = itemBeforeUpdate; // Ensure itemAfterUpdate is set
         return;
       }
-      const newOrderKey = this.utilsService.calculateOrderKey(keyBefore, keyAfter);
+      // MODIFIED: Call calculateOrderKey statically
+      const newOrderKey = WorkItemUtilsService.calculateOrderKey(keyBefore, keyAfter);
       if (newOrderKey === null) {
         throw new Error(`Failed to calculate a new order key for moving item ${workItemId} to start.`);
       }
@@ -62,6 +63,7 @@ export class WorkItemPositionUpdateService {
         logger.info(
           `[WorkItemPositionUpdateService] Calculated new order key for ${workItemId} is same as current. No effective change.`
         );
+        itemAfterUpdate = itemBeforeUpdate; // Ensure itemAfterUpdate is set
         return;
       }
       const updatePayload: Partial<WorkItemData> = { order_key: newOrderKey };
@@ -121,7 +123,6 @@ export class WorkItemPositionUpdateService {
   }
 
   public async moveItemToEnd(workItemId: string): Promise<FullWorkItemData> {
-    // ... (moveItemToEnd method - full content as previously provided) ...
     logger.info(`[WorkItemPositionUpdateService] Moving work item ${workItemId} to end.`);
     let itemBeforeUpdate: WorkItemData | undefined;
     let itemAfterUpdate: WorkItemData | null = null;
@@ -140,9 +141,11 @@ export class WorkItemPositionUpdateService {
       const keyAfter = null;
       if (keyBefore === itemBeforeUpdate.order_key) {
         logger.info(`[WorkItemPositionUpdateService] Item ${workItemId} is already at the end. No update needed.`);
+        itemAfterUpdate = itemBeforeUpdate; // Ensure itemAfterUpdate is set
         return;
       }
-      const newOrderKey = this.utilsService.calculateOrderKey(keyBefore, keyAfter);
+      // MODIFIED: Call calculateOrderKey statically
+      const newOrderKey = WorkItemUtilsService.calculateOrderKey(keyBefore, keyAfter);
       if (newOrderKey === null) {
         throw new Error(`Failed to calculate a new order key for moving item ${workItemId} to end.`);
       }
@@ -150,6 +153,7 @@ export class WorkItemPositionUpdateService {
         logger.info(
           `[WorkItemPositionUpdateService] Calculated new order key for ${workItemId} is same as current. No effective change.`
         );
+        itemAfterUpdate = itemBeforeUpdate; // Ensure itemAfterUpdate is set
         return;
       }
       const updatePayload: Partial<WorkItemData> = { order_key: newOrderKey };
@@ -209,7 +213,6 @@ export class WorkItemPositionUpdateService {
   }
 
   public async moveItemAfter(workItemIdToMove: string, targetSiblingId: string): Promise<FullWorkItemData> {
-    // ... (moveItemAfter method - full content as previously provided) ...
     logger.info(`[WorkItemPositionUpdateService] Moving work item ${workItemIdToMove} after ${targetSiblingId}.`);
     let itemToMoveBefore: WorkItemData | undefined;
     let itemToMoveAfter: WorkItemData | null = null;
@@ -232,59 +235,67 @@ export class WorkItemPositionUpdateService {
       const currentNeighboursOfItemToMove = await this.workItemRepository.findNeighbourOrderKeys(
         parentId,
         workItemIdToMove,
-        'before',
+        'before', // Check item before current itemToMove
         client
       );
+      // If the item currently before itemToMove is the targetSibling, it's already in place.
       if (currentNeighboursOfItemToMove.before === targetSiblingItem.order_key) {
         logger.info(
           `[WorkItemPositionUpdateService] Item ${workItemIdToMove} is already after ${targetSiblingId}. No update needed.`
         );
+        itemToMoveAfter = itemToMoveBefore; // Ensure itemToMoveAfter is set
         return;
       }
-      const keyBefore = targetSiblingItem.order_key;
+
+      const keyBefore = targetSiblingItem.order_key; // itemToMove will be after this key
       const neighboursOfTarget = await this.workItemRepository.findNeighbourOrderKeys(
         parentId,
         targetSiblingId,
-        'after',
+        'after', // We need the item that is currently after targetSiblingId
         client
       );
-      const keyAfter = neighboursOfTarget.after;
+      const keyAfter = neighboursOfTarget.after; // itemToMove will be before this key
+
+      // Special case: if itemToMove is currently keyAfter (i.e., it's the item immediately after targetSibling's own "after" item),
+      // this means targetSibling is followed by itemToMove, which is followed by keyAfter.
+      // Moving itemToMove between targetSibling and keyAfter might be a no-op or require specific handling
+      // if keyAfter is itemToMove itself.
+      // If itemToMove's current order_key IS keyAfter, it means itemToMove is already the item after targetSiblingItem's original 'after' item.
+      // This condition seems complex, let's simplify: we want itemToMove between targetSiblingItem and whatever was after targetSiblingItem.
+      let newOrderKey: string | null;
       if (itemToMoveBefore.order_key === keyAfter) {
-        const neighboursOfItemToMoveWhenItIsKeyAfter = await this.workItemRepository.findNeighbourOrderKeys(
+        // itemToMove is currently the one after target's original "after" item.
+        // This means we're moving itemToMove into the slot of keyAfter, relative to keyBefore (targetSiblingItem.order_key).
+        // This case can happen if itemToMove is being moved "earlier" to be after targetSiblingId,
+        // and keyAfter was the original position of itemToMove.
+        // We need to find what's after itemToMove in its original position to correctly place it.
+        const originalNeighboursOfItemToMove = await this.workItemRepository.findNeighbourOrderKeys(
           parentId,
           workItemIdToMove,
           'after',
           client
         );
-        const keyAfterItemToMove = neighboursOfItemToMoveWhenItIsKeyAfter.after;
-        const newOrderKey = this.utilsService.calculateOrderKey(keyBefore, keyAfterItemToMove);
-        if (newOrderKey === null) {
-          throw new Error(`Failed to calculate order key for moving ${workItemIdToMove} (was keyAfter).`);
-        }
-        if (newOrderKey === itemToMoveBefore.order_key) {
-          logger.info(
-            `[WorkItemPositionUpdateService] Calculated new order key for ${workItemIdToMove} is same as current. No effective change.`
-          );
-          return;
-        }
-        itemToMoveAfter = await this.workItemRepository.updateFields(client, workItemIdToMove, {
-          order_key: newOrderKey,
-        });
+        // MODIFIED: Call calculateOrderKey statically
+        newOrderKey = WorkItemUtilsService.calculateOrderKey(keyBefore, originalNeighboursOfItemToMove.after);
       } else {
-        const newOrderKey = this.utilsService.calculateOrderKey(keyBefore, keyAfter);
-        if (newOrderKey === null) {
-          throw new Error(`Failed to calculate an order key for moving ${workItemIdToMove} after ${targetSiblingId}.`);
-        }
-        if (newOrderKey === itemToMoveBefore.order_key) {
-          logger.info(
-            `[WorkItemPositionUpdateService] Calculated new order key for ${workItemIdToMove} is same as current. No effective change.`
-          );
-          return;
-        }
-        itemToMoveAfter = await this.workItemRepository.updateFields(client, workItemIdToMove, {
-          order_key: newOrderKey,
-        });
+        // MODIFIED: Call calculateOrderKey statically
+        newOrderKey = WorkItemUtilsService.calculateOrderKey(keyBefore, keyAfter);
       }
+
+      if (newOrderKey === null) {
+        throw new Error(`Failed to calculate an order key for moving ${workItemIdToMove} after ${targetSiblingId}.`);
+      }
+      if (newOrderKey === itemToMoveBefore.order_key) {
+        logger.info(
+          `[WorkItemPositionUpdateService] Calculated new order key for ${workItemIdToMove} is same as current. No effective change.`
+        );
+        itemToMoveAfter = itemToMoveBefore; // Ensure itemToMoveAfter is set
+        return;
+      }
+      itemToMoveAfter = await this.workItemRepository.updateFields(client, workItemIdToMove, {
+        order_key: newOrderKey,
+      });
+
       if (itemToMoveAfter === null) {
         logger.error(
           `[WorkItemPositionUpdateService] Failed to update order_key for ${workItemIdToMove}. Before state:`,
@@ -341,101 +352,79 @@ export class WorkItemPositionUpdateService {
     return fullUpdatedItem;
   }
 
-  // --- NEW Method ---
-  /**
-   * Moves a work item to be immediately before a target sibling work item.
-   */
   public async moveItemBefore(workItemIdToMove: string, targetSiblingId: string): Promise<FullWorkItemData> {
     logger.info(`[WorkItemPositionUpdateService] Moving work item ${workItemIdToMove} before ${targetSiblingId}.`);
-
-    let itemToMoveBefore: WorkItemData | undefined; // State of the item being moved, before this operation
-    let itemToMoveAfter: WorkItemData | null = null; // State of the item being moved, after this operation
-
+    let itemToMoveBefore: WorkItemData | undefined;
+    let itemToMoveAfter: WorkItemData | null = null;
     if (workItemIdToMove === targetSiblingId) {
       throw new ValidationError('A work item cannot be moved relative to itself.');
     }
-
     await this.actionHistoryRepository.withTransaction(async (client: PoolClient) => {
-      // 1. Fetch item to move
       itemToMoveBefore = await this.workItemRepository.findById(workItemIdToMove, { isActive: true });
       if (!itemToMoveBefore) {
         throw new NotFoundError(`Work item to move (ID: ${workItemIdToMove}) not found or is inactive.`);
       }
-
-      // 2. Fetch target sibling item
       const targetSiblingItem = await this.workItemRepository.findById(targetSiblingId, { isActive: true });
       if (!targetSiblingItem) {
         throw new NotFoundError(`Target sibling work item (ID: ${targetSiblingId}) not found or is inactive.`);
       }
-
-      // 3. Validate they are siblings
       if (itemToMoveBefore.parent_work_item_id !== targetSiblingItem.parent_work_item_id) {
         throw new ValidationError(`Work item ${workItemIdToMove} and target ${targetSiblingId} are not siblings.`);
       }
       const parentId = itemToMoveBefore.parent_work_item_id;
-
-      // 4. Check if it's already in the correct position
       const currentNeighboursOfItemToMove = await this.workItemRepository.findNeighbourOrderKeys(
         parentId,
         workItemIdToMove,
-        'after',
+        'after', // Check item after current itemToMove
         client
       );
+      // If the item currently after itemToMove is the targetSibling, it's already in place.
       if (currentNeighboursOfItemToMove.after === targetSiblingItem.order_key) {
         logger.info(
           `[WorkItemPositionUpdateService] Item ${workItemIdToMove} is already before ${targetSiblingId}. No update needed.`
         );
+        itemToMoveAfter = itemToMoveBefore; // Ensure itemToMoveAfter is set
         return;
       }
 
-      // 5. Determine new order key
-      const keyAfter = targetSiblingItem.order_key; // Item will be before this key
+      const keyAfter = targetSiblingItem.order_key; // itemToMove will be before this key
       const neighboursOfTarget = await this.workItemRepository.findNeighbourOrderKeys(
         parentId,
         targetSiblingId,
-        'before',
+        'before', // We need the item that is currently before targetSiblingId
         client
       );
-      const keyBefore = neighboursOfTarget.before; // Item that was before targetSibling
+      const keyBefore = neighboursOfTarget.before; // itemToMove will be after this key
 
-      // Special case: If itemToMove is currently keyBefore, then moving it before targetSiblingId
-      // means it should be placed between the item *before* itemToMove and targetSiblingId.
+      let newOrderKey: string | null;
       if (itemToMoveBefore.order_key === keyBefore) {
-        const neighboursOfItemToMoveWhenItIsKeyBefore = await this.workItemRepository.findNeighbourOrderKeys(
+        // itemToMove is currently the one before target's original "before" item.
+        const originalNeighboursOfItemToMove = await this.workItemRepository.findNeighbourOrderKeys(
           parentId,
           workItemIdToMove,
           'before',
           client
         );
-        const keyBeforeItemToMove = neighboursOfItemToMoveWhenItIsKeyBefore.before;
-        const newOrderKey = this.utilsService.calculateOrderKey(keyBeforeItemToMove, keyAfter);
-        if (newOrderKey === null) {
-          throw new Error(`Failed to calculate order key for moving ${workItemIdToMove} (was keyBefore).`);
-        }
-        if (newOrderKey === itemToMoveBefore.order_key) {
-          logger.info(
-            `[WorkItemPositionUpdateService] Calculated new order key for ${workItemIdToMove} is same as current. No effective change.`
-          );
-          return;
-        }
-        itemToMoveAfter = await this.workItemRepository.updateFields(client, workItemIdToMove, {
-          order_key: newOrderKey,
-        });
+        // MODIFIED: Call calculateOrderKey statically
+        newOrderKey = WorkItemUtilsService.calculateOrderKey(originalNeighboursOfItemToMove.before, keyAfter);
       } else {
-        const newOrderKey = this.utilsService.calculateOrderKey(keyBefore, keyAfter);
-        if (newOrderKey === null) {
-          throw new Error(`Failed to calculate an order key for moving ${workItemIdToMove} before ${targetSiblingId}.`);
-        }
-        if (newOrderKey === itemToMoveBefore.order_key) {
-          logger.info(
-            `[WorkItemPositionUpdateService] Calculated new order key for ${workItemIdToMove} is same as current. No effective change.`
-          );
-          return;
-        }
-        itemToMoveAfter = await this.workItemRepository.updateFields(client, workItemIdToMove, {
-          order_key: newOrderKey,
-        });
+        // MODIFIED: Call calculateOrderKey statically
+        newOrderKey = WorkItemUtilsService.calculateOrderKey(keyBefore, keyAfter);
       }
+
+      if (newOrderKey === null) {
+        throw new Error(`Failed to calculate an order key for moving ${workItemIdToMove} before ${targetSiblingId}.`);
+      }
+      if (newOrderKey === itemToMoveBefore.order_key) {
+        logger.info(
+          `[WorkItemPositionUpdateService] Calculated new order key for ${workItemIdToMove} is same as current. No effective change.`
+        );
+        itemToMoveAfter = itemToMoveBefore; // Ensure itemToMoveAfter is set
+        return;
+      }
+      itemToMoveAfter = await this.workItemRepository.updateFields(client, workItemIdToMove, {
+        order_key: newOrderKey,
+      });
 
       if (itemToMoveAfter === null) {
         logger.error(
@@ -446,8 +435,6 @@ export class WorkItemPositionUpdateService {
           `Failed to update order_key for work item ${workItemIdToMove}, it might have been modified or deactivated concurrently.`
         );
       }
-
-      // 6. Record History
       const undoStepsData: CreateUndoStepInput[] = [
         {
           step_order: 1,
@@ -476,7 +463,6 @@ export class WorkItemPositionUpdateService {
         `[WorkItemPositionUpdateService] Recorded history for moving ${workItemIdToMove} before ${targetSiblingId}.`
       );
     });
-
     const finalItemState = itemToMoveAfter ?? itemToMoveBefore;
     if (!finalItemState) {
       logger.error(

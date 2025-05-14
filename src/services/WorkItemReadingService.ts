@@ -1,9 +1,5 @@
-// src/services/WorkItemReadingService.ts
-import {
-  WorkItemRepository,
-  WorkItemData,
-  // WorkItemDependencyData, // Removed unused import
-} from '../repositories/index.js';
+// File: src/services/WorkItemReadingService.ts
+import { WorkItemRepository, WorkItemData } from '../repositories/index.js';
 import { logger } from '../utils/logger.js';
 import { ListWorkItemsFilter, FullWorkItemData, WorkItemTreeNode, GetFullTreeOptions } from './WorkItemServiceTypes.js';
 import { NotFoundError } from '../utils/errors.js';
@@ -18,12 +14,8 @@ export class WorkItemReadingService {
     this.workItemRepository = workItemRepository;
   }
 
-  /**
-   * Gets a work item with its dependencies, dependents, and children.
-   */
   public async getWorkItemById(id: string, filter?: { isActive?: boolean }): Promise<FullWorkItemData | null> {
     logger.debug(`[WorkItemReadingService] Getting work item by ID: ${id} with filter:`, filter);
-    // Default to finding active items if filter.isActive is not explicitly false or undefined
     const findFilter = {
       isActive: filter?.isActive === false ? false : filter?.isActive === undefined ? undefined : true,
     };
@@ -36,7 +28,6 @@ export class WorkItemReadingService {
       return null;
     }
 
-    // Fetch related items, typically only active ones are relevant by default
     const depFilter = { isActive: true };
 
     const [dependencies, dependents, children] = await Promise.all([
@@ -54,18 +45,13 @@ export class WorkItemReadingService {
     return fullData;
   }
 
-  /**
-   * Lists work items based on filters.
-   */
   public async listWorkItems(filter: ListWorkItemsFilter): Promise<WorkItemData[]> {
     logger.debug(`[WorkItemReadingService] Listing work items with filter:`, filter);
     try {
-      // Default isActive filter to undefined (fetch all) unless explicitly set
       const isActiveFilter = filter.isActive === false ? false : filter.isActive === undefined ? undefined : true;
       const parentId = filter.parent_work_item_id === undefined ? undefined : (filter.parent_work_item_id ?? null);
       const statusFilter = filter.status;
 
-      // Construct the filter object for repository methods
       const repoFilter: { isActive?: boolean; status?: WorkItemData['status'] } = {};
       if (isActiveFilter !== undefined) {
         repoFilter.isActive = isActiveFilter;
@@ -81,7 +67,6 @@ export class WorkItemReadingService {
       } else if (parentId !== undefined && typeof parentId === 'string') {
         items = await this.workItemRepository.findChildren(parentId, repoFilter);
       } else {
-        // If no specific scope (root/child) is requested, find all matching the filter
         items = await this.workItemRepository.findAll(repoFilter);
       }
       logger.info(`[WorkItemReadingService] Listed ${items.length} items.`);
@@ -92,74 +77,113 @@ export class WorkItemReadingService {
     }
   }
 
-  /**
-   * Retrieves a work item and its full descendant tree recursively.
-   */
   public async getFullTree(rootWorkItemId: string, options?: GetFullTreeOptions): Promise<WorkItemTreeNode | null> {
     const includeInactiveItems = options?.include_inactive_items ?? false;
     const includeInactiveDependencies = options?.include_inactive_dependencies ?? false;
-    const maxDepth = options?.max_depth ?? 10; // Default max depth
+    const maxDepth = options?.max_depth ?? 10;
 
-    const getSubTree = async (itemId: string, currentDepth: number): Promise<WorkItemTreeNode | null> => {
-      if (currentDepth > maxDepth) {
-        logger.debug(
-          `[WorkItemReadingService] Max depth ${maxDepth} reached for item ${itemId}. Returning item without children.`
-        );
-        const currentItemData = await this.workItemRepository.findById(itemId, {
-          isActive: includeInactiveItems ? undefined : true,
-        });
-        if (!currentItemData) return null;
-        const [dependencies, dependents] = await Promise.all([
-          this.workItemRepository.findDependencies(itemId, {
-            isActive: includeInactiveDependencies ? undefined : true,
-          }),
-          this.workItemRepository.findDependents(itemId, { isActive: includeInactiveDependencies ? undefined : true }),
-        ]);
-        return { ...currentItemData, dependencies, dependents, children: [] };
-      }
-
+    // isPartOfLinkedBranch: Parameter to track if we are currently traversing a "linked" branch.
+    // forceLinkedDisplay: Parameter to force children of an explicitly linked item to also show as linked.
+    const getSubTree = async (
+      itemId: string,
+      currentDepth: number,
+      forceLinkedDisplay: boolean
+    ): Promise<WorkItemTreeNode | null> => {
       const itemFilter = { isActive: includeInactiveItems ? undefined : true };
       const item = await this.workItemRepository.findById(itemId, itemFilter);
 
       if (!item) {
         logger.warn(
-          `[WorkItemReadingService] Item ${itemId} not found for tree (filter: ${JSON.stringify(itemFilter)}).`
+          `[WorkItemReadingService] Item ${itemId} (forceLinkedDisplay: ${forceLinkedDisplay}) not found for tree (filter: ${JSON.stringify(itemFilter)}).`
         );
         return null;
       }
 
-      const childrenFilter: ListWorkItemsFilter = {};
-      if (!includeInactiveItems) {
-        childrenFilter.isActive = true;
+      const depFilterForCurrentItem = { isActive: includeInactiveDependencies ? undefined : true };
+      const [itemDependencies, itemDependents] = await Promise.all([
+        this.workItemRepository.findDependencies(itemId, depFilterForCurrentItem),
+        this.workItemRepository.findDependents(itemId, depFilterForCurrentItem),
+      ]);
+
+      const itemName = forceLinkedDisplay ? `${item.name} (L)` : item.name;
+
+      if (currentDepth > maxDepth) {
+        logger.debug(
+          `[WorkItemReadingService] Max depth ${maxDepth} reached for item ${itemId}. Returning item without expanding children.`
+        );
+        return {
+          ...item,
+          name: itemName,
+          dependencies: itemDependencies,
+          dependents: itemDependents,
+          children: [],
+        };
       }
-      const directChildrenData = await this.workItemRepository.findChildren(itemId, childrenFilter);
 
       const childrenNodes: WorkItemTreeNode[] = [];
+
+      // 1. Fetch and process direct children (not linked ones yet)
+      // These children are displayed as "linked" if their parent (the current item) is being force-displayed as linked.
+      const childrenFilter: ListWorkItemsFilter = { isActive: includeInactiveItems ? undefined : true };
+      const directChildrenData = await this.workItemRepository.findChildren(itemId, childrenFilter);
       for (const childData of directChildrenData) {
-        const childNode = await getSubTree(childData.work_item_id, currentDepth + 1);
+        // If the current item is forced to display as linked, its direct children also are.
+        const childNode = await getSubTree(childData.work_item_id, currentDepth + 1, forceLinkedDisplay);
         if (childNode) {
           childrenNodes.push(childNode);
         }
       }
 
-      const depFilter = { isActive: includeInactiveDependencies ? undefined : true };
-      const [dependencies, dependents] = await Promise.all([
-        this.workItemRepository.findDependencies(itemId, depFilter),
-        this.workItemRepository.findDependents(itemId, depFilter),
-      ]);
+      // 2. Fetch and process 'linked' dependencies (promoted items from this item)
+      // These items become "linked branches" themselves.
+      // This block should only execute if we are NOT already forcing linked display from a higher level.
+      // This means we are at a node (e.g., MainProject) and looking for its direct promotions.
+      if (!forceLinkedDisplay) {
+        const linkedDependencyFilter = {
+          isActive: includeInactiveDependencies ? undefined : true,
+          dependency_type: 'linked' as const,
+        };
+        const linkedDependencies = await this.workItemRepository.findDependencies(itemId, linkedDependencyFilter);
+
+        for (const linkedDep of linkedDependencies) {
+          if (childrenNodes.some((cn) => cn.work_item_id === linkedDep.depends_on_work_item_id)) {
+            logger.debug(
+              `[WorkItemReadingService] Item ${linkedDep.depends_on_work_item_id} (linked to ${itemId}) is already in children list. Skipping duplicate add.`
+            );
+            continue;
+          }
+          // Fetch the linked item (which is a root project) and its subtree.
+          // Mark this new branch as "linked" by passing `forceLinkedDisplay: true`.
+          // Its children will also be marked.
+          const linkedItemNode = await getSubTree(linkedDep.depends_on_work_item_id, currentDepth + 1, true);
+          if (linkedItemNode) {
+            childrenNodes.push(linkedItemNode);
+          }
+        }
+      }
+
+      childrenNodes.sort((a, b) => {
+        if (a.order_key && b.order_key) {
+          return String(a.order_key).localeCompare(String(b.order_key));
+        }
+        if (a.order_key) return -1;
+        if (b.order_key) return 1;
+        return a.name.localeCompare(b.name);
+      });
 
       return {
         ...item,
-        dependencies,
-        dependents,
-        children: childrenNodes.length > 0 ? childrenNodes : undefined,
+        name: itemName,
+        dependencies: itemDependencies,
+        dependents: itemDependents,
+        children: childrenNodes,
       };
     };
 
     logger.info(`[WorkItemReadingService] Fetching full tree for root ID: ${rootWorkItemId} with options:`, options);
-    const tree = await getSubTree(rootWorkItemId, 1);
+    // Initial call, not part of a linked branch, so forceLinkedDisplay is false.
+    const tree = await getSubTree(rootWorkItemId, 1, false);
     if (!tree) {
-      // This NotFoundError should be thrown if the root item itself is not found based on criteria
       throw new NotFoundError(
         `Root work item with ID ${rootWorkItemId} not found or does not meet active/inactive criteria.`
       );
