@@ -1,4 +1,4 @@
-// src/db/DatabaseManager.ts
+// upload/src/db/DatabaseManager.ts
 import pg, { Pool, PoolClient } from 'pg';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -8,9 +8,9 @@ import { logger } from '../utils/logger.js';
 
 export class DatabaseManager {
   private static instance: DatabaseManager | null = null;
-  private static initializationPromise: Promise<void> | null = null; // Static promise for initialization
+  private static initializationPromise: Promise<void> | null = null;
   private pool: Pool;
-  private initializationComplete: boolean = false; // Instance-level flag
+  private initializationComplete: boolean = false;
 
   private constructor() {
     const configManager = ConfigurationManager.getInstance();
@@ -22,13 +22,12 @@ export class DatabaseManager {
         user: configManager.getPgUser(),
         password: configManager.getPgPassword(),
         database: configManager.getPgDatabase(),
-        connectionTimeoutMillis: 5000, // Keep timeout
+        connectionTimeoutMillis: 5000,
       });
 
       this.pool.on('error', (err) => {
         logger.error('[DatabaseManager] Unexpected error on idle client', { err });
         console.error('[DatabaseManager] Fallback console log: Unexpected error on idle client:', err);
-        // On critical error, reset state to allow re-initialization attempt
         this.initializationComplete = false;
         DatabaseManager.instance = null;
         DatabaseManager.initializationPromise = null;
@@ -40,23 +39,19 @@ export class DatabaseManager {
         '[DatabaseManager] Fallback console log: CRITICAL: Failed to configure PostgreSQL pool:',
         configError
       );
-      throw configError; // Throw error to prevent instantiation
+      throw configError;
     }
   }
 
-  // Simplified getInstance - handles initialization on first call
   public static async getInstance(): Promise<DatabaseManager> {
-    // If instance exists and is initialized, return it directly
     if (DatabaseManager.instance?.initializationComplete) {
       logger.debug('[DatabaseManager] getInstance: Returning existing initialized instance.');
       return DatabaseManager.instance;
     }
 
-    // If initialization is already in progress, await it
     if (DatabaseManager.initializationPromise) {
       logger.debug('[DatabaseManager] getInstance: Initialization in progress, awaiting existing promise.');
       await DatabaseManager.initializationPromise;
-      // Check again if successful after awaiting
       if (DatabaseManager.instance?.initializationComplete) {
         return DatabaseManager.instance;
       } else {
@@ -65,25 +60,23 @@ export class DatabaseManager {
       }
     }
 
-    // Otherwise, start new initialization
     logger.debug('[DatabaseManager] getInstance: No instance or ongoing initialization, starting new...');
     const newInstance = new DatabaseManager();
     DatabaseManager.initializationPromise = newInstance
       .initializeDatabaseInternal()
       .then(() => {
         logger.info('[DatabaseManager] getInstance: Initialization successful.');
-        DatabaseManager.instance = newInstance; // Set static instance *after* successful init
+        DatabaseManager.instance = newInstance;
       })
       .catch((initError) => {
         logger.error('[DatabaseManager] getInstance: Initialization failed.', { initError });
-        DatabaseManager.initializationPromise = null; // Reset promise on failure
-        DatabaseManager.instance = null; // Ensure no broken instance is kept
-        throw initError; // Propagate the error
+        DatabaseManager.initializationPromise = null;
+        DatabaseManager.instance = null;
+        throw initError;
       });
 
     await DatabaseManager.initializationPromise;
 
-    // Final check after awaiting the *new* promise
     if (!DatabaseManager.instance?.initializationComplete) {
       logger.error(
         '[DatabaseManager] getInstance: Exiting, failed to get a fully initialized instance after new attempt.'
@@ -95,24 +88,72 @@ export class DatabaseManager {
     return DatabaseManager.instance;
   }
 
+  private async logConnectionDetails(client: PoolClient): Promise<void> {
+    try {
+      logger.info('[DatabaseManager] Querying connection details from Node.js application perspective...');
+      const versionRes = await client.query('SELECT version();');
+      const dbNameRes = await client.query('SELECT current_database();');
+      const userRes = await client.query('SELECT current_user;');
+      const dataDirRes = await client.query('SHOW data_directory;');
+      const serverAddrRes = await client.query('SELECT inet_server_addr(), inet_server_port();');
+      const settingContextRes = await client.query('SHOW config_file;');
+
+      logger.info(`[DatabaseManager] Connected to PostgreSQL Server Version: ${versionRes.rows[0]?.version}`);
+      logger.info(`[DatabaseManager] Current Database: ${dbNameRes.rows[0]?.current_database}`);
+      logger.info(`[DatabaseManager] Current User: ${userRes.rows[0]?.current_user}`);
+      logger.info(`[DatabaseManager] Data Directory (from SHOW data_directory): ${dataDirRes.rows[0]?.data_directory}`);
+      logger.info(`[DatabaseManager] Config File (from SHOW config_file): ${settingContextRes.rows[0]?.config_file}`);
+      if (serverAddrRes.rows[0]) {
+        logger.info(
+          `[DatabaseManager] Server Listening on IP: ${serverAddrRes.rows[0].inet_server_addr}, Port: ${serverAddrRes.rows[0].inet_server_port}`
+        );
+      } else {
+        logger.warn('[DatabaseManager] Could not retrieve server address and port.');
+      }
+    } catch (error) {
+      logger.error(
+        '[DatabaseManager] Failed to query extended connection details (some queries might require specific permissions):',
+        {
+          message: error instanceof Error ? error.message : String(error),
+          // @ts-expect-error Expected error if 'code' property doesn't exist on 'unknown' type
+          code: error.code,
+        }
+      );
+      try {
+        const versionRes = await client.query('SELECT version();');
+        logger.info(
+          `[DatabaseManager] Connected to PostgreSQL Server Version (fallback): ${versionRes.rows[0]?.version}`
+        );
+      } catch (versionError) {
+        logger.error('[DatabaseManager] Failed to query even PostgreSQL version (fallback):', { versionError });
+      }
+    }
+  }
+
+  // REMOVED checkEssentialTablesExist method
+
   private async initializeDatabaseInternal(): Promise<void> {
-    // Prevent re-running if already complete on this instance
     if (this.initializationComplete) {
       logger.debug('[DatabaseManager] initializeDatabaseInternal: Instance already marked complete.');
       return;
     }
 
-    logger.info('[DatabaseManager] initializeDatabaseInternal: Starting schema initialization...');
+    logger.info('[DatabaseManager] initializeDatabaseInternal: Starting schema initialization process...');
     let client: PoolClient | null = null;
     try {
-      // Direct connection attempt
       logger.debug('[DatabaseManager] initializeDatabaseInternal: Attempting connection...');
-      client = await this.pool.connect(); // Throws if connection fails
+      client = await this.pool.connect();
       logger.info(`[DatabaseManager] initializeDatabaseInternal: Connected to PostgreSQL.`);
 
-      const forceSchemaRun = true; // Keep forcing schema run for test consistency
+      await this.logConnectionDetails(client); // Keep this for diagnostics
+
+      const forceSchemaRun = process.env.FORCE_SCHEMA_RUN === 'true';
+      logger.info(
+        `[DatabaseManager] initializeDatabaseInternal: FORCE_SCHEMA_RUN environment variable is set to '${process.env.FORCE_SCHEMA_RUN}', schema run is ${forceSchemaRun ? 'ENABLED' : 'DISABLED'}.`
+      );
+
       if (forceSchemaRun) {
-        logger.info('[DatabaseManager] initializeDatabaseInternal: Force schema run enabled.');
+        logger.info('[DatabaseManager] initializeDatabaseInternal: Force schema run enabled. Executing schema.sql...');
         const __filename = fileURLToPath(import.meta.url);
         const __dirname = path.dirname(__filename);
         const schemaPath = path.join(__dirname, 'schema.sql');
@@ -128,27 +169,37 @@ export class DatabaseManager {
         }
 
         const schemaSql = await fs.readFile(schemaPath, 'utf8');
-        logger.debug('[DatabaseManager] initializeDatabaseInternal: Executing schema setup...');
+        logger.debug('[DatabaseManager] initializeDatabaseInternal: Executing schema setup from schema.sql...');
         await client.query(schemaSql);
         logger.info('[DatabaseManager] initializeDatabaseInternal: Full schema script executed.');
 
-        // Verification
+        // You might still want a simple confirmation here if FORCE_SCHEMA_RUN was true,
+        // or rely on the psql logs from build.sh for that confirmation.
+        // For example, check if 'work_items' exists after a forced schema run.
         const finalCheck = await client.query(
           `SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'work_items');`
         );
         if (!finalCheck.rows[0]?.exists) {
           logger.error(
-            '[DatabaseManager] initializeDatabaseInternal: work_items table does not exist after execution!'
+            '[DatabaseManager] initializeDatabaseInternal: work_items table does not exist even after a forced schema execution!'
           );
-          throw new Error('Schema execution failed to create work_items table.');
+          throw new Error('Schema execution (when forced) failed to create work_items table.');
         } else {
-          logger.info('[DatabaseManager] initializeDatabaseInternal: Confirmed work_items table exists.');
+          logger.info(
+            '[DatabaseManager] initializeDatabaseInternal: Confirmed work_items table exists after forced schema run.'
+          );
         }
       } else {
-        logger.info('[DatabaseManager] initializeDatabaseInternal: Skipped forced schema run.');
+        logger.info(
+          '[DatabaseManager] initializeDatabaseInternal: Skipped forced schema run based on FORCE_SCHEMA_RUN environment variable.'
+        );
+        // REMOVED call to checkEssentialTablesExist and associated error throwing
+        logger.info(
+          '[DatabaseManager] initializeDatabaseInternal: Proceeding without explicit table existence check as FORCE_SCHEMA_RUN is not true.'
+        );
       }
 
-      this.initializationComplete = true; // Mark instance as complete *only on success*
+      this.initializationComplete = true;
       logger.info('[DatabaseManager] initializeDatabaseInternal: Initialization marked as complete.');
     } catch (error: unknown) {
       logger.error('[DatabaseManager] initializeDatabaseInternal: FAILED during execution:', { error });
@@ -156,8 +207,8 @@ export class DatabaseManager {
         '[DatabaseManager] initializeDatabaseInternal: Fallback console log: FAILED during execution:',
         error
       );
-      this.initializationComplete = false; // Ensure it's marked as failed
-      throw error; // Propagate error to reject the initializationPromise
+      this.initializationComplete = false;
+      throw error;
     } finally {
       if (client) {
         client.release();
@@ -175,13 +226,13 @@ export class DatabaseManager {
   }
 
   public async closeDb(): Promise<void> {
-    const instance = DatabaseManager.instance; // Grab current instance if it exists
-    DatabaseManager.instance = null; // Clear static ref
-    DatabaseManager.initializationPromise = null; // Clear static promise
+    const instance = DatabaseManager.instance;
+    DatabaseManager.instance = null;
+    DatabaseManager.initializationPromise = null;
 
     if (instance?.pool) {
       logger.info('[DatabaseManager] Closing PostgreSQL connection pool...');
-      instance.initializationComplete = false; // Mark specific instance as not complete
+      instance.initializationComplete = false;
       try {
         await instance.pool.end();
         logger.info('[DatabaseManager] PostgreSQL connection pool closed.');

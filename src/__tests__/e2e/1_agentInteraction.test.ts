@@ -1,4 +1,4 @@
-// src/__tests__/e2e/1_agentInteraction.test.ts
+// upload/src/__tests__/e2e/1_agentInteraction.test.ts
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { z } from 'zod';
@@ -38,7 +38,11 @@ describe('Agent Interaction E2E Test', () => {
       const transportParams = {
         command: 'node',
         args: ['--loader', 'ts-node/esm', './dist/server.js'],
-        env: { ...process.env, LOG_LEVEL: 'debug' },
+        env: {
+          ...process.env,
+          LOG_LEVEL: 'debug',
+          FORCE_SCHEMA_RUN: 'false', // Explicitly ensure schema is NOT rebuilt for E2E tests
+        },
       };
       transport = new StdioClientTransport(transportParams);
       client = new Client(clientInfo);

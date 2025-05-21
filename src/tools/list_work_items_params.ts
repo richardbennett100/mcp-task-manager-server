@@ -1,29 +1,41 @@
-// src/tools/list_work_items_params.ts
+// upload/src/tools/list_work_items_params.ts
 import { z } from 'zod';
-import { WorkItemStatusEnum } from '../services/WorkItemServiceTypes.js'; // Import the Zod enum
+import { WorkItemStatusEnum } from '../services/WorkItemServiceTypes.js';
 
 export const TOOL_NAME = 'list_work_items';
-export const TOOL_DESCRIPTION = `
-Lists work items (projects or tasks) based on specified filters.
-Returns an array of work items.
-If no filters are provided, it may list all work items or apply default filters (e.g., only active items).
+
+export const TOOL_DESCRIPTION = `Lists work items (projects or tasks) based on specified filters.
+Returns a JSON array of work item objects.
+
+**Agent Formatting Guide for "List Projects" Request:**
+When user asks to list projects (e.g., "Which projects do we have?"), use filters: \`roots_only: true, is_active: true\`.
+Present the output as follows:
+
+Current Projects:
+N. [S] Project Name (Due:YYYY-MM-DD)
+        Description text.
+
+**Format Details:**
+- N: Sequential number (1, 2,...).
+- [S]: Status Icon: '[ ]' todo, '[-]' in-progress, '[R]' review, '[x]' done.
+- Due Date: Show if present.
+- Description: Indent. If none, state "No description available."
+- Deleted: Hidden by default. If asked, show with "(Deleted)" appended to name.
+
+**Follow-up Actions:**
+Agent must internally map displayed numbers to project \`work_item_id\` (GUID) from the tool's raw JSON output for subsequent commands.
 `;
 
 export const ListWorkItemsParamsSchema = z.object({
   parent_work_item_id: z
     .string()
     .uuid({ message: 'Parent work item ID must be a valid UUID.' })
-    // .nullable() // REMOVED to avoid Vertex AI anyOf issue
     .optional()
-    .describe(
-      'Optional. Filter by parent UUID. If omitted and roots_only is not true, it might list items under various parents or all items depending on other filters. To list root items, use roots_only: true or omit this field and ensure roots_only is not false.'
-    ),
+    .describe('Optional. Filter by parent UUID. To list root items (projects), use roots_only: true.'),
   roots_only: z
     .boolean()
     .optional()
-    .describe(
-      'Optional. If true, only root work items (typically projects) are returned. This is the primary way to list root items.'
-    ),
+    .describe('Optional. If true, only root work items (typically projects) are returned.'),
   status: WorkItemStatusEnum.optional().describe(
     `Optional. Filter by status. Allowed values: ${WorkItemStatusEnum.options.join(', ')}.`
   ),
@@ -31,7 +43,7 @@ export const ListWorkItemsParamsSchema = z.object({
     .boolean()
     .optional()
     .describe(
-      'Optional. Filter by active status. If true, only active items. If false, only inactive. If omitted, the service default is applied (usually active items).'
+      'Optional. Filter by active status. True for active, false for inactive. Default: service usually returns active items.'
     ),
 });
 

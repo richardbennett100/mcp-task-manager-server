@@ -2,7 +2,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { createProjectTool } from './create_project_tool.js';
 import { addTaskTool } from './add_task_tool.js';
-import { updateTaskTool } from './update_task_tool.js';
 import { deleteProjectTool } from './delete_project_tool.js';
 import { deleteTaskTool } from './delete_task_tool.js';
 import { undoLastActionTool } from './undo_last_action_tool.js';
@@ -32,7 +31,6 @@ import { listWorkItemsTool } from './list_work_items_tool.js'; // ADDED: New lis
 export const registerTools = (server: McpServer): void => {
   createProjectTool(server);
   addTaskTool(server);
-  updateTaskTool(server);
   deleteProjectTool(server);
   deleteTaskTool(server);
   undoLastActionTool(server);
@@ -57,5 +55,5 @@ export const registerTools = (server: McpServer): void => {
   importProjectTool(server);
   exportProjectTool(server);
   getDetailsTool(server);
-  listWorkItemsTool(server); // ADDED: Register the new list_work_items tool
+  listWorkItemsTool(server);
 };

@@ -1,0 +1,168 @@
+Project: Create Svelte Web UI [todo]
+Description: Develop a Svelte-based web user interface for the task management system.
+Status: todo
+
+  Task: Set up Svelte development environment [todo]
+  Description: Install necessary tools (Node.js, npm/yarn, Svelte kit) and configure project structure.
+  Status: todo
+
+  Task: Design core UI layout and navigation [todo]
+  Description: Create the main layout components, navigation bar, and basic styling for the application.
+  Status: todo
+
+  Task: Implement 'Log in with Google' Authentication [todo]
+  Description: Integrate Google Sign-In for user authentication, covering both frontend initiation and backend validation.
+  Status: todo
+
+    Sub-task: Backend: Implement Google OAuth callback and token exchange [todo]
+    Description: Create backend endpoint to receive callback from Google, exchange authorization code for tokens.
+    Status: todo
+
+    Sub-task: Backend: Implement user creation/linking based on Google ID [todo]
+    Description: Develop backend logic to check if a user exists by Google ID, create a new user if needed, and link Google ID to internal user.
+    Status: todo
+
+    Sub-task: Backend: Secure API endpoints requiring authentication [todo]
+    Description: Add middleware/guards to backend API routes to ensure only authenticated users can access them.
+    Status: todo
+
+    Sub-task: Frontend: Add 'Sign in with Google' button and initiate OAuth flow [todo]
+    Description: Implement the 'Sign in with Google' button in the UI and trigger the Google OAuth authentication process.
+    Status: todo
+
+    Sub-task: Frontend: Handle authentication tokens/sessions client-side [todo]
+    Description: Receive and store authentication tokens/sessions from the backend securely (e.g., http-only cookies or local storage) and include them in API requests.
+    Status: todo
+
+  Task: Integrate UI with Node.js Service Layer API [todo]
+  Description: Connect the Svelte frontend components to the backend Node.js service layer API endpoints.
+  Status: todo
+
+  Task: Implement client-side state management [todo]
+  Description: Choose and implement a state management solution in Svelte (e.g., stores) to handle application data client-side.
+  Status: todo
+
+  Task: Develop "List Projects" view [todo]
+  Description: Build the UI component to fetch and display a list of projects (initially read-only).
+  Status: todo
+
+  Task: Develop "View Project Details" view [todo]
+  Description: Build the UI component to fetch and display the details and child tasks of a selected project (initially read-only).
+  Status: todo
+
+  Task: Implement real-time UI updates using Server-Sent Events (SSE) [todo]
+  Description: Set up server-sent events to push data changes from the backend to the frontend in real time.
+  Status: todo
+
+    Sub-task: Backend: Add SSE endpoint for real-time notifications [todo]
+    Description: Create a backend endpoint that sends real-time updates to connected clients using SSE.
+    Status: todo
+
+    Sub-task: Frontend: Connect to SSE stream and process incoming updates [todo]
+    Description: Implement client-side logic to establish an SSE connection and listen for messages.
+    Status: todo
+
+    Sub-task: Frontend: Update client-side state based on SSE messages [todo]
+    Description: Write logic to update the client-side state management solution when new data arrives via SSE.
+    Status: todo
+
+  Task: Implement Multi-User Concurrency Control Strategy [todo]
+  Description: Implement mechanisms to safely handle concurrent edits from multiple users/agents, preventing data loss.
+  Status: todo
+
+    Sub-task: Backend: Design and implement concurrency check logic on save/update [todo]
+    Description: Modify backend save/update logic to check for data versioning or timestamps to detect conflicts.
+    Status: todo
+
+    Sub-task: Frontend: Implement logic to handle save conflicts [todo]
+    Description: Develop frontend code to react when a save is rejected due to a conflict (e.g., prompt the user).
+    Status: todo
+
+    Sub-task: Frontend: Display warnings/indicators for potentially stale data [todo]
+    Description: Optionally, add UI elements (like visual indicators) to show users when the data they are viewing might be out of date due to changes by others.
+    Status: todo
+
+    
+
+
+
+
+
+
+
+
+
+
+    Phase 1: Backend Enhancements for UI POC (in src/)
+
+Task: Define and Implement HTTP API Endpoints for UI [todo]
+Description: Create new HTTP GET endpoints required by the Svelte UI.
+Status: todo
+Sub-task: Implement GET /api/projects endpoint [todo]
+Description: Fetches a list of root-level projects (e.g., using WorkItemService.listWorkItems({ roots_only: true, is_active: true })).
+Status: todo
+Sub-task: Implement GET /api/projects/:projectId/tree endpoint [todo]
+Description: Fetches the full, always-expanded tree for a specified project ID (e.g., using WorkItemService.getFullTree(projectId, { includeDependencies: true })). Ensure dependency information (IDs of tasks it depends on, and tasks that depend on it) is included for each node.
+Status: todo
+Task: Implement Server-Sent Events (SSE) for Real-Time Updates [todo]
+Description: Set up an SSE endpoint and integrate it with backend services to broadcast work item changes to connected UI clients.
+Status: todo
+Sub-task: Create SSE service and /api/events endpoint [todo]
+Description: Implement the core SSE connection handling and message broadcasting logic.
+Status: todo
+Sub-task: Integrate SSE with WorkItem services [todo]
+Description: Modify existing services (e.g., WorkItemAddingService, WorkItemUpdateService, WorkItemDeleteService) to notify the SSE service upon successful data modification.
+Status: todo
+Sub-task: Define SSE event structure [todo]
+Description: Finalize the payload for events like workItemCreated, workItemUpdated, workItemDeleted to efficiently update the UI. (Payload should ideally be the WorkItemTreeNode or relevant parts).
+Status: todo
+Phase 2: Frontend Svelte UI POC (in new ui/ directory)
+
+Task: Set up SvelteKit Development Environment [todo]
+Description: Initialize a new SvelteKit project with TypeScript. Install necessary dependencies (e.g., ESLint, Prettier).
+Status: todo
+Sub-task: Configure ESLint and Prettier for Svelte/TypeScript [todo]
+Description: Set up linting and formatting rules.
+Status: todo
+Sub-task: Create basic ui/build.sh script [todo]
+Description: Script to lint and build the SvelteKit application (e.g., npm run lint && npm run build).
+Status: todo
+Task: Design and Implement Core UI Layout & Navigation (Read-Only) [todo]
+Description: Create the main layout components, navigation structure, and basic styling (pastel colors, fixed-width fonts, "coder-vibe").
+Status: todo
+Sub-task: Create TopBar.svelte component (placeholder) [todo]
+Description: Basic top bar for future use.
+Status: todo
+Sub-task: Create collapsible Sidebar.svelte component [todo]
+Description: Fetches and displays the list of root projects from GET /api/projects. Allows selection of a project.
+Status: todo
+Sub-task: Create MainPanel.svelte component [todo]
+Description: Displays the content for the selected project (i.e., the project tree).
+Status: todo
+Sub-task: Create AppLayout.svelte to structure views [todo]
+Description: Combines TopBar, Sidebar, and MainPanel.
+Status: todo
+Sub-task: Implement basic global styling (pastel theme, fonts) [todo]
+Description: Set up global CSS variables and base styles.
+Status: todo
+Task: Implement Project Tree View (Read-Only, Real-Time) [todo]
+Description: Display the selected project as an always-expanded tree. Update in real-time via SSE.
+Status: todo
+Sub-task: Create ProjectTreeView.svelte component [todo]
+Description: Fetches project tree data from GET /api/projects/:projectId/tree when a project is selected.
+Status: todo
+Sub-task: Create recursive WorkItemNode.svelte component [todo]
+Description: Displays individual work item details (name, description with expander, status, priority, dates, textual dependencies, etc.). Uses pastel colors for status/differentiation.
+Status: todo
+Task: Implement Client-Side State Management (Svelte Stores) [todo]
+Description: Use Svelte stores to manage UI state (e.g., project list, selected project ID, project tree data).
+Status: todo
+Task: Integrate Frontend with Backend API & SSE [todo]
+Description: Connect Svelte components to the defined backend HTTP API endpoints and the SSE event stream.
+Status: todo
+Sub-task: Create API client module (ui/src/lib/client/api.ts) [todo]
+Description: Functions to fetch data from GET /api/projects and GET /api/projects/:projectId/tree.
+Status: todo
+Sub-task: Create SSE client module (ui/src/lib/client/sse.ts) [todo]
+Description: Connects to /api/events, listens for messages, and updates Svelte stores accordingly.
+Status: todo

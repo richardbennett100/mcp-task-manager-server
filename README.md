@@ -23,7 +23,7 @@ This server acts as a persistent backend for local MCP clients (like AI agents o
 
 ## Implemented MCP Tools
 
-*(Note: Refer to the corresponding `src/tools/*Params.ts` files for detailed Zod schemas.)*
+*(Note: Refer to the corresponding `src/tools/*Params.ts` files for detailed Zod schemas and agent formatting guidelines in descriptions.)*
 
 **Creation & Deletion:**
 
@@ -37,7 +37,7 @@ This server acts as a persistent backend for local MCP clients (like AI agents o
 **Reading & Querying:**
 
 * **`get_details`**: Retrieves the full details for a specific work item (project or task) by its UUID, including dependencies, dependents, and direct children.
-* **`list_work_items`**: Lists work items based on specified filters (e.g., parent, status, active state, roots only).
+* **`list_work_items`**: Lists work items based on specified filters (e.g., parent, status, active state, roots only). Agent is expected to format project lists in Markdown by default.
 * **`get_full_tree`**: Retrieves a work item and its *entire* descendant hierarchy recursively. Returns a structured JSON object. Linked items (promoted tasks) and their children are suffixed with "(L)" in their names when viewed under their original parent.
 * **`list_history`**: Lists recorded actions, optionally filtered by a date range.
 * **`get_next_task`**: Intelligently identifies the next actionable task based on dependencies, status, priority, etc.
@@ -107,11 +107,12 @@ Environment variables can be used to configure the database connection:
 * **`PGHOST`**: Database host (default: `localhost`)
 * **`PGPORT`**: Database port (default: `5432`)
 * **`PGUSER`**: Database user (default: `taskmanager_user`)
-* **`PGPASSWORD`**: Database password (no default, **required**)
+* **`PGPASSWORD`**: Database password (no default, **required** in `.env` or environment)
 * **`PGDATABASE`**: Database name (default: `taskmanager_db`)
 * **`LOG_LEVEL`**: The logging level (e.g., `debug`, `info`, `warn`, `error`). The default is `info`.
+* **`FORCE_SCHEMA_RUN`**: Set to `true` to force `schema.sql` execution on server startup (e.g., for `npm start`). Defaults to `false` if not set. Tests may override this.
 
-You can set these directly or use a `.env` file (e.g., `.env.development`, `.env.production`) with a tool like `dotenv-cli`.
+You can set these directly or use a `.env` file (e.g., `.env.development`, `.env.production`) with a tool like `dotenv-cli`. The `npm test` scripts use `.env.test`.
 
 ## Project Structure
 
@@ -120,10 +121,11 @@ You can set these directly or use a `.env` file (e.g., `.env.development`, `.env
     * `/db`: Database manager and schema (`schema.sql`).
     * `/repositories`: Data access layer (PostgreSQL interaction).
     * `/services`: Core business logic.
-    * `/tools`: MCP tool definitions (*Params.ts) and implementation (*Tool.ts).
+    * `/tools`: MCP tool definitions (`*params.ts`, `*tool.ts`).
     * `/utils`: Logging, custom errors, etc.
     * `/__tests__`: Test files.
         * `/e2e`: End-to-end tests.
+        * `/services/__tests__`: Integration and Unit tests for services.
     * `createServer.ts`: Server instance creation.
     * `server.ts`: Main application entry point.
 * `/dist`: Compiled JavaScript output.
@@ -131,65 +133,36 @@ You can set these directly or use a `.env` file (e.g., `.env.development`, `.env
 * `start_local_pg.sh`: Script to run a local PostgreSQL Docker container.
 * Config files (`package.json`, `tsconfig.json`, `.eslintrc.json`, etc.)
 
+## Testing Strategy
+
+This project employs a multi-layered testing approach:
+
+### 1. Unit Tests (`*.spec.ts`)
+* **Scope:** Test individual functions, pure logic, and small, isolated units of code within services or utilities.
+* **Characteristics:** No I/O (no database, no network calls). Relies on Jest. Mocks are avoided.
+* **Data:** Test data is defined directly within the test. Database is not touched.
+* **Execution:** Run via `npm run test:unit` or as part of `build.sh`.
+
+### 2. Integration Tests (`*.test.ts` within `src/services/__tests__`)
+* **Scope:** Test the interaction between different internal components, primarily service methods and their database interactions (repositories). Focus on CRUD operations, service logic involving data persistence, and workflows like undo/redo.
+* **Characteristics:** Requires a running PostgreSQL database. Each test suite or individual test `it(...)` block ensures a clean data state, typically by truncating relevant tables via `cleanDatabase()` (from `integrationSetup.ts`) in `beforeEach` or `beforeAll` blocks. The overall database schema is assumed to be stable for the test run, set up once by `build.sh`.
+* **Data:** Tests create their own necessary data.
+* **Execution:** Run via `npm run test:integration` or as part of `build.sh`.
+
+### 3. End-to-End (E2E) Tests (`*.test.ts` within `src/__tests__/e2e`)
+* **Scope:** Test complete scenarios and workflows from the perspective of an external client (like an MCP agent). Involves making calls to the server's exposed tools and verifying results and side effects.
+* **Characteristics:**
+    * Requires a fully running server instance and its connected PostgreSQL database.
+    * **Data Persists Across E2E Test Files:** Within a single `build.sh` execution, data created by one E2E test file (e.g., `1_*.test.ts`) is intended to be available to subsequent E2E test files (e.g., `2_*.test.ts`, `3_*.test.ts`). E2E tests *do not* clear the database or schema between test files. They build upon each other to simulate a continuous user/agent session.
+    * The database schema is set up once at the beginning of the `build.sh` script (`rebuild_database_schema_directly` function).
+    * Server instances started by E2E tests run with the environment variable `FORCE_SCHEMA_RUN=false` to prevent schema re-application.
+    * Individual E2E tests within a file should be mindful of the state they create or depend on.
+* **Tools:** Uses the `@modelcontextprotocol/sdk` client to interact with the server. Assertions are made using Jest.
+* **Execution:** Run via `npm run test:e2e` or as part of `build.sh`. E2E test files are typically ordered by naming convention (e.g., `1_...`, `2_...`) to reflect dependent scenarios.
+
 ## Linting and Formatting
 
 * **Lint:** `npm run lint`
 * **Format:** `npm run format`
 
 (Code is automatically linted/formatted on commit via Husky/lint-staged).
-
-## Testing
-
-This project uses Jest for unit and integration tests, and a custom E2E testing setup using the MCP SDK.
-
-### E2E Test Logging Standards
-
-To improve the utility of E2E test logs for debugging and understanding test flow, the following logging practices should be adopted:
-
-1.  **Start of Test Log:**
-    At the beginning of each E2E test case (within the `it(...)` block), use `logger.info()` to print a descriptive message outlining the scenario and the high-level steps the test will perform.
-    *Example:*
-    ```typescript
-    logger.info(
-      'E2E Test Starting: Scenario - Advanced Promotion and Tree Verification. Steps: ' +
-      '1. Create MainProject. 2. Add L1 sub-tasks (Sub1, Sub2, Sub3). ' +
-      '3. Add L2 sub-tasks (SubSub1, SubSub2, SubSub3) to Sub1. 4. Promote Sub1. ' +
-      '5. Get MainProject tree. 6. Verify MainProject tree structure. ' +
-      '7. List root projects. 8. Verify root projects list.'
-    );
-    ```
-
-2.  **End of Test Log (Markdown Tree Output):**
-    Towards the end of each E2E test case, after the primary operations have been performed and before final assertions (or as part of verification), fetch the full tree structure of the main work item(s) created or manipulated during the test using the `get_full_tree` tool. Format this tree into a human-readable Markdown list and print it using `logger.info()`. This provides a visual snapshot of the state.
-
-    *Example Markdown Output:*
-    ```markdown
-    - MainProject Alpha (id: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
-      - Sub1 (L) (id: yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy)
-        - SubSub1 (L) (id: zzzzzzzz-zzzz-zzzz-zzzz-zzzzzzzzzzzz)
-        - SubSub2 (L) (id: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa)
-        - SubSub3 (L) (id: bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb)
-      - Sub2 (id: cccccccc-cccc-cccc-cccc-cccccccccccc)
-      - Sub3 (id: dddddddd-dddd-dddd-dddd-dddddddddddd)
-    ```
-
-    *Helper Function for Markdown Tree (Example for E2E tests):*
-    A helper function should be used within the E2E tests to generate this Markdown. It can be defined in a shared test utility file or directly within the test files if simple.
-    ```typescript
-    // Example helper (assuming 'MinimalWorkItemTreeNode' type is defined in the test)
-    function formatTreeToMarkdown(node: MinimalWorkItemTreeNode, indent = ''): string {
-      let markdown = `${indent}- ${node.name} (id: ${node.work_item_id})\n`;
-      if (node.children && node.children.length > 0) {
-        // Ensure children are sorted for consistent output if order matters for visual inspection
-        const sortedChildren = [...node.children].sort((a, b) => {
-            // Basic sort by name, adapt if order_key or other properties are more relevant
-            return a.name.localeCompare(b.name);
-        });
-        for (const child of sortedChildren) {
-          markdown += formatTreeToMarkdown(child, `${indent}  `);
-        }
-      }
-      return markdown;
-    }
-    ```
-    The `MinimalWorkItemTreeNode` type would be the Zod schema type used for parsing the `get_full_tree` response within the E2E test. Ensure the helper function is adapted to the actual structure of your tree nodes.

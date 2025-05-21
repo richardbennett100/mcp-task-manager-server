@@ -1,3 +1,7 @@
+// Modified upload/src/services/WorkItemService.ts
+// Changes:
+// 1. Added import for ChildTaskInputRecursive.
+// 2. Added public method addWorkItemTree that delegates to this.addingService.addWorkItemTree.
 // File: src/services/WorkItemService.ts
 import {
   WorkItemRepository,
@@ -28,6 +32,7 @@ import { WorkItemHistoryService } from './WorkItemHistoryService.js';
 import { WorkItemPromoteService } from './WorkItemPromoteService.js';
 import { logger } from '../utils/logger.js';
 import { z } from 'zod';
+import { type ChildTaskInputRecursive } from '../tools/add_child_tasks_params.js'; // Added this import
 
 type WorkItemStatus = z.infer<typeof WorkItemStatusEnum>;
 type WorkItemPriority = z.infer<typeof WorkItemPriorityEnum>;
@@ -53,10 +58,6 @@ export class WorkItemService {
     this.historyService = new WorkItemHistoryService(workItemRepository, actionHistoryRepository);
     this.addingService = new WorkItemAddingService(workItemRepository, actionHistoryRepository, this.historyService);
     this.readingService = new WorkItemReadingService(workItemRepository);
-
-    // MODIFIED: Reverted constructor calls for these services to 2 arguments
-    // Assuming their current constructors only expect workItemRepository and actionHistoryRepository.
-    // If they later need historyService for invalidateRedoStack, their constructors will need updating.
     this.updateService = new WorkItemUpdateService(workItemRepository, actionHistoryRepository);
     this.fieldUpdateService = new WorkItemFieldUpdateService(workItemRepository, actionHistoryRepository);
     this.dependencyUpdateService = new WorkItemDependencyUpdateService(workItemRepository, actionHistoryRepository);
@@ -67,6 +68,14 @@ export class WorkItemService {
 
   public async addWorkItem(input: AddWorkItemInput): Promise<WorkItemData> {
     return this.addingService.addWorkItem(input);
+  }
+
+  // New method to expose addWorkItemTree functionality
+  public async addWorkItemTree(
+    initialParentId: string,
+    childTasksTree: ChildTaskInputRecursive[]
+  ): Promise<WorkItemData[]> {
+    return this.addingService.addWorkItemTree(initialParentId, childTasksTree);
   }
 
   public async getWorkItemById(id: string, filter?: { isActive?: boolean }): Promise<FullWorkItemData | null> {

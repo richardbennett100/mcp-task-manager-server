@@ -14,11 +14,9 @@
     "prepare": "husky install || true",
     "test": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
     "test:bail": "npm test -- --bail",
-    
     "test:unit": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand --bail --clearCache \"src/services/__tests__/unit/.*\\.spec\\.ts$\"",
     "test:integration": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand --bail --clearCache \"src/services/__tests__/.*\\.test\\.ts$\"",
     "test:e2e": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand --bail --clearCache \"src/__tests__/e2e/.*\\.test\\.ts$\"",
-
     "build:test:sync": "npm run lint:fix && npm run build && npm run test:bail && ./sync_files.sh",
     "ci:test": "npm run lint:fix && npm run build && npm run test:bail",
     "test:watch": "dotenv -e .env.test -- cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch --runInBand"
