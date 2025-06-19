@@ -13,6 +13,7 @@ import { DatabaseManager } from '../db/DatabaseManager.js';
 import { WorkItemRepository, ActionHistoryRepository } from '../repositories/index.js';
 import { WorkItemService } from '../services/WorkItemService.js';
 import { type FullWorkItemData } from '../services/WorkItemServiceTypes.js';
+// import sseNotificationService from '../services/SseNotificationService.js';
 
 export const promoteToProjectTool = (server: McpServer): void => {
   const processRequest = async (args: PromoteToProjectArgs): Promise<{ content: { type: 'text'; text: string }[] }> => {
@@ -23,7 +24,7 @@ export const promoteToProjectTool = (server: McpServer): void => {
       const pool = dbManager.getPool();
       const workItemRepository = new WorkItemRepository(pool);
       const actionHistoryRepository = new ActionHistoryRepository(pool);
-      const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository);
+      const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository); //, sseNotificationService);
 
       // Call the new service method (to be created)
       const updatedItem: FullWorkItemData = await workItemService.promoteToProject(args.work_item_id);

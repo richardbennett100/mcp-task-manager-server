@@ -1,3 +1,4 @@
+// File: src/services/WorkItemHistoryService.ts
 // src/services/WorkItemHistoryService.ts
 import { PoolClient } from 'pg';
 import {
@@ -289,6 +290,11 @@ export class WorkItemHistoryService {
           key === 'updated_at' &&
           setClauses.includes(`"updated_at" = CURRENT_TIMESTAMP`)
         ) {
+          continue;
+        }
+
+        // ADDITION: Skip 'depends_on_status' when updating 'work_item_dependencies' table
+        if (tableName === 'work_item_dependencies' && key === 'depends_on_status') {
           continue;
         }
 

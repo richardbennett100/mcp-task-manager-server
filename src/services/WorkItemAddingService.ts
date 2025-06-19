@@ -1,10 +1,6 @@
-// Modified upload/src/services/WorkItemAddingService.ts
-// Changes:
-// 1. Added import for 'validate as uuidValidate' from 'uuid'.
-// 2. Added UUID format validation for initialParentId at the beginning of addWorkItemTree.
-// upload/src/services/WorkItemAddingService.ts
+// Modified src/services/WorkItemAddingService.ts
 import { PoolClient } from 'pg';
-import { v4 as uuidv4, validate as uuidValidate } from 'uuid'; // Added uuidValidate
+import { v4 as uuidv4, validate as uuidValidate } from 'uuid';
 import {
   WorkItemRepository,
   ActionHistoryRepository,
@@ -16,6 +12,7 @@ import {
 import { AddWorkItemInput, PositionEnum } from './WorkItemServiceTypes.js';
 import { ChildTaskInputRecursive } from '../tools/add_child_tasks_params.js';
 import { WorkItemHistoryService } from './WorkItemHistoryService.js';
+// import sseNotificationServiceInstance from './SseNotificationService.js';
 import { WorkItemUtilsService } from './WorkItemUtilsService.js';
 import { NotFoundError, ValidationError, DatabaseError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
@@ -24,15 +21,18 @@ export class WorkItemAddingService {
   private workItemRepository: WorkItemRepository;
   private actionHistoryRepository: ActionHistoryRepository;
   private historyService: WorkItemHistoryService;
+  //private sseService: typeof SseNotificationServiceInstance;
 
   constructor(
     workItemRepository: WorkItemRepository,
     actionHistoryRepository: ActionHistoryRepository,
-    historyService: WorkItemHistoryService
+    historyService: WorkItemHistoryService //,
+    //sseService: typeof SseNotificationServiceInstance
   ) {
     this.workItemRepository = workItemRepository;
     this.actionHistoryRepository = actionHistoryRepository;
     this.historyService = historyService;
+    // this.sseService = sseService;
   }
 
   private async determineOrderKeys(
@@ -105,7 +105,6 @@ export class WorkItemAddingService {
     );
 
     const order_key = await this.determineOrderKeysForNewItemInTree(client, parentId);
-
     const now = new Date().toISOString();
     const newWorkItemData: WorkItemData = {
       work_item_id: uuidv4(),
@@ -121,8 +120,7 @@ export class WorkItemAddingService {
       updated_at: now,
     };
 
-    const createdItem = await this.workItemRepository.create(client, newWorkItemData, undefined);
-
+    const createdItem = await this.workItemRepository.create(client, newWorkItemData);
     if (!createdItem) {
       throw new DatabaseError(`Failed to create work item "${itemData.name}" in repository.`);
     }
@@ -139,12 +137,11 @@ export class WorkItemAddingService {
     accumulatedCreatedItems: WorkItemData[]
   ): Promise<void> {
     if (currentParentId) {
-      const parentItem = await this.workItemRepository.findById(currentParentId, undefined, client);
+      const parentItem = await this.workItemRepository.findById(currentParentId, { isActive: true }, client);
       if (!parentItem) {
-        throw new NotFoundError(`Parent work item with ID ${currentParentId} not found for adding children.`);
-      }
-      if (!parentItem.is_active) {
-        throw new ValidationError(`Parent work item with ID ${currentParentId} is inactive.`);
+        throw new NotFoundError(
+          `Parent work item with ID ${currentParentId} not found or is inactive for adding children.`
+        );
       }
       if (parentItem.status === 'done') {
         throw new ValidationError(
@@ -156,7 +153,6 @@ export class WorkItemAddingService {
     for (const taskDef of tasksToCreate) {
       const createdItem = await this.createSingleWorkItemInTree(taskDef, currentParentId, client);
       accumulatedCreatedItems.push(createdItem);
-
       if (taskDef.children && taskDef.children.length > 0) {
         await this.addWorkItemTreeRecursiveInternal(
           createdItem.work_item_id,
@@ -173,56 +169,38 @@ export class WorkItemAddingService {
     childTasksTree: ChildTaskInputRecursive[]
   ): Promise<WorkItemData[]> {
     logger.info(`[WorkItemAddingService] Adding work item tree under initial parent ${initialParentId}`);
-
-    // Validate UUID format first
     if (!uuidValidate(initialParentId)) {
       throw new ValidationError(`Invalid parent_work_item_id format: ${initialParentId}`);
     }
-
-    const parentItem = await this.workItemRepository.findById(initialParentId, undefined);
+    const parentItem = await this.workItemRepository.findById(initialParentId, { isActive: true });
     if (!parentItem) {
-      throw new NotFoundError(`Initial parent work item with ID ${initialParentId} not found.`);
-    }
-    if (!parentItem.is_active) {
-      throw new ValidationError(
-        `Initial parent work item "${parentItem.name}" (ID: ${initialParentId}) is inactive and cannot have new tasks added.`
-      );
+      throw new NotFoundError(`Initial parent work item with ID ${initialParentId} not found or is inactive.`);
     }
     if (parentItem.status === 'done') {
       throw new ValidationError(
         `Initial parent work item "${parentItem.name}" (ID: ${initialParentId}) is marked as "done" and cannot have new tasks added.`
       );
     }
-
     const allCreatedItems: WorkItemData[] = [];
-
     await this.actionHistoryRepository.withTransaction(async (txClient) => {
       await this.addWorkItemTreeRecursiveInternal(initialParentId, childTasksTree, txClient, allCreatedItems);
-
       if (allCreatedItems.length > 0) {
         const topLevelCreatedNames = childTasksTree.map((t) => t.name).join(', ');
         const description = `Added task tree (${allCreatedItems.length} total items) under "${parentItem.name}": ${topLevelCreatedNames}`;
-
         const actionData: CreateActionHistoryInput = {
           action_type: 'ADD_TASK_TREE',
           work_item_id: initialParentId,
           description: description.substring(0, 250),
         };
-
-        const undoStepsForBatch: CreateUndoStepInput[] = [];
-        allCreatedItems.forEach((createdItem, index) => {
-          undoStepsForBatch.push({
-            step_order: index + 1,
-            step_type: 'UPDATE',
-            table_name: 'work_items',
-            record_id: createdItem.work_item_id,
-            old_data: { is_active: false },
-            new_data: { ...createdItem, is_active: true },
-          });
-        });
-
+        const undoStepsForBatch: CreateUndoStepInput[] = allCreatedItems.map((createdItem, index) => ({
+          step_order: index + 1,
+          step_type: 'UPDATE',
+          table_name: 'work_items',
+          record_id: createdItem.work_item_id,
+          old_data: { is_active: false },
+          new_data: { ...createdItem, is_active: true },
+        }));
         const createdAction = await this.actionHistoryRepository.createActionWithSteps(actionData, undoStepsForBatch);
-
         await this.historyService.invalidateRedoStack(txClient, createdAction.action_id);
         logger.info(
           `[WorkItemAddingService] Task tree creation transaction committed. Action ID: ${createdAction.action_id}. Total items: ${allCreatedItems.length}.`
@@ -231,27 +209,33 @@ export class WorkItemAddingService {
         logger.info(`[WorkItemAddingService] No items were specified in the task tree for parent ${initialParentId}.`);
       }
     });
-
+    if (allCreatedItems.length > 0) {
+      //this.sseService.notifyWorkItemUpdated(parentItem, parentItem.parent_work_item_id);
+    }
     return allCreatedItems;
   }
 
   public async addWorkItem(input: AddWorkItemInput): Promise<WorkItemData> {
-    logger.info('[WorkItemAddingService] addWorkItem (public) called with input:', input);
+    logger.info('[WorkItemAddingService] addWorkItem called with input:', input);
     let createdItemGlobal: WorkItemData | undefined;
 
     await this.actionHistoryRepository.withTransaction(async (txClient) => {
       if (input.parent_work_item_id && !uuidValidate(input.parent_work_item_id)) {
         throw new ValidationError(`Invalid parent_work_item_id format: ${input.parent_work_item_id}`);
       }
-
       const parentId = input.parent_work_item_id || null;
       if (parentId) {
-        const parentItemData = await this.workItemRepository.findById(parentId, undefined, txClient);
-        if (!parentItemData) throw new NotFoundError(`Parent work item with ID ${parentId} not found.`);
-        if (!parentItemData.is_active)
-          throw new ValidationError(`Parent work item with ID ${parentId} not found or is inactive.`);
-        if (parentItemData.status === 'done')
+        const parentItemData = await this.workItemRepository.findById(parentId, {}, txClient);
+        if (!parentItemData) {
+          // **THE FIX**: Throw a ValidationError here, as the non-existent ID is an invalid input.
+          throw new ValidationError(`Parent work item with ID ${parentId} not found.`);
+        }
+        if (!parentItemData.is_active) {
+          throw new ValidationError(`Parent work item with ID ${parentId} is not active.`);
+        }
+        if (parentItemData.status === 'done') {
           throw new ValidationError(`Parent work item "${parentItemData.name}" (ID: ${parentId}) is "done".`);
+        }
       }
 
       const { keyBefore, keyAfter } = await this.determineOrderKeys(
@@ -261,12 +245,14 @@ export class WorkItemAddingService {
         input.insertAfter_work_item_id,
         input.insertBefore_work_item_id
       );
+
       const order_key = WorkItemUtilsService.calculateOrderKey(keyBefore, keyAfter);
       if (order_key === null) throw new DatabaseError('Failed to calculate order key.');
 
       const now = new Date().toISOString();
+      const newWorkItemId = uuidv4();
       const newWorkItemData: WorkItemData = {
-        work_item_id: uuidv4(),
+        work_item_id: newWorkItemId,
         name: input.name,
         description: input.description || null,
         parent_work_item_id: parentId,
@@ -280,15 +266,18 @@ export class WorkItemAddingService {
       };
 
       let dependenciesForRepoCreate: WorkItemDependencyData[] | undefined = undefined;
+
       if (input.dependencies && input.dependencies.length > 0) {
         dependenciesForRepoCreate = input.dependencies.map((d) => ({
-          work_item_id: newWorkItemData.work_item_id,
+          work_item_id: newWorkItemId,
           depends_on_work_item_id: d.depends_on_work_item_id,
           dependency_type: d.dependency_type || 'finish-to-start',
           is_active: true,
         }));
       }
+
       const createdItem = await this.workItemRepository.create(txClient, newWorkItemData, dependenciesForRepoCreate);
+
       if (!createdItem) throw new DatabaseError('Failed to create item in repository.');
       createdItemGlobal = createdItem;
 
@@ -311,7 +300,7 @@ export class WorkItemAddingService {
             table_name: 'work_item_dependencies',
             record_id: `${createdItem.work_item_id}:${dep.depends_on_work_item_id}`,
             old_data: { is_active: false },
-            new_data: { ...dep },
+            new_data: { ...dep, work_item_id: createdItem.work_item_id, is_active: true },
           });
         });
       }
@@ -321,20 +310,18 @@ export class WorkItemAddingService {
         work_item_id: createdItem.work_item_id,
         description: `Added work item "${createdItem.name}"`,
       };
-
       const createdAction = await this.actionHistoryRepository.createActionWithSteps(
         actionInput,
         undoStepsForSingleAdd
       );
       await this.historyService.invalidateRedoStack(txClient, createdAction.action_id);
-
       logger.info(
-        `[WorkItemAddingService] Added single work item ${createdItem.work_item_id} and recorded history. Action ID: ${createdAction.action_id}`
+        `[WorkItemAddingService] Added single work item ${createdItem.work_item_id}. Action ID: ${createdAction.action_id}`
       );
     });
 
     if (!createdItemGlobal) {
-      throw new DatabaseError('Failed to create work item, global item reference not set.');
+      throw new DatabaseError('Failed to create work item, item reference not set.');
     }
     return createdItemGlobal;
   }

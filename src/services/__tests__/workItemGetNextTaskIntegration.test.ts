@@ -202,6 +202,7 @@ describe('WorkItemService - Get Next Task Integration Tests', () => {
     // If we make B2 medium priority, A2 should be picked
     await testEnvironment.workItemService.setPriority(taskB2_TagBE.work_item_id, 'medium');
     const nextTaskAfterPrioChange = await testEnvironment.workItemService.getNextTask({});
+    logger.info('Returned task after prio change:', nextTaskAfterPrioChange); // Or console.log
     expect(nextTaskAfterPrioChange?.work_item_id).toBe(taskA2_PrioHigh.work_item_id);
   });
 

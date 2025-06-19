@@ -1,17 +1,15 @@
 // src/repositories/WorkItemRepositorySearchOrder.ts
-import { type PoolClient, type Pool, type QueryResult } from 'pg';
+import { type Pool, type PoolClient, type QueryResult } from 'pg';
 import { WorkItemRepositoryBase, type WorkItemData } from './WorkItemRepositoryBase.js';
 import { logger } from '../utils/logger.js';
-import { NotFoundError } from '../utils/errors.js'; // FIX: Added import for NotFoundError
+import { NotFoundError } from '../utils/errors.js';
 
-// Interface for the filters parameter for findCandidateTasksForSuggestion
 export interface CandidateTaskFilters {
   scopeItemId?: string | null;
   includeTags?: string[] | null;
   excludeTags?: string[] | null;
 }
 
-// Interface for listWorkItems filters
 export interface ListWorkItemsFilters {
   parent_work_item_id?: string | null;
   status?: string | null;
@@ -31,9 +29,6 @@ export class WorkItemRepositorySearchOrder extends WorkItemRepositoryBase {
     super(pool);
   }
 
-  /**
-   * Lists work items based on various filter criteria.
-   */
   public async listWorkItems(filters: ListWorkItemsFilters = {}, client?: PoolClient | Pool): Promise<WorkItemData[]> {
     const dbClient = client || this.pool;
     let sql = `SELECT * FROM work_items`;
@@ -118,20 +113,16 @@ export class WorkItemRepositorySearchOrder extends WorkItemRepositoryBase {
     }
   }
 
-  /**
-   * Searches for work items by name or description.
-   */
   public async searchByNameOrDescription(
     searchTerm: string,
-    isActiveFilter?: boolean, // Expects boolean or undefined
+    isActiveFilter?: boolean,
     client?: PoolClient | Pool
   ): Promise<WorkItemData[]> {
     const dbClient = client || this.pool;
     let sql = `SELECT * FROM work_items WHERE (name ILIKE $1 OR description ILIKE $1)`;
     const params: any[] = [`%${searchTerm}%`];
-    let paramIndex = 2; // Start next param index at 2
+    let paramIndex = 2;
 
-    // Directly use the boolean filter value
     if (isActiveFilter === true) {
       sql += ` AND is_active = $${paramIndex++}`;
       params.push(true);
@@ -139,9 +130,8 @@ export class WorkItemRepositorySearchOrder extends WorkItemRepositoryBase {
       sql += ` AND is_active = $${paramIndex++}`;
       params.push(false);
     }
-    // If isActiveFilter is undefined, no WHERE clause for is_active is added
 
-    sql += ` ORDER BY is_active DESC, name ASC;`; // Order might need adjustment based on relevance
+    sql += ` ORDER BY is_active DESC, name ASC;`;
 
     try {
       const result = await dbClient.query(sql, params);
@@ -152,13 +142,10 @@ export class WorkItemRepositorySearchOrder extends WorkItemRepositoryBase {
     }
   }
 
-  /**
-   * Finds the order_key of the first or last sibling of a given parent.
-   */
   public async findSiblingEdgeOrderKey(
     parentWorkItemId: string | null,
     edge: 'first' | 'last',
-    client?: PoolClient | Pool // Allow Pool for reads
+    client?: PoolClient | Pool
   ): Promise<string | null> {
     const dbClient = client || this.pool;
     let sql: string;
@@ -190,22 +177,17 @@ export class WorkItemRepositorySearchOrder extends WorkItemRepositoryBase {
     }
   }
 
-  /**
-   * Finds the order_keys of the items immediately before and after a given sibling item.
-   */
   public async findNeighbourOrderKeys(
-    parentWorkItemId: string | null, // This is the *expected* parent, can be different from actual
+    parentWorkItemId: string | null,
     siblingWorkItemId: string,
-    position: 'before' | 'after', // relative to siblingWorkItemId
-    client?: PoolClient | Pool // Allow Pool for reads
+    position: 'before' | 'after',
+    client?: PoolClient | Pool
   ): Promise<{ before: string | null; after: string | null }> {
     const dbClient = client || this.pool;
     if (!this.validateUuid(siblingWorkItemId, 'findNeighbourOrderKeys siblingWorkItemId')) {
-      // Throw specific error if the provided ID is invalid format
       throw new NotFoundError(`Invalid UUID format for reference work item: ${siblingWorkItemId}`);
     }
 
-    // Fetch the item itself to get its current order_key and actual parent_id
     const currentItemSql = `SELECT order_key, parent_work_item_id FROM work_items WHERE work_item_id = $1 AND is_active = TRUE;`;
     const currentItemParams = [siblingWorkItemId];
     let currentItemResult: QueryResult;
@@ -213,22 +195,19 @@ export class WorkItemRepositorySearchOrder extends WorkItemRepositoryBase {
       currentItemResult = await dbClient.query(currentItemSql, currentItemParams);
     } catch (error) {
       logger.error(`[WorkItemRepositorySearchOrder] Error fetching current item ${siblingWorkItemId}`, error);
-      throw error; // Rethrow DB errors
+      throw error;
     }
 
     if (currentItemResult.rows.length === 0) {
-      // Check if the item exists but is inactive
       const inactiveItemResult = await dbClient.query(
         'SELECT work_item_id FROM work_items WHERE work_item_id = $1 AND is_active = FALSE',
         [siblingWorkItemId]
       );
       if (inactiveItemResult.rows.length > 0) {
-        logger.warn(`[WorkItemRepositorySearchOrder] Reference work item ${siblingWorkItemId} is inactive.`);
         throw new NotFoundError(
           `Reference work item ${siblingWorkItemId} not found, not active, or does not belong to parent ${parentWorkItemId ?? 'root'}.`
         );
       } else {
-        logger.warn(`[WorkItemRepositorySearchOrder] Reference work item ${siblingWorkItemId} not found.`);
         throw new NotFoundError(
           `Reference work item ${siblingWorkItemId} not found, not active, or does not belong to parent ${parentWorkItemId ?? 'root'}.`
         );
@@ -237,12 +216,7 @@ export class WorkItemRepositorySearchOrder extends WorkItemRepositoryBase {
     const currentOrderKey = currentItemResult.rows[0].order_key;
     const actualItemParentId = currentItemResult.rows[0].parent_work_item_id;
 
-    // Validate parent consistency if an expected parent was provided
-    // Use !== comparison which handles null correctly
     if (parentWorkItemId !== undefined && parentWorkItemId !== actualItemParentId) {
-      logger.warn(
-        `[WorkItemRepositorySearchOrder] Reference item ${siblingWorkItemId} does not belong to the expected parent ${parentWorkItemId ?? 'root'}. Actual parent: ${actualItemParentId ?? 'root'}.`
-      );
       throw new NotFoundError(
         `Reference work item ${siblingWorkItemId} not found, not active, or does not belong to parent ${parentWorkItemId ?? 'root'}.`
       );
@@ -250,25 +224,18 @@ export class WorkItemRepositorySearchOrder extends WorkItemRepositoryBase {
 
     let beforeSql: string;
     let afterSql: string;
-    const queryBaseParams: any[] = [currentOrderKey]; // $1 will always be currentOrderKey
+    const queryBaseParams: any[] = [currentOrderKey];
 
     if (actualItemParentId) {
       if (!this.validateUuid(actualItemParentId, 'findNeighbourOrderKeys actualItemParentId')) {
-        // Should not happen if fetched above, but check defensively
-        logger.error(
-          `[WorkItemRepositorySearchOrder] Fetched item ${siblingWorkItemId} has invalid parent UUID: ${actualItemParentId}`
-        );
-        // Return nulls or throw depending on desired strictness
         return { before: null, after: null };
       }
-      // actualItemParentId will be $2
       beforeSql = `SELECT order_key FROM work_items WHERE parent_work_item_id = $2 AND order_key < $1 AND is_active = TRUE ORDER BY order_key DESC NULLS LAST LIMIT 1;`;
       afterSql = `SELECT order_key FROM work_items WHERE parent_work_item_id = $2 AND order_key > $1 AND is_active = TRUE ORDER BY order_key ASC NULLS FIRST LIMIT 1;`;
-      queryBaseParams.push(actualItemParentId); // Add parent_id as the second parameter
+      queryBaseParams.push(actualItemParentId);
     } else {
       beforeSql = `SELECT order_key FROM work_items WHERE parent_work_item_id IS NULL AND order_key < $1 AND is_active = TRUE ORDER BY order_key DESC NULLS LAST LIMIT 1;`;
       afterSql = `SELECT order_key FROM work_items WHERE parent_work_item_id IS NULL AND order_key > $1 AND is_active = TRUE ORDER BY order_key ASC NULLS FIRST LIMIT 1;`;
-      // No second parameter if parent_work_item_id IS NULL
     }
 
     try {
@@ -276,15 +243,12 @@ export class WorkItemRepositorySearchOrder extends WorkItemRepositoryBase {
       let keyAfter: string | null = null;
 
       if (position === 'before') {
-        // We want to insert *before* siblingWorkItemId
         const beforeResult = await dbClient.query(beforeSql, queryBaseParams);
         keyBefore = beforeResult.rows.length > 0 ? beforeResult.rows[0].order_key : null;
-        keyAfter = currentOrderKey; // The item after the new one is the current item
+        keyAfter = currentOrderKey;
       } else {
-        // position === 'after'
-        // We want to insert *after* siblingWorkItemId
         const afterResult = await dbClient.query(afterSql, queryBaseParams);
-        keyBefore = currentOrderKey; // The item before the new one is the current item
+        keyBefore = currentOrderKey;
         keyAfter = afterResult.rows.length > 0 ? afterResult.rows[0].order_key : null;
       }
       return { before: keyBefore, after: keyAfter };
@@ -295,16 +259,10 @@ export class WorkItemRepositorySearchOrder extends WorkItemRepositoryBase {
         }):`,
         { error, sqlBefore: beforeSql, sqlAfter: afterSql, params: queryBaseParams }
       );
-      throw error; // Rethrow DB errors
+      throw error;
     }
   }
 
-  /**
-   * Finds candidate work items for the 'get_next_task' suggestion logic.
-   * Applies filters for scope (descendants of an item), tag inclusion/exclusion,
-   * and always filters for active, non-done items.
-   * **Only returns tasks (items with a parent), not projects.**
-   */
   public async findCandidateTasksForSuggestion(
     filters: CandidateTaskFilters,
     client?: PoolClient | Pool
@@ -312,95 +270,84 @@ export class WorkItemRepositorySearchOrder extends WorkItemRepositoryBase {
     const dbClient = client || this.pool;
     const { scopeItemId, includeTags, excludeTags } = filters;
 
-    let sqlQuery = '';
     const queryParams: any[] = [];
     let paramIndex = 1;
-    let scopeItemIdIsValidAndUsed = false;
+    let scopeCte = '';
+    let scopeJoin = '';
 
     if (scopeItemId) {
-      if (!this.validateUuid(scopeItemId, 'findCandidateTasksForSuggestion scopeItemId')) {
-        logger.warn(
-          `[WorkItemRepositorySearchOrder] Invalid UUID for scopeItemId: ${scopeItemId}. Proceeding without scope filter.`
-        );
-      } else {
-        // Use CTE to find all descendants (including the scope item itself if it's a task)
-        sqlQuery += `
+      if (this.validateUuid(scopeItemId, 'findCandidateTasksForSuggestion scopeItemId')) {
+        scopeCte = `
           WITH RECURSIVE descendant_items AS (
-            SELECT work_item_id, parent_work_item_id
-            FROM work_items
-            WHERE work_item_id = $${paramIndex++} AND is_active = TRUE -- Start with the scope item
-            UNION ALL
-            SELECT wi.work_item_id, wi.parent_work_item_id
-            FROM work_items wi
+            SELECT work_item_id FROM work_items WHERE work_item_id = $${paramIndex++} AND is_active = TRUE
+            UNION
+            SELECT wi.work_item_id FROM work_items wi
             INNER JOIN descendant_items di ON wi.parent_work_item_id = di.work_item_id
-            WHERE wi.is_active = TRUE -- Only traverse active items
+            WHERE wi.is_active = TRUE
           )
         `;
         queryParams.push(scopeItemId);
-        scopeItemIdIsValidAndUsed = true;
+        scopeJoin = 'JOIN descendant_items di_scope ON wi.work_item_id = di_scope.work_item_id';
+      } else {
+        logger.warn(`Invalid UUID for scopeItemId: ${scopeItemId}. Returning no tasks.`);
+        return [];
       }
     }
 
-    sqlQuery += `
-      SELECT wi.*
-      FROM work_items wi
+    let whereConditions = `
+      WHERE wi.is_active = TRUE
+      AND wi.status <> 'done'
+      AND wi.parent_work_item_id IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1
+        FROM work_item_dependencies wid
+        JOIN work_items dep_wi ON wid.depends_on_work_item_id = dep_wi.work_item_id
+        WHERE wid.work_item_id = wi.work_item_id
+          AND wid.is_active = TRUE
+          AND dep_wi.is_active = TRUE
+          AND dep_wi.status <> 'done'
+      )
     `;
 
-    if (scopeItemIdIsValidAndUsed) {
-      // Join with the CTE to filter by scope
-      sqlQuery += `
-        JOIN descendant_items di_scope ON wi.work_item_id = di_scope.work_item_id
-      `;
-    }
-
-    const whereConditions: string[] = [];
-    whereConditions.push('wi.is_active = TRUE'); // Must be active
-    whereConditions.push("wi.status <> 'done'"); // Must not be done
-    whereConditions.push('wi.parent_work_item_id IS NOT NULL'); // MUST be a task (have a parent)
-
     if (includeTags && includeTags.length > 0) {
-      whereConditions.push(`(wi.tags IS NOT NULL AND wi.tags @> $${paramIndex++}::text[])`);
+      whereConditions += ` AND (wi.tags IS NOT NULL AND wi.tags @> $${paramIndex++}::text[])`;
       queryParams.push(includeTags);
     }
 
     if (excludeTags && excludeTags.length > 0) {
-      whereConditions.push(`(wi.tags IS NULL OR NOT (wi.tags && $${paramIndex++}::text[]))`);
+      whereConditions += ` AND (wi.tags IS NULL OR NOT (wi.tags && $${paramIndex++}::text[]))`;
       queryParams.push(excludeTags);
     }
 
-    if (whereConditions.length > 0) {
-      sqlQuery += ` WHERE ${whereConditions.join(' AND ')}`;
-    }
-
-    // Order results to prioritize tasks
-    sqlQuery += `
+    const sqlQuery = `
+      ${scopeCte}
+      SELECT wi.*
+      FROM work_items wi
+      ${scopeJoin}
+      ${whereConditions}
       ORDER BY
-        wi.due_date ASC NULLS LAST,  -- Earlier due date first
-        CASE wi.priority            -- Higher priority first
+        (wi.due_date IS NULL),
+        wi.due_date ASC,
+        CASE wi.priority
           WHEN 'high' THEN 1
           WHEN 'medium' THEN 2
           WHEN 'low' THEN 3
           ELSE 4
         END ASC,
-        wi.order_key ASC NULLS LAST, -- Lower order_key first (within same parent)
-        wi.created_at ASC;          -- Fallback to creation time
+        wi.order_key ASC NULLS LAST,
+        wi.created_at ASC
     `;
-
-    logger.debug(
-      `[WorkItemRepositorySearchOrder] Executing findCandidateTasksForSuggestion SQL: ${sqlQuery.replace(/\s+/g, ' ').trim()}`
-    );
-    logger.debug(`[WorkItemRepositorySearchOrder] Parameters: ${JSON.stringify(queryParams)}`);
 
     try {
       const result = await dbClient.query(sqlQuery, queryParams);
-      return result.rows.map((row) => this.mapRowToWorkItemData(row));
+      return result.rows.map(this.mapRowToWorkItemData);
     } catch (error) {
       logger.error('[WorkItemRepositorySearchOrder] Error in findCandidateTasksForSuggestion:', {
         sql: sqlQuery,
         params: queryParams,
         error,
       });
-      throw error; // Rethrow the error to be handled by the service layer
+      throw error;
     }
   }
 }

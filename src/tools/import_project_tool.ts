@@ -7,6 +7,7 @@ import { DatabaseManager } from '../db/DatabaseManager.js';
 import { WorkItemRepository, ActionHistoryRepository, WorkItemData } from '../repositories/index.js';
 import { WorkItemService } from '../services/WorkItemService.js';
 import { AddWorkItemInput } from '../services/WorkItemServiceTypes.js';
+// import sseNotificationService from '../services/SseNotificationService.js';
 
 export const importProjectTool = (server: McpServer): void => {
   const processRequest = async (args: ImportProjectArgs): Promise<{ content: { type: 'text'; text: string }[] }> => {
@@ -17,7 +18,7 @@ export const importProjectTool = (server: McpServer): void => {
       const pool = dbManager.getPool();
       const workItemRepository = new WorkItemRepository(pool);
       const actionHistoryRepository = new ActionHistoryRepository(pool);
-      const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository);
+      const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository); //); //, sseNotificationService);
 
       let parsedProjectData: any;
       try {

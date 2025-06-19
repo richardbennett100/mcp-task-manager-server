@@ -1,0 +1,34 @@
+/.svelte-kit
+/build/
+/dist/
+
+# Mac
+.DS_Store
+
+# Node
+/node_modules
+*.log
+logs
+*debug.log*
+*debug.*.log*
+yarn-error.log
+pnpm-debug.log
+
+# Editor Directories and Files
+.idea
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-project
+*.sublime-workspace
+
+# Misc
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+
+# SvelteKit cache files
+.vite-inspect/

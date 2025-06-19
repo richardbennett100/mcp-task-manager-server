@@ -12,6 +12,7 @@ import { logger } from '../utils/logger.js';
 import { DatabaseManager } from '../db/DatabaseManager.js';
 // Removed unused WorkItemRepository import
 import { ActionHistoryRepository } from '../repositories/index.js';
+//import { WorkItemService } from '../services/WorkItemService.js';
 // Removed unused WorkItemService import
 
 export const listHistoryTool = (server: McpServer): void => {

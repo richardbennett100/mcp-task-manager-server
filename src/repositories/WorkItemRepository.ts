@@ -4,7 +4,6 @@ import { WorkItemRepositoryBase, type WorkItemData, type WorkItemDependencyData 
 import { WorkItemRepositoryCRUD } from './WorkItemRepositoryCRUD.js';
 import { WorkItemRepositoryHierarchy } from './WorkItemRepositoryHierarchy.js';
 import { WorkItemRepositoryDependencies } from './WorkItemRepositoryDependencies.js';
-// FIX: Import CandidateTaskFilters type
 import { WorkItemRepositorySearchOrder, type CandidateTaskFilters } from './WorkItemRepositorySearchOrder.js';
 import { WorkItemRepositoryUndoRedo } from './WorkItemRepositoryUndoRedo.js';
 import { ValidationError } from '../utils/errors.js';
@@ -183,7 +182,6 @@ export class WorkItemRepository extends WorkItemRepositoryBase {
     return this.searchOrder.findNeighbourOrderKeys(parentId, relativeToId, relation, client);
   }
 
-  // FIX: Expose findCandidateTasksForSuggestion from the composed searchOrder helper
   public findCandidateTasksForSuggestion(
     filters: CandidateTaskFilters,
     client?: PoolClient | Pool

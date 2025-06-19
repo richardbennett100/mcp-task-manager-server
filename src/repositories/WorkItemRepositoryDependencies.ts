@@ -12,8 +12,7 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
   }
 
   /**
-   * Finds dependencies for a given work item.
-   * Uses the provided client if in a transaction, otherwise the pool.
+   * Finds dependencies for a given work item, including the status of the item it depends on.
    */
   public async findDependencies(
     workItemId: string,
@@ -26,8 +25,9 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
     const dbClient = client || this.pool;
 
     let sql = `
-            SELECT wid.* FROM work_item_dependencies wid
-            LEFT JOIN work_items wi_dep_on ON wid.depends_on_work_item_id = wi_dep_on.work_item_id
+            SELECT wid.*, wi_dep_on.status as depends_on_status
+            FROM work_item_dependencies wid
+            JOIN work_items wi_dep_on ON wid.depends_on_work_item_id = wi_dep_on.work_item_id
             WHERE wid.work_item_id = $1 `;
     const params: (string | boolean)[] = [workItemId];
     let paramIndex = 2;
@@ -39,7 +39,6 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
       sql += ` AND wid.is_active = $${paramIndex++}`;
       params.push(false);
     }
-    // If filter?.isActive is undefined, no clause for wid.is_active is added, fetching all.
 
     if (filter?.dependsOnActive !== undefined) {
       sql += ` AND wi_dep_on.is_active = $${paramIndex++}`;
@@ -49,13 +48,6 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
 
     try {
       const result = await dbClient.query(sql, params);
-      logger.debug(
-        `[WorkItemRepositoryDependencies] findDependencies for item ${workItemId} (link active: ${
-          filter?.isActive === undefined ? 'any' : filter.isActive
-        }, dependsOn active: ${
-          filter?.dependsOnActive === undefined ? 'any' : filter.dependsOnActive
-        }). Found ${result.rows.length} rows.`
-      );
       return result.rows.map(this.mapRowToWorkItemDependencyData);
     } catch (error: unknown) {
       logger.error(`[WorkItemRepositoryDependencies] Failed to find dependencies for item ${workItemId}:`, error);
@@ -101,13 +93,6 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
 
     try {
       const result = await dbClient.query(sql, params);
-      logger.debug(
-        `[WorkItemRepositoryDependencies] findDependenciesByItemList (count: ${workItemIds.length}, link active: ${
-          filter?.isActive === undefined ? 'any' : filter.isActive
-        }, dependsOn active: ${
-          filter?.dependsOnActive === undefined ? 'any' : filter.dependsOnActive
-        }). Found ${result.rows.length} rows.`
-      );
       return result.rows.map(this.mapRowToWorkItemDependencyData);
     } catch (error: unknown) {
       logger.error(`[WorkItemRepositoryDependencies] Failed to find dependencies for item list:`, error);
@@ -148,13 +133,6 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
 
     try {
       const result = await dbClient.query(sql, params);
-      logger.debug(
-        `[WorkItemRepositoryDependencies] findDependents for item ${dependsOnWorkItemId} (link active: ${
-          filter?.isActive === undefined ? 'any' : filter.isActive
-        }, dependent active: ${
-          filter?.dependentIsActive === undefined ? 'any' : filter.dependentIsActive
-        }). Found ${result.rows.length} rows.`
-      );
       return result.rows.map(this.mapRowToWorkItemDependencyData);
     } catch (error: unknown) {
       logger.error(
@@ -203,13 +181,6 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
 
     try {
       const result = await dbClient.query(sql, params);
-      logger.debug(
-        `[WorkItemRepositoryDependencies] findDependentsByItemList (count: ${
-          dependsOnWorkItemIds.length
-        }, link active: ${filter?.isActive === undefined ? 'any' : filter.isActive}, dependent active: ${
-          filter?.dependentIsActive === undefined ? 'any' : filter.dependentIsActive
-        }). Found ${result.rows.length} rows.`
-      );
       return result.rows.map(this.mapRowToWorkItemDependencyData);
     } catch (error: unknown) {
       logger.error(`[WorkItemRepositoryDependencies] Failed to find dependents for item list:`, error);
@@ -258,11 +229,6 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
 
     try {
       const result = await dbClient.query(sql, params);
-      logger.debug(
-        `[WorkItemRepositoryDependencies] findDependenciesByCompositeKeys (count: ${
-          compositeKeys.length
-        }, link active: ${filter?.isActive === undefined ? 'any' : filter.isActive}). Found ${result.rows.length} rows.`
-      );
       return result.rows.map(this.mapRowToWorkItemDependencyData);
     } catch (error: unknown) {
       logger.error(`[WorkItemRepositoryDependencies] Failed to find dependencies by composite keys:`, error);
@@ -298,7 +264,6 @@ export class WorkItemRepositoryDependencies extends WorkItemRepositoryBase {
 
     try {
       const result = await dbClient.query(sql, params);
-      logger.info(`[WorkItemRepositoryDependencies] Soft deleted ${result.rowCount ?? 0} dependency link(s).`);
       return result.rowCount ?? 0;
     } catch (error: unknown) {
       logger.error(`[WorkItemRepositoryDependencies] Failed to soft delete dependency links:`, error);

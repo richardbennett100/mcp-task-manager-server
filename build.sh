@@ -262,9 +262,9 @@ format_lint_build
 rebuild_database_schema_directly
 
 # ADDED VERIFICATION STEP
-verify_tables_exist_via_psql
+#verify_tables_exist_via_psql
 
-#run_tests "unit"
+run_tests "unit"
 
 #read -p "Press Enter to continue..."
 

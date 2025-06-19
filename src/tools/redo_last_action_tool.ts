@@ -7,6 +7,7 @@ import { logger } from '../utils/logger.js';
 import { DatabaseManager } from '../db/DatabaseManager.js';
 import { WorkItemRepository, ActionHistoryRepository, ActionHistoryData } from '../repositories/index.js';
 import { WorkItemService } from '../services/WorkItemService.js';
+// import sseNotificationService from '../services/SseNotificationService.js';
 
 export const redoLastActionTool = (server: McpServer): void => {
   // Remove unused _args parameter
@@ -18,7 +19,7 @@ export const redoLastActionTool = (server: McpServer): void => {
       const pool = dbManager.getPool();
       const workItemRepository = new WorkItemRepository(pool);
       const actionHistoryRepository = new ActionHistoryRepository(pool);
-      const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository);
+      const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository); //, sseNotificationService);
 
       const redoneAction: ActionHistoryData | null = await workItemService.redoLastUndo();
 

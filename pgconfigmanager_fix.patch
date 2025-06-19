@@ -1,0 +1,13 @@
+--- a/src/createServer.ts
++++ b/src/createServer.ts
+@@ -23,9 +23,8 @@
+ 
+   // For ConfigurationManager, using process.env directly for non-PG specific values
+   // as the provided ConfigurationManager.ts focuses on PG and doesn't have a generic .get()
+-  const pgConfigManager = ConfigurationManager.getInstance(); 
+-  logger.info('Configuration Manager (for PG) initialized.'); 
++  ConfigurationManager.getInstance(); // Ensure it's initialized if DBManager or other parts rely on it being called once.
++  // logger.info('Configuration Manager (for PG) initialized.'); // Log line removed as variable is removed.
+ 
+   const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
+   logger.info(`Log level set to: ${LOG_LEVEL}`); 

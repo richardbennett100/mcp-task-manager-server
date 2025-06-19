@@ -7,6 +7,7 @@ import { NotFoundError } from '../utils/errors.js';
 import { DatabaseManager } from '../db/DatabaseManager.js';
 import { WorkItemRepository, ActionHistoryRepository } from '../repositories/index.js';
 import { WorkItemService } from '../services/WorkItemService.js';
+// import sseNotificationService from '../services/SseNotificationService.js';
 
 export const deleteProjectTool = (server: McpServer): void => {
   const processRequest = async (args: DeleteProjectArgs): Promise<{ content: { type: 'text'; text: string }[] }> => {
@@ -17,7 +18,7 @@ export const deleteProjectTool = (server: McpServer): void => {
       const pool = dbManager.getPool();
       const workItemRepository = new WorkItemRepository(pool);
       const actionHistoryRepository = new ActionHistoryRepository(pool);
-      const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository);
+      const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository); //); //, sseNotificationService);
 
       // --- Validation Step ---
       const projectItem = await workItemRepository.findById(args.project_id, { isActive: true }); // Check active projects first

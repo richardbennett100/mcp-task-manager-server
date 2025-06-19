@@ -1,8 +1,4 @@
 // Modified upload/src/services/WorkItemService.ts
-// Changes:
-// 1. Added import for ChildTaskInputRecursive.
-// 2. Added public method addWorkItemTree that delegates to this.addingService.addWorkItemTree.
-// File: src/services/WorkItemService.ts
 import {
   WorkItemRepository,
   ActionHistoryRepository,
@@ -32,7 +28,7 @@ import { WorkItemHistoryService } from './WorkItemHistoryService.js';
 import { WorkItemPromoteService } from './WorkItemPromoteService.js';
 import { logger } from '../utils/logger.js';
 import { z } from 'zod';
-import { type ChildTaskInputRecursive } from '../tools/add_child_tasks_params.js'; // Added this import
+import { type ChildTaskInputRecursive } from '../tools/add_child_tasks_params.js';
 
 type WorkItemStatus = z.infer<typeof WorkItemStatusEnum>;
 type WorkItemPriority = z.infer<typeof WorkItemPriorityEnum>;
@@ -54,7 +50,6 @@ export class WorkItemService {
   constructor(workItemRepository: WorkItemRepository, actionHistoryRepository: ActionHistoryRepository) {
     this.workItemRepository = workItemRepository;
     this.actionHistoryRepository = actionHistoryRepository;
-
     this.historyService = new WorkItemHistoryService(workItemRepository, actionHistoryRepository);
     this.addingService = new WorkItemAddingService(workItemRepository, actionHistoryRepository, this.historyService);
     this.readingService = new WorkItemReadingService(workItemRepository);
@@ -70,7 +65,6 @@ export class WorkItemService {
     return this.addingService.addWorkItem(input);
   }
 
-  // New method to expose addWorkItemTree functionality
   public async addWorkItemTree(
     initialParentId: string,
     childTasksTree: ChildTaskInputRecursive[]
@@ -172,42 +166,16 @@ export class WorkItemService {
       includeTags: params.include_tags,
       excludeTags: params.exclude_tags,
     };
-    const candidates = await this.workItemRepository.findCandidateTasksForSuggestion(candidateFilters);
-    logger.debug(`[WorkItemService] Found ${candidates.length} initial candidates.`);
 
-    if (candidates.length === 0) {
-      logger.info('[WorkItemService] No candidate tasks found matching filters.');
-      return null;
+    const candidates = await this.workItemRepository.findCandidateTasksForSuggestion(candidateFilters);
+
+    if (candidates && candidates.length > 0) {
+      const nextTask = candidates[0];
+      logger.info(`[WorkItemService] Found next task: ${nextTask.work_item_id}`);
+      return nextTask;
     }
-    for (const candidate of candidates) {
-      logger.debug(`[WorkItemService] Checking candidate: ${candidate.work_item_id} (${candidate.name})`);
-      const dependencies = await this.workItemRepository.findDependencies(candidate.work_item_id, { isActive: true });
-      if (dependencies.length === 0) {
-        logger.info(`[WorkItemService] Found next task (no active dependencies): ${candidate.work_item_id}`);
-        return candidate;
-      }
-      let allDependenciesMet = true;
-      const dependencyIds = dependencies.map((dep) => dep.depends_on_work_item_id);
-      if (dependencyIds.length > 0) {
-        const dependencyItems = await this.workItemRepository.findByIds(dependencyIds, { isActive: true });
-        const dependencyStatusMap = new Map(dependencyItems.map((item) => [item.work_item_id, item.status]));
-        for (const depLink of dependencies) {
-          const depStatus = dependencyStatusMap.get(depLink.depends_on_work_item_id);
-          if (depStatus !== 'done') {
-            allDependenciesMet = false;
-            logger.debug(
-              `[WorkItemService] Candidate ${candidate.work_item_id} blocked by dependency ${depLink.depends_on_work_item_id} (status: ${depStatus ?? 'not found/inactive'})`
-            );
-            break;
-          }
-        }
-      }
-      if (allDependenciesMet) {
-        logger.info(`[WorkItemService] Found next task (all active dependencies met): ${candidate.work_item_id}`);
-        return candidate;
-      }
-    }
-    logger.info('[WorkItemService] No suitable task found after checking dependencies for all candidates.');
+
+    logger.info('[WorkItemService] No suitable task found after repository search.');
     return null;
   }
 }

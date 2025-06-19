@@ -45,7 +45,9 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.18",
     "@types/cross-spawn": "^6.0.6",
+    "@types/express": "^5.0.2",
     "@types/node": "^20.17.44",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
@@ -71,25 +73,25 @@
     ]
   },
   "jest": {
-  "preset": "ts-jest/presets/default-esm",
-  "testEnvironment": "node",
-  "roots": [
-    "<rootDir>/dist"
-  ],
-  "testMatch": [
-    "**/__tests__/**/*.spec.js",
-    "__tests__/e2e/*.test.js",
-    "**/?(*.)+(spec|test).js"
-  ],
-  "moduleNameMapper": {
-    "^(\\.{1,2}/.*)\\.js$": "$1"
-  },
-  "globals": {
-    "ts-jest": {
-      "useESM": true,
-      "tsconfig": "tsconfig.json"
-    }
-  },
-  "clearMocks": true
+    "preset": "ts-jest/presets/default-esm",
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/dist"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.spec.js",
+      "__tests__/e2e/*.test.js",
+      "**/?(*.)+(spec|test).js"
+    ],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
+    "globals": {
+      "ts-jest": {
+        "useESM": true,
+        "tsconfig": "tsconfig.json"
+      }
+    },
+    "clearMocks": true
   }
 }

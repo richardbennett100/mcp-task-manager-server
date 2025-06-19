@@ -7,6 +7,7 @@ import { DatabaseManager } from '../db/DatabaseManager.js';
 import { WorkItemRepository, ActionHistoryRepository, WorkItemData } from '../repositories/index.js';
 import { WorkItemService } from '../services/WorkItemService.js';
 import { ListWorkItemsFilter } from '../services/WorkItemServiceTypes.js';
+// import sseNotificationService from '../services/SseNotificationService.js';
 
 export const listWorkItemsTool = (server: McpServer): void => {
   // The handler function for the tool
@@ -24,7 +25,7 @@ export const listWorkItemsTool = (server: McpServer): void => {
       const pool = dbManager.getPool();
       const workItemRepository = new WorkItemRepository(pool);
       const actionHistoryRepository = new ActionHistoryRepository(pool);
-      const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository);
+      const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository); //); //, sseNotificationService);
 
       const filter: ListWorkItemsFilter = {
         parent_work_item_id: args.parent_work_item_id,

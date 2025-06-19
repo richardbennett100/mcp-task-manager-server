@@ -9,7 +9,7 @@ export interface WorkItemData {
   name: string;
   //shortname: string | null; // Will be removed later, keep for now
   description: string | null;
-  status: 'todo' | 'in-progress' | 'review' | 'done';
+  status: 'todo' | 'in-progress' | 'review' | 'done' | 'blocked';
   priority: 'high' | 'medium' | 'low';
   order_key: string | null;
   created_at: string;
@@ -23,6 +23,8 @@ export interface WorkItemDependencyData {
   depends_on_work_item_id: string;
   dependency_type: 'finish-to-start' | 'linked';
   is_active: boolean;
+  // This field is optional and only populated by specific queries (like findDependencies)
+  depends_on_status?: WorkItemData['status'];
 }
 
 export class WorkItemRepositoryBase {
@@ -65,12 +67,19 @@ export class WorkItemRepositoryBase {
   }
 
   public mapRowToWorkItemDependencyData(row: any): WorkItemDependencyData {
-    return {
+    const dependencyData: WorkItemDependencyData = {
       work_item_id: row.work_item_id ?? null,
       depends_on_work_item_id: row.depends_on_work_item_id ?? null,
       dependency_type: row.dependency_type ?? 'linked',
       is_active: row.is_active === true,
     };
+
+    // Safely add the optional field if it exists on the row
+    if (row.depends_on_status) {
+      dependencyData.depends_on_status = row.depends_on_status;
+    }
+
+    return dependencyData;
   }
 
   protected validateUuid(id: string | null | undefined, context: string): boolean {

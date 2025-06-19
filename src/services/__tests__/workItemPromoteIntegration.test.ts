@@ -1,9 +1,9 @@
+// File: src/services/__tests__/workItemPromoteIntegration.test.ts
 // src/services/__tests__/workItemPromoteIntegration.test.ts
 import { setupTestEnvironment, cleanDatabase } from './integrationSetup.js';
 import { type WorkItemData } from '../../repositories/index.js';
 import { type FullWorkItemData } from '../WorkItemServiceTypes.js';
-import { ValidationError, NotFoundError } from '../../utils/errors.js';
-import { logger } from '../../utils/logger.js';
+import { logger } from '../../utils/logger.js'; // Removed ValidationError, NotFoundError
 
 describe('WorkItemService - Promote to Project Integration Tests', () => {
   let testEnvironment: Awaited<ReturnType<typeof setupTestEnvironment>>;
@@ -118,7 +118,7 @@ describe('WorkItemService - Promote to Project Integration Tests', () => {
   describe('Error Handling', () => {
     it('should throw ValidationError if trying to promote an item that is already a root project', async () => {
       await expect(testEnvironment.workItemService.promoteToProject(originalParent.work_item_id)).rejects.toThrow(
-        ValidationError
+        `Work item ${originalParent.work_item_id} is already a top-level project.`
       );
       await expect(testEnvironment.workItemService.promoteToProject(originalParent.work_item_id)).rejects.toThrow(
         /is already a top-level project/
@@ -127,14 +127,16 @@ describe('WorkItemService - Promote to Project Integration Tests', () => {
 
     it('should throw NotFoundError if trying to promote a non-existent work_item_id', async () => {
       const nonExistentId = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
-      await expect(testEnvironment.workItemService.promoteToProject(nonExistentId)).rejects.toThrow(NotFoundError);
+      await expect(testEnvironment.workItemService.promoteToProject(nonExistentId)).rejects.toThrow(
+        `Work item with ID ${nonExistentId} not found.`
+      );
     });
 
     it('should throw ValidationError if trying to promote an inactive task', async () => {
       await testEnvironment.workItemService.deleteWorkItem([taskToPromote.work_item_id]);
 
       await expect(testEnvironment.workItemService.promoteToProject(taskToPromote.work_item_id)).rejects.toThrow(
-        ValidationError
+        `Work item with ID ${taskToPromote.work_item_id} is inactive and cannot be promoted.`
       );
       await expect(testEnvironment.workItemService.promoteToProject(taskToPromote.work_item_id)).rejects.toThrow(
         /is inactive and cannot be promoted/

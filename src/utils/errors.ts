@@ -1,54 +1,55 @@
-﻿// File: src/utils/errors.ts
-/**
- * Custom error types for the Task Management Server.
- * These can be caught in the service layer and mapped to specific
- * McpError codes in the tool layer.
- */
+﻿export class AppError extends Error {
+  public readonly errorCode: string;
+  public readonly statusCode: number;
+  public readonly details: any;
 
-// Example: Base service error
-export class ServiceError extends Error {
-  constructor(
-    message: string,
-    public details?: any
-  ) {
+  constructor(errorCode: string, message: string, statusCode: number, details?: any) {
     super(message);
-    this.name = 'ServiceError';
+    this.errorCode = errorCode;
+    this.statusCode = statusCode;
+    this.details = details;
+    Object.setPrototypeOf(this, AppError.prototype);
   }
 }
 
-// Example: Validation specific error
-export class ValidationError extends ServiceError {
-  constructor(message: string, details?: any) {
-    super(message, details);
-    this.name = 'ValidationError';
+export const ErrorCode = {
+  BadRequest: 'BadRequest',
+  Unauthorized: 'Unauthorized',
+  Forbidden: 'Forbidden',
+  NotFound: 'NotFound',
+  Conflict: 'Conflict',
+  InternalServerError: 'InternalServerError',
+  DatabaseError: 'DatabaseError',
+  ValidationError: 'ValidationError',
+  ApiError: 'ApiError',
+};
+
+export class NotFoundError extends AppError {
+  constructor(message = 'Resource not found', details?: any) {
+    super(ErrorCode.NotFound, message, 404, details);
   }
 }
 
-// Example: Not found specific error
-export class NotFoundError extends ServiceError {
-  constructor(message: string = 'Resource not found', details?: any) {
-    super(message, details);
-    this.name = 'NotFoundError';
+export class ValidationError extends AppError {
+  constructor(message = 'Validation failed', details?: any) {
+    super(ErrorCode.ValidationError, message, 400, details);
   }
 }
 
-// Example: Conflict specific error (e.g., trying to create something that exists)
-export class ConflictError extends ServiceError {
-  constructor(message: string = 'Resource conflict', details?: any) {
-    super(message, details);
-    this.name = 'ConflictError';
+export class DatabaseError extends AppError {
+  constructor(message = 'A database error occurred', details?: any) {
+    super(ErrorCode.DatabaseError, message, 500, details);
   }
 }
 
-// ADDED: DatabaseError
-export class DatabaseError extends ServiceError {
-  constructor(
-    message: string = 'A database error occurred',
-    public details?: any
-  ) {
-    super(message, details);
-    this.name = 'DatabaseError';
+export class UnauthorizedError extends AppError {
+  constructor(message = 'Unauthorized', details?: any) {
+    super(ErrorCode.Unauthorized, message, 401, details);
   }
 }
 
-// Add other custom error types as needed
+export class ForbiddenError extends AppError {
+  constructor(message = 'Forbidden', details?: any) {
+    super(ErrorCode.Forbidden, message, 403, details);
+  }
+}

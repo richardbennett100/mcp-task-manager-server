@@ -10,6 +10,7 @@ import { DatabaseManager } from '../db/DatabaseManager.js';
 import { WorkItemRepository, ActionHistoryRepository } from '../repositories/index.js';
 import { WorkItemService } from '../services/WorkItemService.js';
 import { WorkItemData } from '../repositories/index.js'; // Import return type
+// import sseNotificationService from '../services/SseNotificationService.js';
 
 // FIX: Define constants locally
 export const TOOL_NAME = 'get_next_task';
@@ -27,7 +28,7 @@ export const getNextTaskTool = (server: McpServer): void => {
       const pool = dbManager.getPool();
       const workItemRepository = new WorkItemRepository(pool);
       const actionHistoryRepository = new ActionHistoryRepository(pool);
-      const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository);
+      const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository); //); //, sseNotificationService);
 
       // Call the new service method
       const nextTask: WorkItemData | null = await workItemService.getNextTask(args);

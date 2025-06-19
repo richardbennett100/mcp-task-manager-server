@@ -10,6 +10,7 @@ import { logger } from '../utils/logger.js';
 import { DatabaseManager } from '../db/DatabaseManager.js';
 import { WorkItemRepository, ActionHistoryRepository } from '../repositories/index.js';
 import { WorkItemService } from '../services/WorkItemService.js';
+// import sseNotificationService from '../services/SseNotificationService.js';
 // WorkItemHistoryService is not directly instantiated here anymore.
 
 export const addChildTasksTool = (server: McpServer): void => {
@@ -22,7 +23,7 @@ export const addChildTasksTool = (server: McpServer): void => {
       const workItemRepository = new WorkItemRepository(pool);
       const actionHistoryRepository = new ActionHistoryRepository(pool);
       // Corrected: WorkItemService constructor takes 2 arguments
-      const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository);
+      const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository); //); //, sseNotificationService);
 
       const parentItem = await workItemService.getWorkItemById(args.parent_work_item_id);
       if (!parentItem) {

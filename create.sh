@@ -194,7 +194,7 @@ EOF_SRC_API_PROJECTROUTES_TS
 cat << 'EOF_SRC_API_SSEROUTES_TS' > src/api/sseRoutes.ts
 // src/api/sseRoutes.ts
 import { Router, Request, Response } from 'express';
-import sseNotificationService from '../services/SseNotificationService'; 
+// import sseNotificationService from '../services/SseNotificationService'; 
 import { logger } from '../utils';
 
 export const sseRoutes = (): Router => {
@@ -414,7 +414,7 @@ import { WorkItemPositionUpdateService } from './WorkItemPositionUpdateService.j
 import { WorkItemDeleteService } from './WorkItemDeleteService.js';
 import { WorkItemHistoryService } from './WorkItemHistoryService.js';
 import { WorkItemPromoteService } from './WorkItemPromoteService.js';
-import SseNotificationServiceSingleton from './SseNotificationService'; // Import the singleton
+// import sseNotificationServiceSingleton from './SseNotificationService'; // Import the singleton
 
 import { logger } from '../utils/logger.js';
 import { z } from 'zod';
@@ -660,7 +660,7 @@ import { WorkItemService } from './services/WorkItemService.js';
 import { initializeTools } from './tools/index.js';
 import { projectRoutes } from './api/projectRoutes.js'; // Ensure .js extension if your tsconfig module is ESNext
 import { sseRoutes } from './api/sseRoutes.js';       // Ensure .js extension
-import SseNotificationServiceSingleton from './services/SseNotificationService.js'; // Import the singleton
+// import sseNotificationServiceSingleton from './services/SseNotificationService.js'; // Import the singleton
 
 export async function createServer(): Promise<Express> {
   const app = express();
@@ -775,7 +775,7 @@ import {
 import { AddWorkItemInput, PositionEnum } from './WorkItemServiceTypes.js';
 import { ChildTaskInputRecursive } from '../tools/add_child_tasks_params.js'; // Assuming tags might be part of this
 import { WorkItemHistoryService } from './WorkItemHistoryService.js';
-import SseNotificationServiceInstance from './SseNotificationService'; 
+// import sseNotificationServiceInstance from './SseNotificationService'; 
 import { WorkItemUtilsService } from './WorkItemUtilsService.js';
 import { NotFoundError, ValidationError, DatabaseError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
@@ -1124,7 +1124,7 @@ import {
 } from '../repositories/index.js';
 import { UpdateWorkItemInput } from './WorkItemServiceTypes.js';
 import { DependencyInput } from '../tools/add_dependencies_params.js'; // Ensure this type is correctly defined/used
-import SseNotificationServiceInstance from './SseNotificationService';
+// import sseNotificationServiceInstance from './SseNotificationService';
 import { NotFoundError, ValidationError, DatabaseError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 
@@ -1279,7 +1279,7 @@ import {
   CreateUndoStepInput,
   WorkItemData
 } from '../repositories/index.js';
-import SseNotificationServiceInstance from './SseNotificationService';
+// import sseNotificationServiceInstance from './SseNotificationService';
 import { logger } from '../utils/logger.js';
 import { NotFoundError, ValidationError } from '../utils/errors.js';
 
@@ -1409,7 +1409,7 @@ import {
   CreateUndoStepInput,
 } from '../repositories/index.js';
 import { WorkItemStatusEnum, WorkItemPriorityEnum } from './WorkItemServiceTypes.js';
-import SseNotificationServiceInstance from './SseNotificationService';
+// import sseNotificationServiceInstance from './SseNotificationService';
 import { NotFoundError, ValidationError, DatabaseError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 import { z } from 'zod';
@@ -1554,7 +1554,7 @@ import {
   CreateUndoStepInput,
 } from '../repositories/index.js';
 import { WorkItemUtilsService } from './WorkItemUtilsService.js';
-import SseNotificationServiceInstance from './SseNotificationService';
+// import sseNotificationServiceInstance from './SseNotificationService';
 import { NotFoundError, ValidationError, DatabaseError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 
@@ -1721,7 +1721,7 @@ import {
   CreateUndoStepInput,
 } from '../repositories/index.js';
 import { WorkItemUtilsService } from './WorkItemUtilsService.js';
-import SseNotificationServiceInstance from './SseNotificationService';
+// import sseNotificationServiceInstance from './SseNotificationService';
 import { NotFoundError, ValidationError, DatabaseError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 
@@ -1828,7 +1828,7 @@ import {
   CreateUndoStepInput,
 } from '../repositories/index.js';
 import { DependencyInput } from '../tools/add_dependencies_params.js';
-import SseNotificationServiceInstance from './SseNotificationService';
+// import sseNotificationServiceInstance from './SseNotificationService';
 import { NotFoundError, ValidationError, DatabaseError } from '../utils/errors.js';
 import { logger } from '../utils/logger.js';
 

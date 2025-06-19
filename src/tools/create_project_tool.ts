@@ -9,6 +9,7 @@ import { WorkItemRepository, ActionHistoryRepository } from '../repositories/ind
 import { WorkItemService } from '../services/WorkItemService.js';
 import { AddWorkItemInput } from '../services/WorkItemServiceTypes.js'; // Service uses this
 import { WorkItemData } from '../repositories/index.js';
+// import sseNotificationService from '../services/SseNotificationService.js';
 
 export const createProjectTool = (server: McpServer): void => {
   const processRequest = async (args: CreateProjectArgs): Promise<{ content: { type: 'text'; text: string }[] }> => {
@@ -19,7 +20,7 @@ export const createProjectTool = (server: McpServer): void => {
       const pool = dbManager.getPool();
       const workItemRepository = new WorkItemRepository(pool);
       const actionHistoryRepository = new ActionHistoryRepository(pool);
-      const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository);
+      const workItemService = new WorkItemService(workItemRepository, actionHistoryRepository); //); //, sseNotificationService);
 
       // Map tool arguments to service input, explicitly setting parent to null
       const serviceInput: AddWorkItemInput = {
