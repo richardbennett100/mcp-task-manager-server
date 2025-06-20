@@ -67,6 +67,16 @@ else
   echo "Source src directory not found, skipping copy."
 fi
 
+
+# 3. Copy the ui directory recursively (preserving timestamps)
+echo "Step 3a: Copying ui directory recursively (preserving timestamps)..."
+if [ -d "$SOURCE_DIR/ui" ]; then
+  rsync -a --exclude=".svelte-kit" --exclude="build" --exclude="node_modules" "$SOURCE_DIR/ui/" "$UPLOAD_DIR/ui"
+  echo "ui directory copied."
+else
+  echo "Source ui directory not found, skipping copy."
+fi
+
 # 3b. Copy the logs directory recursively (preserving timestamps)
 echo "Step 3b: Copying logs directory recursively (preserving timestamps)..."
 if [ -d "$SOURCE_DIR/logs" ]; then
